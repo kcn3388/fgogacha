@@ -1,11 +1,9 @@
 import base64
 import io
-import random
-from datetime import timedelta
 
 from PIL import Image
 
-from hoshino import priv, Service, R, util
+from hoshino import priv, Service
 from hoshino.typing import *
 from hoshino.util import DailyNumberLimiter
 
@@ -14,8 +12,8 @@ from .getGachaPools import *
 from .downloadIcons import *
 from .gacha import *
 
-jewel_limit = DailyNumberLimiter(1500)
-tenjo_limit = DailyNumberLimiter(5)
+jewel_limit = DailyNumberLimiter(3000)
+tenjo_limit = DailyNumberLimiter(10)
 
 JEWEL_EXCEED_NOTICE = f"您今天已经抽过{jewel_limit.max}石头了，欢迎明早5点后再来！"
 
@@ -41,8 +39,10 @@ sv_help = '''
 [获取fgo卡池] 从mooncell获取卡池数据
 [查询fgo卡池] 查询本地缓存的卡池以及本群卡池
 [切换fgo卡池 + 卡池编号] 切换需要的卡池
+[切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池
 [@bot fgo十连/fgo百连] 紧张刺激的抽卡
 '''.strip()
+
 sv = Service(
     name='fgo抽卡',
     help_=sv_help,
@@ -67,9 +67,6 @@ async def bangzhu(bot, ev):
         }
     }
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
-
-
-priv.set_block_group(868844497, timedelta(hours=1))
 
 
 @sv.on_fullmatch(("fgo数据初始化", "FGO数据初始化"))
@@ -139,8 +136,12 @@ async def check_pool(bot, ev: CQEvent):
         return
     msg = "当前卡池："
     for each in pools:
-        s = "\n" + str(each["id"]) + "：" + each["banner"]
+        s = f"\n{each['id']}：{each['banner']}"
         msg += s
+        if "sub_pool" in each:
+            for sub_pools in each["sub_pool"]:
+                s = f"\n\t{sub_pools['id']}：{sub_pools['sub_title']}"
+                msg += s
 
     if os.path.exists(json_path):
         banners = json.load(open(banner_path, encoding="utf-8"))
@@ -156,6 +157,8 @@ async def check_pool(bot, ev: CQEvent):
         else:
             b_name = banner["banner"]["banner"]
             title = banner["banner"]["title"]
+            if "sub_title" in banner["banner"]:
+                b_name = banner["banner"]["sub_title"]
             group = f"\n\n本群{ev.group_id}卡池：\n{b_name}\n从属活动：\n{title}"
             msg += group
 
@@ -186,7 +189,7 @@ async def switch_pool(bot, ev: CQEvent):
     for each in pools:
         if each["id"] == int(p_id):
             if each["type"] == "daily pickup":
-                await bot.finish(ev, "暂不支持日替卡池，请选择别的卡池")
+                await bot.finish(ev, "日替卡池请使用指令：切换fgo日替卡池 + 卡池编号 + 日替卡池编号")
             banner["banner"] = each
             break
     if banner == {}:
@@ -204,6 +207,65 @@ async def switch_pool(bot, ev: CQEvent):
 
     title = banner["banner"]["title"]
     b_name = banner["banner"]["banner"]
+    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
+
+
+@sv.on_prefix(("切换fgo日替卡池", "切换FGO日替卡池"))
+async def switch_pool(bot, ev: CQEvent):
+    ids = ev.message.extract_plain_text()
+    if ids == "":
+        await bot.finish(ev, "食用指南：切换fgo日替卡池 + 编号", at_sender=True)
+
+    pools = json.load(open(pools_path, encoding="utf-8"))
+    p_id = ids.split(" ")[0]
+    s_id = ids.split(" ")[1]
+    if not os.path.exists(banner_path):
+        print("初始化数据json...")
+        open(json_path, 'w')
+        banners = []
+    else:
+        banners = json.load(open(banner_path, encoding="utf-8"))
+    if len(pools) == 0:
+        print("no pool")
+        await bot.send(ev, "没有卡池！请先获取卡池！")
+        return
+    banner = {
+        "group": ev.group_id,
+        "banner": []
+    }
+    for each in pools:
+        if each["id"] == int(p_id) and each["type"] == "daily pickup":
+            for sub_pool in each["sub_pool"]:
+                if sub_pool["id"] == int(s_id):
+                    sp = {
+                        "id": each["id"],
+                        "sid": sub_pool["id"],
+                        "title": each["title"],
+                        "href": each["href"],
+                        "banner": each["banner"],
+                        "sub_title": sub_pool["sub_title"],
+                        "type": each["type"]
+                    }
+                    banner["banner"] = sp
+                    break
+
+    if banner == {}:
+        await bot.finish(ev, "卡池编号不存在")
+
+    exists = False
+    for i in range(len(banners)):
+        if banners[i]["group"] == ev.group_id:
+            banners[i] = banner
+            exists = True
+    if not exists:
+        banners.append(banner)
+    with open(banner_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(banners, indent=2, ensure_ascii=False))
+
+    title = banner["banner"]["title"]
+    b_name = banner["banner"]["banner"]
+    if "sub_title" in banner["banner"]:
+        b_name = banner["banner"]["sub_title"]
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
 
 
@@ -264,9 +326,9 @@ async def gacha_10(bot, ev: CQEvent):
     for each in cards:
         target.paste(each, (66 * c_counter, 72 * r_counter))
         c_counter += 1
-        if c_counter > cols:
+        if c_counter >= cols:
             r_counter += 1
-            if r_counter > rows:
+            if r_counter >= rows:
                 break
             else:
                 c_counter = 0
@@ -387,25 +449,34 @@ async def gacha_100(bot, ev: CQEvent):
         cards.append(Image.open(each).resize((66, 72)))
     cols = 6
     rows = int(len(cards) / 6) + 1
-    target = Image.new('RGBA', (66 * cols, 72 * rows))
-    r_counter = 0
-    c_counter = 0
-    for each in cards:
-        target.paste(each, (66 * c_counter, 72 * r_counter))
-        c_counter += 1
-        if c_counter > cols:
-            r_counter += 1
-            if r_counter > rows:
-                break
-            else:
-                c_counter = 0
+    if len(cards) % 6 == 0:
+        rows = int(len(cards) / 6)
+    if not len(cards) % 6 == 0:
+        rows = int(len(cards) / 6) + 1
 
-    bio = io.BytesIO()
-    target.save(bio, format='PNG')
-    base64_str = base64.b64encode(bio.getvalue()).decode()
-    pic_b64 = f'base64://{base64_str}'
-    cqcode = f'[CQ:image,file={pic_b64}]\n\n'
-    msg = "\n您本次的抽卡结果：\n\n" + cqcode
+    if not cards == []:
+        target = Image.new('RGBA', (66 * cols, 72 * rows))
+        r_counter = 0
+        c_counter = 0
+        for each in cards:
+            target.paste(each, (66 * c_counter, 72 * r_counter))
+            c_counter += 1
+            if c_counter >= cols:
+                r_counter += 1
+                if r_counter >= rows:
+                    break
+                else:
+                    c_counter = 0
+
+        bio = io.BytesIO()
+        target.save(bio, format='PNG')
+        base64_str = base64.b64encode(bio.getvalue()).decode()
+        pic_b64 = f'base64://{base64_str}'
+        cqcode = f'[CQ:image,file={pic_b64}]\n\n'
+        msg = "\n您本次的抽卡结果：\n\n" + cqcode
+    else:
+        msg = "\n您本次的抽卡结果：\n\n"
+
     stars = ""
     if not get_pup5 == 0:
         stars += f"UP5☆×{get_pup5}; "
@@ -417,7 +488,7 @@ async def gacha_100(bot, ev: CQEvent):
         stars += f"UP4☆×{get_pup4}; "
 
     if not get_4 == 0:
-        stars += f"5☆×{get_4}; "
+        stars += f"4☆×{get_4}; "
     stars += "\n"
     msg += stars
 
@@ -426,14 +497,15 @@ async def gacha_100(bot, ev: CQEvent):
         if get_pup4 == 0 and not get_4 == 0:
             msg += "甚至没有up四星\n"
         if get_pup4 == 0 and get_4 == 0:
-            msg = "甚至没出四星\n"
+            msg += "甚至没出四星\n"
 
     if get_pup5 == 0 and get_5 == 0:
         msg += "百连零鸡蛋！酋长，考虑一下转生呗？\n"
         if get_pup4 == 0 and not get_4 == 0:
             msg += "甚至没有up四星\n"
         if get_pup4 == 0 and get_4 == 0:
-            msg = "一张金卡都没有？这你还不转生\n"
+            msg = "百连零鸡蛋！酋长，考虑一下转生呗？\n"
+            msg += "一张金卡都没有？这你还不转生\n"
 
     if not get_pup5 == 0:
         if get_pup5 > 1:
@@ -444,7 +516,7 @@ async def gacha_100(bot, ev: CQEvent):
             if get_pup4 == 0 and not get_4 == 0:
                 msg += "众所周知，四星好出\n"
             if get_pup4 == 0 and get_4 == 0:
-                msg = "没出四星啊，那没事了\n"
+                msg += "没出四星啊，那没事了\n"
         if get_pup5 < 2:
             msg += "出了就好，补不补宝这是一个问题~\n"
             if not get_pup4 == 0:

@@ -43,10 +43,15 @@ async def getgachapools():
             "cftIcons": [],
         }
         # counter = 0
+        is_daily = False
         for i in pools:
             raw = await aiorequests.get(i["href"])
             data = await raw.text
             rule = re.compile("raw_str_list\s?=\s?\['(.*)'\]")
+            # debug_path = os.path.join(runtime_path, f"data/html{counter}.txt")
+            # counter += 1
+            # with open(debug_path, "w", encoding="utf-8") as f:
+            #     f.write(data)
 
             soup2 = BeautifulSoup(await raw.content, 'html.parser')
             s = soup2.find('a', class_='mw-selflink selflink')
@@ -65,57 +70,125 @@ async def getgachapools():
                 if each.startswith("svt\t5"):
                     svt_counter += 1
             if svt_counter > 4:
-                print("multi pickup, ignored")
+                print("multi pickup, solve it alone")
                 i["type"] = "daily pickup"
-                continue
-            # debug_path = os.path.join(runtime_path, f"data/html{counter}.txt")
-            # counter += 1
-            # with open(debug_path, "w", encoding="utf-8") as f:
-            #     f.write(data)
+                is_daily = True
 
-            svt_all, cft_all = await get_svt(rule, data)
-            g = {
-                "p_id": i["id"],
-                "banner": i["banner"],
-                "servants": [],
-                "crafts": []
-            }
-            for j in svt_all:
-                if j[3] == 1:
-                    j[0] = "svt_pup"
-                j[0] = j[0] + "_" + str(j[1])
-                servants = {
-                    "type": j[0],
-                    "star": j[1],
-                    "weight": j[2],
-                    "display": j[3],
-                    "ids": j[4]
+            if not is_daily:
+                svt_all, cft_all = await get_svt(rule, data)
+                g = {
+                    "p_id": i["id"],
+                    "banner": i["banner"],
+                    "servants": [],
+                    "crafts": []
                 }
-                g["servants"].append(servants)
-            for j in cft_all:
-                if j[3] == "1":
-                    j[0] = "ce_pup"
-                j[0] = j[0] + "_" + str(j[1])
-                crafts = {
-                    "type": j[0],
-                    "star": j[1],
-                    "weight": j[2],
-                    "display": j[3],
-                    "ids": j[4]
+                for j in svt_all:
+                    if j[3] == 1:
+                        j[0] = "svt_pup"
+                    j[0] = j[0] + "_" + str(j[1])
+                    servants = {
+                        "type": j[0],
+                        "star": j[1],
+                        "weight": j[2],
+                        "display": j[3],
+                        "ids": j[4]
+                    }
+                    g["servants"].append(servants)
+                for j in cft_all:
+                    if j[3] == "1":
+                        j[0] = "ce_pup"
+                    j[0] = j[0] + "_" + str(j[1])
+                    crafts = {
+                        "type": j[0],
+                        "star": j[1],
+                        "weight": j[2],
+                        "display": j[3],
+                        "ids": j[4]
+                    }
+                    g["crafts"].append(crafts)
+                gacha_data.append(g)
+                if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
+                    svticonlist = re.search("svt_icons\s?=\s?(\[.*?\])", data)[1]
+                    svticonlist = data_preprocessing(svticonlist)
+                    svticonlist = svticonlist.split("\t")
+                    for k in svticonlist:
+                        icons["svtIcons"].append(k)
+                    cfticonlist = re.search("cft_icons\s?=\s?(\[.*?\])", data)[1]
+                    cfticonlist = data_preprocessing(cfticonlist)
+                    cfticonlist = cfticonlist.split("\t")
+                    for k in cfticonlist:
+                        icons["cftIcons"].append(k)
+
+            if is_daily:
+                print("go to solve daily pickup")
+                sublist = await get_multi_svt(data)
+                daily = {
+                    "id": i["id"],
+                    "title": i["title"],
+                    "href": i["href"],
+                    "banner": i["banner"],
+                    "type": i["type"],
+                    "sub_pool": []
                 }
-                g["crafts"].append(crafts)
-            gacha_data.append(g)
-            if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
-                svticonlist = re.search("svt_icons\s?=\s?(\[.*?\])", data)[1]
-                svticonlist = data_preprocessing(svticonlist)
-                svticonlist = svticonlist.split("\t")
-                for k in svticonlist:
-                    icons["svtIcons"].append(k)
-                cfticonlist = re.search("cft_icons\s?=\s?(\[.*?\])", data)[1]
-                cfticonlist = data_preprocessing(cfticonlist)
-                cfticonlist = cfticonlist.split("\t")
-                for k in cfticonlist:
-                    icons["cftIcons"].append(k)
+                sub_p_counter = 0
+                for each in sublist:
+                    sub_title = each[0]
+                    svt_all = each[1]
+                    cft_all = each[2]
+                    sub_p = {
+                        "id": sub_p_counter,
+                        "sub_title": sub_title
+                    }
+                    sub_p_counter += 1
+                    daily["sub_pool"].append(sub_p)
+
+                    g = {
+                        "p_id": i["id"],
+                        "s_id": sub_p_counter,
+                        "banner": i["banner"],
+                        "sub_title": sub_title,
+                        "servants": [],
+                        "crafts": []
+                    }
+                    for j in svt_all:
+                        if j[3] == 1:
+                            j[0] = "svt_pup"
+                        j[0] = j[0] + "_" + str(j[1])
+                        servants = {
+                            "type": j[0],
+                            "star": j[1],
+                            "weight": j[2],
+                            "display": j[3],
+                            "ids": j[4]
+                        }
+                        g["servants"].append(servants)
+                    for j in cft_all:
+                        if j[3] == "1":
+                            j[0] = "ce_pup"
+                        j[0] = j[0] + "_" + str(j[1])
+                        crafts = {
+                            "type": j[0],
+                            "star": j[1],
+                            "weight": j[2],
+                            "display": j[3],
+                            "ids": j[4]
+                        }
+                        g["crafts"].append(crafts)
+                    gacha_data.append(g)
+                    if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
+                        svticonlist = re.search("svt_icons\s?=\s?(\[.*?\])", data)[1]
+                        svticonlist = data_preprocessing(svticonlist)
+                        svticonlist = svticonlist.split("\t")
+                        for k in svticonlist:
+                            icons["svtIcons"].append(k)
+                        cfticonlist = re.search("cft_icons\s?=\s?(\[.*?\])", data)[1]
+                        cfticonlist = data_preprocessing(cfticonlist)
+                        cfticonlist = cfticonlist.split("\t")
+                        for k in cfticonlist:
+                            icons["cftIcons"].append(k)
+
+                is_daily = False
+                pools[pools.index(i)] = daily
 
         with open(pools_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(pools, indent=2, ensure_ascii=False))
