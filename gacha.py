@@ -135,7 +135,7 @@ async def get_result(pool_data):
     salt = 123383388
     salt += time.time()
     random.seed(salt)
-    while counter < 12:
+    while counter < 11:
         counter += 1
         rate = random.uniform(0, 1)
         # here is svt gacha

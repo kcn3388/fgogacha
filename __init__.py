@@ -31,6 +31,7 @@ mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
 data_path = os.path.join(runtime_path, 'data/')
 json_path = os.path.join(runtime_path, 'data/db.json')
 banner_path = os.path.join(runtime_path, 'data/banner.json')
+seal_path = os.path.join(runtime_path, '海の翁.jpg')
 
 sv_help = '''
 [fgo数据初始化] 初始化数据文件及目录
@@ -350,15 +351,16 @@ async def gacha_10(bot, ev: CQEvent):
         stars += f"UP4☆×{get_pup4}; "
 
     if not get_4 == 0:
-        stars += f"5☆×{get_4}; "
+        stars += f"4☆×{get_4}; "
     stars += "\n"
     msg += stars
-
+    is_seal = False
     if get_pup5 == 0 and not get_5 == 0:
         if get_5 < 2:
             msg += "“常驻等歪.jpg”不亏！\n"
         if get_5 > 1:
             msg += "欧了，但是没有完全欧\n"
+            is_seal = True
         if not get_pup4 == 0:
             msg += "出了up四星，还歪了常驻，血赚\n"
         if get_pup4 == 5:
@@ -373,6 +375,10 @@ async def gacha_10(bot, ev: CQEvent):
             msg += "不是吧，四星也能歪？\n"
         if get_pup4 == 5:
             msg += "十连满宝四星，血赚\n"
+            is_seal = True
+        if not get_pup4 == 5 and get_pup4 > 1:
+            msg += "up四星多黄，血赚\n"
+            is_seal = True
         if get_pup4 + get_4 > 1:
             msg += "多黄不亏\n"
         if get_pup4 == 0 and get_4 == 0:
@@ -382,10 +388,13 @@ async def gacha_10(bot, ev: CQEvent):
         if get_pup5 > 1:
             if not get_5 == 0:
                 msg += "又多宝又歪常驻，什么臭海豹\n"
+                is_seal = True
             if get_5 == 0:
                 msg += "多黄臭海豹，建议击杀\n"
+                is_seal = True
             if get_pup5 == 5:
                 msg += "十连满宝，小心出门被车创死\n"
+                is_seal = True
             if get_pup4 == 0 and not get_4 == 0:
                 msg += "众所周知，四星好出\n"
         if get_pup5 < 2:
@@ -393,8 +402,18 @@ async def gacha_10(bot, ev: CQEvent):
             if not get_pup4 == 0:
                 if get_pup4 == 5:
                     msg += "一发毕业四星还出了五星，你是狗吧？\n"
+                    is_seal = True
                 else:
                     msg += "十连卡池毕业~这你还不补宝？\n"
+                    is_seal = True
+    if is_seal:
+        with open(seal_path, "rb") as f:
+            seal = f.read()
+        bio = io.BytesIO(seal)
+        base64_str = base64.b64encode(bio.getvalue()).decode()
+        pic_b64 = f'base64://{base64_str}'
+        cqcode = f'\n[CQ:image,file={pic_b64}]'
+        msg += cqcode
 
     await bot.send(ev, msg, at_sender=True)
 
@@ -478,6 +497,7 @@ async def gacha_100(bot, ev: CQEvent):
         msg = "\n您本次的抽卡结果：\n\n"
 
     stars = ""
+    is_seal = False
     if not get_pup5 == 0:
         stars += f"UP5☆×{get_pup5}; "
 
@@ -506,13 +526,18 @@ async def gacha_100(bot, ev: CQEvent):
         if get_pup4 == 0 and get_4 == 0:
             msg = "百连零鸡蛋！酋长，考虑一下转生呗？\n"
             msg += "一张金卡都没有？这你还不转生\n"
+        if get_pup4 >= 5:
+            msg += "up四星满宝啊，那没事了\n"
+            is_seal = True
 
     if not get_pup5 == 0:
         if get_pup5 > 1:
             if get_pup5 == 5:
                 msg += "百连满宝，小心出门被车创死\n"
+                is_seal = True
             if not get_pup5 == 0 and not get_pup5 == 5:
                 msg += "百连多宝不亏，这你还不补宝？\n"
+                is_seal = True
             if get_pup4 == 0 and not get_4 == 0:
                 msg += "众所周知，四星好出\n"
             if get_pup4 == 0 and get_4 == 0:
@@ -522,8 +547,19 @@ async def gacha_100(bot, ev: CQEvent):
             if not get_pup4 == 0:
                 if get_pup4 == 5:
                     msg += "百连毕业四星还出了五星，速度补宝赚金方块啊\n"
+                    is_seal = True
                 else:
                     msg += "百连卡池毕业~这你还不补宝？\n"
+                    is_seal = True
+
+    if is_seal:
+        with open(seal_path, "rb") as f:
+            seal = f.read()
+        bio = io.BytesIO(seal)
+        base64_str = base64.b64encode(bio.getvalue()).decode()
+        pic_b64 = f'base64://{base64_str}'
+        cqcode = f'\n[CQ:image,file={pic_b64}]'
+        msg += cqcode
 
     await bot.send(ev, msg, at_sender=True)
 
