@@ -54,17 +54,20 @@ async def gacha(gid):
     with open(banner_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(pool_data, indent=2, ensure_ascii=False))
 
-    result = await get_result(pool_data)
-    return result
+    result, has_pup5, has_pup4 = await get_result(pool_data)
+    return result, has_pup5, has_pup4
 
 
 async def get_result(pool_data):
     # here is svt rate
     # if is pickup 5
+    has_pup5 = False
+    has_pup4 = False
     if "svt_pup_5" in pool_data:
         rate_pup_svt_5 = pool_data["svt_pup_5_rate"]
         rate_svt_5 = rate_pup_svt_5 + pool_data["svt_5_rate"]
         svt_pup_5 = pool_data["svt_pup_5"]
+        has_pup5 = True
     else:
         rate_pup_svt_5 = 0
         rate_svt_5 = pool_data["svt_5_rate"]
@@ -76,6 +79,7 @@ async def get_result(pool_data):
         rate_pup_svt_4 = rate_svt_5 + pool_data["svt_pup_4_rate"]
         rate_svt_4 = rate_pup_svt_4 + pool_data["svt_4_rate"]
         svt_pup_4 = pool_data["svt_pup_4"]
+        has_pup4 = True
     else:
         rate_pup_svt_4 = 0
         rate_svt_4 = rate_svt_5 + pool_data["svt_4_rate"]
@@ -264,4 +268,4 @@ async def get_result(pool_data):
 
             result.append(["cft", "4 or 5", crafts])
 
-    return result
+    return result, has_pup5, has_pup4

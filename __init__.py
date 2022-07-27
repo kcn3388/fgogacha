@@ -41,7 +41,7 @@ sv_help = '''
 [查询fgo卡池] 查询本地缓存的卡池以及本群卡池
 [切换fgo卡池 + 卡池编号] 切换需要的卡池
 [切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池
-[@bot fgo十连/fgo百连] 紧张刺激的抽卡
+[fgo十连/fgo百连] 紧张刺激的抽卡
 '''.strip()
 
 sv = Service(
@@ -281,7 +281,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
-@sv.on_prefix(("fgo十连", "FGO十连", "fgo10连", "FGO10连"), only_to_me=True)
+@sv.on_rex(r'^[fFbB][gG][oO](十|10)(连|l|L)')
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -289,7 +289,7 @@ async def gacha_10(bot, ev: CQEvent):
     await check_jewel(bot, ev)
     jewel_limit.increase(ev.user_id, 30)
 
-    gacha_result = await gacha(gid)
+    gacha_result, has_pup5, has_pup4 = await gacha(gid)
     if gacha_result == 12:
         await bot.finish(ev, "没有选择卡池！请先选择卡池！")
     if gacha_result == 13:
@@ -300,17 +300,13 @@ async def gacha_10(bot, ev: CQEvent):
     get_pup4 = 0
     get_5 = 0
     get_4 = 0
-    has_pup5 = False
-    has_pup4 = False
     for each in gacha_result:
         if each[0] == "svt":
             svt = int(random.choice(each[2]))
             if int(each[1] == "up5"):
                 get_pup5 += 1
-                has_pup5 = True
             if int(each[1] == "up4"):
                 get_pup4 += 1
-                has_pup4 = True
             if int(each[1] == "5"):
                 get_5 += 1
             if int(each[1] == "4"):
@@ -441,7 +437,7 @@ async def gacha_10(bot, ev: CQEvent):
     await bot.send(ev, msg, at_sender=True)
 
 
-@sv.on_prefix(("fgo百连", "FGO百连", "fgo100连", "FGO100连"), only_to_me=True)
+@sv.on_rex(r'^[fFbB][gG][oO](百|100)(连|l|L)')
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -451,9 +447,12 @@ async def gacha_100(bot, ev: CQEvent):
 
     g100 = []
     g_counter = 0
+    has_pup5 = False
+    has_pup4 = False
     while g_counter < 11:
         g_counter += 1
-        g100.append(await gacha(gid))
+        result, has_pup5, has_pup4 = await gacha(gid)
+        g100.append(result)
 
     if g100[0] == 12:
         await bot.finish(ev, "没有选择卡池！请先选择卡池！")
@@ -465,18 +464,14 @@ async def gacha_100(bot, ev: CQEvent):
     get_pup4 = 0
     get_5 = 0
     get_4 = 0
-    has_pup5 = False
-    has_pup4 = False
     for gacha_result in g100:
         for each in gacha_result:
             if each[0] == "svt":
                 svt = int(random.choice(each[2]))
                 if int(each[1] == "up5"):
                     get_pup5 += 1
-                    has_pup5 = True
                 if int(each[1] == "up4"):
                     get_pup4 += 1
-                    has_pup4 = True
                 if int(each[1] == "5"):
                     get_5 += 1
                 if int(each[1] == "4"):

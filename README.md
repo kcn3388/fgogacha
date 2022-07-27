@@ -7,6 +7,10 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
 ======
 ### 2022
 - 7.27
+  - 修改触发方式为正则表达式，不再需要atbot，现在可以同时检测\[fgo/bgo/FGO/BGO\]\[十/百/10/100\]\[连/l/L\]
+    - ~~因为懒得打连字，直接fgo100l不快吗~~
+  - 修正是否pickup卡池的检测
+- 7.27
   - 修正了一部分抽卡结果语句
   - 修正了无pickup四星/五星时的抽卡结果语句
   - 修正了抽卡结果图片
@@ -22,9 +26,9 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
 使用方法
 ======
 # 抽卡模拟相关
-[@Bot fgo十连] fgo抽卡
+[fgo十连] fgo抽卡
 
-[@Bot fgo百连] 100抽
+[fgo百连] 100抽
 
 [获取fgo卡池] 从mooncell获取卡池数据
 
