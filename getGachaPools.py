@@ -139,7 +139,6 @@ async def getgachapools():
                         "id": sub_p_counter,
                         "sub_title": sub_title
                     }
-                    sub_p_counter += 1
                     daily["sub_pool"].append(sub_p)
 
                     g = {
@@ -150,6 +149,7 @@ async def getgachapools():
                         "servants": [],
                         "crafts": []
                     }
+                    sub_p_counter += 1
                     for j in svt_all:
                         if j[3] == 1:
                             j[0] = "svt_pup"

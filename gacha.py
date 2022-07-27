@@ -26,8 +26,13 @@ async def gacha(gid):
     data = {}
     for each in gacha_data:
         if each["p_id"] == banner["banner"]["id"]:
-            data = each
-            break
+            if "s_id" in each:
+                if each["s_id"] == banner["banner"]["s_id"]:
+                    data = each
+                    break
+            else:
+                data = each
+                break
     if len(data) == 0:
         print("data error")
         return 13

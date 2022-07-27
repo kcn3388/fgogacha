@@ -55,7 +55,7 @@ sv = Service(
 )
 
 
-@sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡"))
+@sv.on_rex(r"^[帮bB][助zZ][fFbB][gG][oO][抽cC][卡kK]$|^[fFbB][gG][oO][抽cC][卡kK][帮bB][助zZ]$")
 async def bangzhu(bot, ev):
     _name = "涩茄子"
     _uin = "2087332430"
@@ -70,7 +70,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_fullmatch(("fgo数据初始化", "FGO数据初始化"))
+@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][初cC][始sS][化hH]$")
 async def init(bot, ev: CQEvent):
     if not os.path.exists(basic_path):
         print("数据初始化...")
@@ -89,7 +89,7 @@ async def init(bot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv.on_fullmatch(("fgo数据下载", "FGO数据下载"))
+@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][下xXdD][载zZlL]")
 async def get_fgo_data(bot, ev: CQEvent):
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         print("资源路径未初始化...")
@@ -108,7 +108,7 @@ async def get_fgo_data(bot, ev: CQEvent):
     await bot.send(ev, "下载完成")
 
 
-@sv.on_fullmatch(("获取fgo卡池", "更新fgo卡池", "获取FGO卡池", "更新FGO卡池"))
+@sv.on_rex(r"^[获hH更gG][取qQ新xX][fFbB][gG][oO][卡kK][池cC]$|^[fFbB][gG][oO][卡kK][池cC][获hH更gG][取qQ新xX]$")
 async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     download_stat = await getgachapools()
@@ -125,7 +125,7 @@ async def check_jewel(bot, ev):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
 
 
-@sv.on_prefix(("查询fgo卡池", "查询FGO卡池"))
+@sv.on_rex(r"^[查cC][询xX][fFbB][gG][oO][卡kK][池cC]|^[fFbB][gG][oO][卡kK][池cC][查cC][询xX]$")
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
@@ -176,10 +176,15 @@ async def check_pool(bot, ev: CQEvent):
         await bot.send(ev, msg)
 
 
-@sv.on_prefix(("切换fgo卡池", "切换FGO卡池"))
+@sv.on_rex(r"^[切qQsS][换hHwW][fFbB][gG][oO][卡kK][池cC](\s\d+)?$|^[fFbB][gG][oO][卡kK][池cC][切qQsS][换hHwW](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_id = ev.message.extract_plain_text()
-    if p_id == "":
+    p_id = p_id.split(" ")
+    if len(p_id) > 1:
+        p_id = p_id[1]
+    else:
+        p_id = p_id[0]
+    if not p_id.isdigit():
         await bot.finish(ev, "食用指南：切换fgo卡池 + 编号", at_sender=True)
 
     pools = json.load(open(pools_path, encoding="utf-8"))
@@ -203,7 +208,7 @@ async def switch_pool(bot, ev: CQEvent):
                 await bot.finish(ev, "日替卡池请使用指令：切换fgo日替卡池 + 卡池编号 + 日替卡池编号")
             banner["banner"] = each
             break
-    if banner == {}:
+    if banner == {"group": ev.group_id, "banner": []}:
         await bot.finish(ev, "卡池编号不存在")
 
     exists = False
@@ -221,15 +226,23 @@ async def switch_pool(bot, ev: CQEvent):
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
 
 
-@sv.on_prefix(("切换fgo日替卡池", "切换FGO日替卡池"))
+@sv.on_rex(r"^[切qQsS][换hHwW][fFbB][gG][oO][日rRdD][替tTpP][卡kK][池cC](\s\d+\s\d+)?$"
+           r"|^[fFbB][gG][oO][日rRdD][替tTpP][卡kK][池cC][切qQsS][换hHwW](\s\d+\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if ids == "":
         await bot.finish(ev, "食用指南：切换fgo日替卡池 + 编号", at_sender=True)
 
     pools = json.load(open(pools_path, encoding="utf-8"))
-    p_id = ids.split(" ")[0]
-    s_id = ids.split(" ")[1]
+    ids = ids.split(" ")
+    p_id = ""
+    s_id = ""
+    if len(ids) > 2:
+        p_id = ids[1]
+        s_id = ids[2]
+    else:
+        await bot.finish(ev, "食用指南：切换fgo日替卡池 + 卡池编号 + 日替卡池编号", at_sender=True)
+
     if not os.path.exists(banner_path):
         print("初始化数据json...")
         open(banner_path, 'w')
@@ -250,7 +263,7 @@ async def switch_pool(bot, ev: CQEvent):
                 if sub_pool["id"] == int(s_id):
                     sp = {
                         "id": each["id"],
-                        "sid": sub_pool["id"],
+                        "s_id": sub_pool["id"],
                         "title": each["title"],
                         "href": each["href"],
                         "banner": each["banner"],
@@ -260,7 +273,7 @@ async def switch_pool(bot, ev: CQEvent):
                     banner["banner"] = sp
                     break
 
-    if banner == {}:
+    if banner == {"group": ev.group_id, "banner": []}:
         await bot.finish(ev, "卡池编号不存在")
 
     exists = False
