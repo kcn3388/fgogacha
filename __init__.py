@@ -45,7 +45,7 @@ sv_help = '''
 '''.strip()
 
 sv = Service(
-    name='fgo抽卡',
+    name='fgo抽卡模拟器',
     help_=sv_help,
     bundle="娱乐",
     enable_on_default=True,
