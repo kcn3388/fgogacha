@@ -29,9 +29,9 @@ runtime_path = os.path.dirname(__file__)
 mooncellBackgroundUrl = 'https://fgo.wiki/images/bg/bg-mc-icon.png'
 mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
 data_path = os.path.join(runtime_path, 'data/')
-json_path = os.path.join(runtime_path, 'data/db.json')
 banner_path = os.path.join(runtime_path, 'data/banner.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
+frame_path = os.path.join(runtime_path, 'background.png')
 
 sv_help = '''
 [fgo数据初始化] 初始化数据文件及目录
@@ -85,9 +85,6 @@ async def init(bot, ev: CQEvent):
     if not os.path.exists(data_path):
         print("初始化data目录...")
         os.mkdir(data_path)
-    if not os.path.exists(json_path):
-        print("初始化数据json...")
-        open(json_path, 'w')
     msg = "初始化完成！"
     await bot.send(ev, msg)
 
@@ -96,8 +93,8 @@ async def init(bot, ev: CQEvent):
 async def get_fgo_data(bot, ev: CQEvent):
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         print("资源路径未初始化...")
-        await bot.send(ev, "资源路径未初始化！请先初始化资源路径\n指令：fgo数据初始化")
-        return
+        await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：fgo数据初始化")
+
     print("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
     print("开始下载bg")
@@ -133,8 +130,8 @@ async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
         print("no pool")
-        await bot.send(ev, "没有卡池！请先获取卡池！")
-        return
+        await bot.finish(ev, "没有卡池！请先获取卡池！")
+
     msg = "当前卡池："
     for each in pools:
         s = f"\n{each['id']}：{each['banner']}"
@@ -144,7 +141,7 @@ async def check_pool(bot, ev: CQEvent):
                 s = f"\n\t{sub_pools['id']}：{sub_pools['sub_title']}"
                 msg += s
 
-    if os.path.exists(json_path):
+    if os.path.exists(banner_path):
         banners = json.load(open(banner_path, encoding="utf-8"))
         banner = {}
         exists = False
@@ -163,7 +160,20 @@ async def check_pool(bot, ev: CQEvent):
             group = f"\n\n本群{ev.group_id}卡池：\n{b_name}\n从属活动：\n{title}"
             msg += group
 
-    await bot.send(ev, msg)
+    if len(msg) > 200:
+        _name = "涩茄子"
+        _uin = "2087332430"
+        _banner = {
+            "type": "node",
+            "data": {
+                "name": _name,
+                "uin": _uin,
+                "content": msg
+            }
+        }
+        await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_banner)
+    else:
+        await bot.send(ev, msg)
 
 
 @sv.on_prefix(("切换fgo卡池", "切换FGO卡池"))
@@ -175,14 +185,14 @@ async def switch_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if not os.path.exists(banner_path):
         print("初始化数据json...")
-        open(json_path, 'w')
+        open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         print("no pool")
-        await bot.send(ev, "没有卡池！请先获取卡池！")
-        return
+        await bot.finish(ev, "没有卡池！请先获取卡池！")
+
     banner = {
         "group": ev.group_id,
         "banner": []
@@ -222,14 +232,14 @@ async def switch_pool(bot, ev: CQEvent):
     s_id = ids.split(" ")[1]
     if not os.path.exists(banner_path):
         print("初始化数据json...")
-        open(json_path, 'w')
+        open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         print("no pool")
-        await bot.send(ev, "没有卡池！请先获取卡池！")
-        return
+        await bot.finish(ev, "没有卡池！请先获取卡池！")
+
     banner = {
         "group": ev.group_id,
         "banner": []
@@ -290,13 +300,17 @@ async def gacha_10(bot, ev: CQEvent):
     get_pup4 = 0
     get_5 = 0
     get_4 = 0
+    has_pup5 = False
+    has_pup4 = False
     for each in gacha_result:
         if each[0] == "svt":
             svt = int(random.choice(each[2]))
             if int(each[1] == "up5"):
                 get_pup5 += 1
+                has_pup5 = True
             if int(each[1] == "up4"):
                 get_pup4 += 1
+                has_pup4 = True
             if int(each[1] == "5"):
                 get_5 += 1
             if int(each[1] == "4"):
@@ -319,13 +333,13 @@ async def gacha_10(bot, ev: CQEvent):
     cards = []
     for each in img_path:
         cards.append(Image.open(each).resize((66, 72)))
-    rows = 2
-    cols = 6
-    target = Image.new('RGBA', (66 * cols, 72 * rows))
+    rows = 3
+    cols = 4
+    target = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
     r_counter = 0
     c_counter = 0
     for each in cards:
-        target.paste(each, (66 * c_counter, 72 * r_counter))
+        target.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
         c_counter += 1
         if c_counter >= cols:
             r_counter += 1
@@ -338,29 +352,33 @@ async def gacha_10(bot, ev: CQEvent):
     target.save(bio, format='PNG')
     base64_str = base64.b64encode(bio.getvalue()).decode()
     pic_b64 = f'base64://{base64_str}'
-    cqcode = f'[CQ:image,file={pic_b64}]\n\n'
-    msg = "\n您本次的抽卡结果：\n\n" + cqcode
+    cqcode = f'[CQ:image,file={pic_b64}]\n'
+    msg = "\n您本次的抽卡结果：\n" + cqcode
     stars = ""
     if not get_pup5 == 0:
-        stars += f"UP5☆×{get_pup5}; "
+        stars += f"UP5☆×{get_pup5};\t"
 
     if not get_5 == 0:
-        stars += f"5☆×{get_5}; "
+        stars += f"5☆×{get_5};\t"
 
     if not get_pup4 == 0:
-        stars += f"UP4☆×{get_pup4}; "
+        stars += f"UP4☆×{get_pup4};\t"
 
     if not get_4 == 0:
-        stars += f"4☆×{get_4}; "
+        stars += f"4☆×{get_4};\t"
     stars += "\n"
     msg += stars
     is_seal = False
     if get_pup5 == 0 and not get_5 == 0:
-        if get_5 < 2:
+        if get_5 < 2 and has_pup5:
             msg += "“常驻等歪.jpg”不亏！\n"
-        if get_5 > 1:
+        if get_5 < 2 and not has_pup5:
+            msg += "有五星就行\n"
+        if get_5 > 1 and has_pup5:
             msg += "欧了，但是没有完全欧\n"
             is_seal = True
+        if get_5 > 1 and not has_pup5:
+            msg += "这么多五星，还说你不是海豹？\n"
         if not get_pup4 == 0:
             msg += "出了up四星，还歪了常驻，血赚\n"
         if get_pup4 == 5:
@@ -371,7 +389,7 @@ async def gacha_10(bot, ev: CQEvent):
     if get_pup5 == 0 and get_5 == 0:
         if not get_pup4 == 0:
             msg += "起码出了up四星，不亏\n"
-        if get_pup4 == 0 and not get_4 == 0:
+        if get_pup4 == 0 and not get_4 == 0 and has_pup4:
             msg += "不是吧，四星也能歪？\n"
         if get_pup4 == 5:
             msg += "十连满宝四星，血赚\n"
@@ -383,6 +401,11 @@ async def gacha_10(bot, ev: CQEvent):
             msg += "多黄不亏\n"
         if get_pup4 == 0 and get_4 == 0:
             msg += "零鸡蛋！酋长咱们回非洲吧\n"
+        if 0 < get_4 < 2 and not has_pup4:
+            msg += "出金就行.jpg\n"
+        if get_4 > 1 and not has_pup4:
+            msg += "什么四星大放送啊\n"
+            is_seal = True
 
     if not get_pup5 == 0:
         if get_pup5 > 1:
@@ -395,7 +418,7 @@ async def gacha_10(bot, ev: CQEvent):
             if get_pup5 == 5:
                 msg += "十连满宝，小心出门被车创死\n"
                 is_seal = True
-            if get_pup4 == 0 and not get_4 == 0:
+            if get_pup4 == 0 and has_pup4:
                 msg += "众所周知，四星好出\n"
         if get_pup5 < 2:
             msg += "出了就好，补不补宝这是一个问题~\n"
@@ -442,14 +465,18 @@ async def gacha_100(bot, ev: CQEvent):
     get_pup4 = 0
     get_5 = 0
     get_4 = 0
+    has_pup5 = False
+    has_pup4 = False
     for gacha_result in g100:
         for each in gacha_result:
             if each[0] == "svt":
                 svt = int(random.choice(each[2]))
                 if int(each[1] == "up5"):
                     get_pup5 += 1
+                    has_pup5 = True
                 if int(each[1] == "up4"):
                     get_pup4 += 1
+                    has_pup4 = True
                 if int(each[1] == "5"):
                     get_5 += 1
                 if int(each[1] == "4"):
@@ -466,19 +493,22 @@ async def gacha_100(bot, ev: CQEvent):
     cards = []
     for each in img_path:
         cards.append(Image.open(each).resize((66, 72)))
-    cols = 6
-    rows = int(len(cards) / 6) + 1
-    if len(cards) % 6 == 0:
-        rows = int(len(cards) / 6)
-    if not len(cards) % 6 == 0:
-        rows = int(len(cards) / 6) + 1
+
+    if len(cards) % 4 == 0:
+        rows = int(len(cards) / 4)
+    else:
+        rows = int(len(cards) / 4) + 1
+    if len(cards) < 4:
+        cols = len(cards)
+    else:
+        cols = 4
 
     if not cards == []:
-        target = Image.new('RGBA', (66 * cols, 72 * rows))
+        target = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
         r_counter = 0
         c_counter = 0
         for each in cards:
-            target.paste(each, (66 * c_counter, 72 * r_counter))
+            target.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
             c_counter += 1
             if c_counter >= cols:
                 r_counter += 1
@@ -499,29 +529,32 @@ async def gacha_100(bot, ev: CQEvent):
     stars = ""
     is_seal = False
     if not get_pup5 == 0:
-        stars += f"UP5☆×{get_pup5}; "
+        stars += f"UP5☆×{get_pup5};\t"
 
     if not get_5 == 0:
-        stars += f"5☆×{get_5}; "
+        stars += f"5☆×{get_5};\t"
 
     if not get_pup4 == 0:
-        stars += f"UP4☆×{get_pup4}; "
+        stars += f"UP4☆×{get_pup4};\t"
 
     if not get_4 == 0:
-        stars += f"4☆×{get_4}; "
+        stars += f"4☆×{get_4};\t"
     stars += "\n"
     msg += stars
 
     if get_pup5 == 0 and not get_5 == 0:
-        msg += "百连你都能不出up5星，洗洗睡吧\n"
-        if get_pup4 == 0 and not get_4 == 0:
+        if has_pup5:
+            msg += "百连你都能不出up5星，洗洗睡吧\n"
+        else:
+            msg += "百连你都能不出5星，什么天选之子\n"
+        if get_pup4 == 0 and not get_4 == 0 and has_pup4:
             msg += "甚至没有up四星\n"
         if get_pup4 == 0 and get_4 == 0:
             msg += "甚至没出四星\n"
 
     if get_pup5 == 0 and get_5 == 0:
         msg += "百连零鸡蛋！酋长，考虑一下转生呗？\n"
-        if get_pup4 == 0 and not get_4 == 0:
+        if get_pup4 == 0 and not get_4 == 0 and has_pup4:
             msg += "甚至没有up四星\n"
         if get_pup4 == 0 and get_4 == 0:
             msg = "百连零鸡蛋！酋长，考虑一下转生呗？\n"
@@ -532,14 +565,13 @@ async def gacha_100(bot, ev: CQEvent):
 
     if not get_pup5 == 0:
         if get_pup5 > 1:
+            is_seal = True
             if get_pup5 == 5:
                 msg += "百连满宝，小心出门被车创死\n"
-                is_seal = True
             if not get_pup5 == 0 and not get_pup5 == 5:
                 msg += "百连多宝不亏，这你还不补宝？\n"
-                is_seal = True
-            if get_pup4 == 0 and not get_4 == 0:
-                msg += "众所周知，四星好出\n"
+            if get_pup4 == 0 and has_pup4:
+                msg += "众所周知，up四星好出\n"
             if get_pup4 == 0 and get_4 == 0:
                 msg += "没出四星啊，那没事了\n"
         if get_pup5 < 2:
@@ -567,7 +599,7 @@ async def gacha_100(bot, ev: CQEvent):
 @sv.on_prefix('氪圣晶石')
 async def kakin(bot, ev: CQEvent):
     if ev.user_id not in bot.config.SUPERUSERS:
-        return
+        bot.finish(ev, "小孩子别在游戏里氪金！", at_sender=True)
     count = 0
     for m in ev.message:
         if m.type == 'at' and m.data['qq'] != 'all':
