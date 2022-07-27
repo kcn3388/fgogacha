@@ -45,7 +45,7 @@ sv_help = '''
 '''.strip()
 
 sv = Service(
-    name='fgo抽卡模拟器',
+    name='fgo抽卡',
     help_=sv_help,
     bundle="娱乐",
     enable_on_default=True,
@@ -55,7 +55,8 @@ sv = Service(
 )
 
 
-@sv.on_rex(r"^[帮bB][助zZ][fFbB][gG][oO][抽cC][卡kK]$|^[fFbB][gG][oO][抽cC][卡kK][帮bB][助zZ]$")
+@sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡"))
+@sv.on_rex(r"^[fFbB][gG][oO][抽cC][卡kK][帮bB][助zZ]$")
 async def bangzhu(bot, ev):
     _name = "涩茄子"
     _uin = "2087332430"
