@@ -47,7 +47,7 @@ async def getgachapools():
         for i in pools:
             raw = await aiorequests.get(i["href"])
             data = await raw.text
-            rule = re.compile("raw_str_list\s?=\s?\['(.*)'\]")
+            rule = re.compile(r"raw_str_list\s?=\s?\['(.*)']")
             # debug_path = os.path.join(runtime_path, f"data/html{counter}.txt")
             # counter += 1
             # with open(debug_path, "w", encoding="utf-8") as f:
@@ -107,17 +107,16 @@ async def getgachapools():
                     }
                     g["crafts"].append(crafts)
                 gacha_data.append(g)
-                if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
-                    svticonlist = re.search("svt_icons\s?=\s?(\[.*?\])", data)[1]
-                    svticonlist = data_preprocessing(svticonlist)
-                    svticonlist = svticonlist.split("\t")
-                    for k in svticonlist:
-                        icons["svtIcons"].append(k)
-                    cfticonlist = re.search("cft_icons\s?=\s?(\[.*?\])", data)[1]
-                    cfticonlist = data_preprocessing(cfticonlist)
-                    cfticonlist = cfticonlist.split("\t")
-                    for k in cfticonlist:
-                        icons["cftIcons"].append(k)
+                svt_icon_list = re.search(r"svt_icons\s?=\s?(\[.*?])", data)[1]
+                svt_icon_list = data_preprocessing(svt_icon_list)
+                svt_icon_list = svt_icon_list.split("\t")
+                cft_icon_list = re.search(r"cft_icons\s?=\s?(\[.*?])", data)[1]
+                cft_icon_list = data_preprocessing(cft_icon_list)
+                cft_icon_list = cft_icon_list.split("\t")
+                for j in svt_icon_list:
+                    icons["svtIcons"].append(j)
+                for j in cft_icon_list:
+                    icons["cftIcons"].append(j)
 
             if is_daily:
                 print("go to solve daily pickup")
@@ -176,12 +175,12 @@ async def getgachapools():
                         g["crafts"].append(crafts)
                     gacha_data.append(g)
                     if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
-                        svticonlist = re.search("svt_icons\s?=\s?(\[.*?\])", data)[1]
+                        svticonlist = re.search(r"svt_icons\s?=\s?(\[.*?])", data)[1]
                         svticonlist = data_preprocessing(svticonlist)
                         svticonlist = svticonlist.split("\t")
                         for k in svticonlist:
                             icons["svtIcons"].append(k)
-                        cfticonlist = re.search("cft_icons\s?=\s?(\[.*?\])", data)[1]
+                        cfticonlist = re.search(r"cft_icons\s?=\s?(\[.*?])", data)[1]
                         cfticonlist = data_preprocessing(cfticonlist)
                         cfticonlist = cfticonlist.split("\t")
                         for k in cfticonlist:
