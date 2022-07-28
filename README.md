@@ -6,6 +6,17 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
 更新日志
 ======
 ### 2022
+- 7.28
+  - 新功能：自定义crt验证文件以规避mooncell的拒绝访问
+    - 如何获取证书请自行Google
+    - 食用指南：``fgo_enable_crt + 证书路径``
+      - 文件默认根路径：hoshino的res文件夹 
+      - 当不存在配置文件时不调用crt验证
+      - 未指定证书路径时默认调用``ca-certificates.crt``
+      - 未找到证书时尝试不调用crt验证
+      - 不需要crt验证时请将证书路径设置为``None``
+        - ``None``使用正则表达式支持全字大小写
+      - ``fgo_check_crt``指令可用于检查是否存在配置文件，以及crt文件路径和是否禁用
 - 7.27
   - 修正日替池子不正确的bug
   - 将所有触发词改为正则表达式触发，现在可以使用拼音缩写进行命令触发
@@ -48,6 +59,10 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
 [fgo数据初始化] 初始化数据文件及目录，务必安装后先执行此命令！
 
 [fgo数据下载] 下载从者及礼装图标，务必先初始化数据再执行下载！
+
+[fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，None为禁用
+
+[fgo_check_crt] 检查本群crt文件配置状态
 
 安装
 ======

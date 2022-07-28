@@ -1,6 +1,7 @@
 import base64
 import io
 
+import requests
 from PIL import Image
 
 from hoshino import priv, Service
@@ -30,8 +31,10 @@ mooncellBackgroundUrl = 'https://fgo.wiki/images/bg/bg-mc-icon.png'
 mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
 data_path = os.path.join(runtime_path, 'data/')
 banner_path = os.path.join(runtime_path, 'data/banner.json')
+config_path = os.path.join(runtime_path, 'data/config.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
 frame_path = os.path.join(runtime_path, 'background.png')
+crt_path = "ca-certificates.crt"
 
 sv_help = '''
 [fgo数据初始化] 初始化数据文件及目录
@@ -73,6 +76,8 @@ async def bangzhu(bot, ev):
 
 @sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][初cC][始sS][化hH]$")
 async def init(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path):
         print("数据初始化...")
         print("初始化资源根目录...")
@@ -92,6 +97,8 @@ async def init(bot, ev: CQEvent):
 
 @sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][下xXdD][载zZlL]")
 async def get_fgo_data(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         print("资源路径未初始化...")
         await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：fgo数据初始化")
@@ -99,11 +106,20 @@ async def get_fgo_data(bot, ev: CQEvent):
     print("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
     print("开始下载bg")
-    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath)
+
+    crt_file = None
+    if os.path.exists(config_path):
+        configs = json.load(open(config_path, encoding="utf-8"))
+        for each in configs:
+            if each["group"] == ev.group_id:
+                if not crt_file == "None":
+                    crt_file = each["crt_path"]
+
+    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
     if not bg_stat == 0:
         await bot.send(ev, f'下载bg失败……{bg_stat}')
     print("开始下载icon")
-    icon_stat = await downloadicons()
+    icon_stat = await downloadicons(crt_file)
     if not icon_stat == 0:
         await bot.send(ev, f'下载icons失败……{bg_stat}')
     await bot.send(ev, "下载完成")
@@ -618,3 +634,71 @@ async def kakin(bot, ev: CQEvent):
             count += 1
     if count:
         await bot.send(ev, f"已为{count}位用户充值完毕！谢谢惠顾～")
+
+
+@sv.on_prefix("fgo_enable_crt")
+async def enable_crt(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.finish(ev, '此命令仅主さま可用~')
+    crt = ev.message.extract_plain_text()
+
+    if crt == "":
+        await bot.send(ev, "食用指南：指令 + crt文件路径，留空设置为默认路径")
+        crt = crt_path
+
+    rule = re.compile(r"^[nN][oO][nN][eE]$")
+    match = re.match(rule, crt)
+    if match:
+        crt = "None"
+
+    if not os.path.exists(config_path):
+        print("初始化配置文件json...")
+        open(config_path, 'w')
+        configs = []
+    else:
+        configs = json.load(open(config_path, encoding="utf-8"))
+
+    crt_config = {
+        "group": ev.group_id,
+        "crt_path": crt
+    }
+
+    exists = False
+    for i in range(len(configs)):
+        if configs[i]["group"] == ev.group_id:
+            configs[i] = crt_config
+            exists = True
+    if not exists:
+        configs.append(crt_config)
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    if not crt == "None":
+        await bot.finish(ev, f"已配置crt文件，文件路径：{crt}")
+    else:
+        await bot.finish(ev, f"已禁用crt文件")
+
+
+@sv.on_fullmatch("fgo_check_crt")
+async def enable_crt(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.finish(ev, '此命令仅主さま可用~')
+
+    if not os.path.exists(config_path):
+        await bot.finish(ev, "未配置crt文件")
+
+    configs = json.load(open(config_path, encoding="utf-8"))
+    crt_config = {}
+
+    exists = False
+    for each in configs:
+        if each["group"] == ev.group_id:
+            exists = True
+            crt_config = each
+    if not exists:
+        await bot.finish(ev, "本群未配置crt")
+    else:
+        if crt_config['crt_path'] == "None":
+            await bot.finish(ev, "本群已禁用crt文件")
+        else:
+            await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")

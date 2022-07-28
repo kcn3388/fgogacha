@@ -11,7 +11,7 @@ svt_path = icon_path + "svt_icons/"
 cft_path = icon_path + "cft_icons/"
 
 
-async def downloadicons():
+async def downloadicons(crt_path):
     if not os.path.exists(svt_path):
         os.mkdir(svt_path)
     if not os.path.exists(cft_path):
@@ -28,12 +28,25 @@ async def downloadicons():
             ret = re.search(rule, i).group(0)
             if os.path.exists(svt_path + ret):
                 continue
-            await download(basic_url + i, svt_path + ret, mute=True)
+            await download(basic_url + i, svt_path + ret, True, crt_path)
         for j in icons["cftIcons"]:
             ret = re.search(rule2, j).group(0)
             if os.path.exists(cft_path + ret):
                 continue
-            await download(basic_url + j, cft_path + ret, mute=True)
+            await download(basic_url + j, cft_path + ret, True, crt_path)
+        print("finish download icons")
+        return 0
+    except OSError:
+        for i in icons["svtIcons"]:
+            ret = re.search(rule, i).group(0)
+            if os.path.exists(svt_path + ret):
+                continue
+            await download(basic_url + i, svt_path + ret, True, crt_path)
+        for j in icons["cftIcons"]:
+            ret = re.search(rule2, j).group(0)
+            if os.path.exists(cft_path + ret):
+                continue
+            await download(basic_url + j, cft_path + ret, True, crt_path)
         print("finish download icons")
         return 0
     except Exception as e:
