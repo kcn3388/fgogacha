@@ -1,12 +1,20 @@
-# Fate Grand Order
-FGO 模拟抽卡插件 for [HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)
+<h1 align="center">Fate Grand Order Gacha Simulator</h1>
 
+<p align="center">
+    <img src="https://img.shields.io/github/v/release/kcn3388/fgogacha">
+    <img src="https://img.shields.io/github/release-date/kcn3388/fgogacha">
+    <img src="https://img.shields.io/github/license/kcn3388/fgogacha">
+</p>
+
+<p align="center">
+FGO 模拟抽卡插件 for [HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)<br>
 GitHub与问题反馈: https://github.com/kcn3388/fgogacha
+</p>
 
 更新日志
 ======
 ### 2022
-- 7.28
+- 7.28 (release 1.1.0)
   - 新功能：自定义crt验证文件以规避mooncell的拒绝访问
     - 如何获取证书请自行Google
     - 食用指南：``fgo_enable_crt + 证书路径``
@@ -17,16 +25,16 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
       - 不需要crt验证时请将证书路径设置为``None``
         - ``None``使用正则表达式支持全字大小写
       - ``fgo_check_crt``指令可用于检查是否存在配置文件，以及crt文件路径和是否禁用
-- 7.27
+- 7.27 (release 1.0.4)
   - 修正日替池子不正确的bug
   - 将所有触发词改为正则表达式触发，现在可以使用拼音缩写进行命令触发
     - 如：``切换fgo卡池`` → ``qhfgokc``
     - ~~主要是方便调试~~
-- 7.27
+- 7.27 (release 1.0.3)
   - 修改触发方式为正则表达式，不再需要atbot，现在可以同时检测\[fgo/bgo/FGO/BGO\]\[十/百/10/100\]\[连/l/L\]
     - ~~因为懒得打连字，直接fgo100l不快吗~~
   - 修正是否pickup卡池的检测
-- 7.27
+- 7.27 (release 1.02)
   - 修正了一部分抽卡结果语句
   - 修正了无pickup四星/五星时的抽卡结果语句
   - 修正了抽卡结果图片
@@ -34,9 +42,9 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
     - 添加了背景，感谢[@GWYOG](https://github.com/GWYOG/GWYOG-Hoshino-plugins#8-%E6%88%B3%E6%9C%BA%E5%99%A8%E4%BA%BA%E9%9B%86%E5%8D%A1%E5%B0%8F%E6%B8%B8%E6%88%8Fpokemanpcr)的戳一戳集卡插件的背景
     - ~~画个饼，后面拿游戏内截图做十连抽卡的背景（~~
   - 添加了海豹判断条件，当豹跳时发送一张海の翁.jpg
-- 7.26 
+- 7.26 (release 1.0.1)
   - 支持日替池，食用方法：``[切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池``
-- ~~7.26~~ 
+- ~~7.26 (release 1.0.0)~~
   - ~~插件上线，暂不支持日替池（在写了在写了）~~
 
 使用方法
