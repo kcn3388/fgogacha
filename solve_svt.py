@@ -1,5 +1,8 @@
 import re
 
+
+# noinspection PyTypeChecker
+# noinspection PyUnresolvedReferences
 async def get_svt(rule, data):
     svt_cft = re.search(rule, data)[1].split('\\n')[1:]  # .split('\\n')
     # split('\\n')[1]号位开始是五星，后面是四星，想想办法获取全部四星
@@ -33,9 +36,11 @@ async def get_svt(rule, data):
     return svt_all, cft_all
 
 
+# noinspection PyTypeChecker
+# noinspection PyUnresolvedReferences
 async def get_multi_svt(data):
-    card_rule = re.compile("raw_str_list\s?=\s?\['(.*)'\]")
-    pup_rule = re.compile("name_list\s?=\s?\['(.*)'\]")
+    card_rule = re.compile(r"raw_str_list\s?=\s?\['(.*)']")
+    pup_rule = re.compile(r"name_list\s?=\s?\['(.*)']")
     sub_list = re.search(pup_rule, data)[1]
     sub_list = sub_list.split("','")
     # 日替从者列表
