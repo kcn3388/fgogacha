@@ -1,7 +1,6 @@
 import base64
 import io
 
-import requests
 from PIL import Image
 
 from hoshino import priv, Service
@@ -311,7 +310,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
-@sv.on_rex(r'^[fFbB][gG][oO](十|10)(连|l|L)')
+@sv.on_rex(r'^[fFbB][gG][oO](十|10|s|S)(连|l|L)')
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -467,7 +466,7 @@ async def gacha_10(bot, ev: CQEvent):
     await bot.send(ev, msg, at_sender=True)
 
 
-@sv.on_rex(r'^[fFbB][gG][oO](百|100)(连|l|L)')
+@sv.on_rex(r'^[fFbB][gG][oO](百|100|b|B)(连|l|L)')
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
 
