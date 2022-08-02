@@ -16,14 +16,14 @@ jewel_limit = DailyNumberLimiter(3000)
 tenjo_limit = DailyNumberLimiter(10)
 
 JEWEL_EXCEED_NOTICE = f"您今天已经抽过{jewel_limit.max}石头了，欢迎明早5点后再来！"
-
 TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，欢迎明早5点后再来！"
+
+FOLLOW_LATEST_POOL = True
 
 basic_path = config.RES_DIR + "img/fgo/"
 icon_path = basic_path + "icons/"
 svt_path = icon_path + "svt_icons/Servant"
 cft_path = icon_path + "cft_icons/礼装"
-gacha_path = basic_path + "gacha/"
 res_init_path = basic_path + ".init/"
 runtime_path = os.path.dirname(__file__)
 mooncellBackgroundUrl = 'https://fgo.wiki/images/bg/bg-mc-icon.png'
@@ -31,8 +31,13 @@ mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
 data_path = os.path.join(runtime_path, 'data/')
 banner_path = os.path.join(runtime_path, 'data/banner.json')
 config_path = os.path.join(runtime_path, 'data/config.json')
+pools_path = os.path.join(runtime_path, 'data/pools.json')
+gacha_path = os.path.join(runtime_path, 'data/gacha.json')
+icons_path = os.path.join(runtime_path, 'data/icons.json')
+banner_data_path = os.path.join(runtime_path, 'data/b_data.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
 frame_path = os.path.join(runtime_path, 'background.png')
+all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
 crt_path = "ca-certificates.crt"
 
 sv_help = '''
@@ -73,7 +78,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][初cC][始sS][化hH]$")
+@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][初cCiI][始sSnN][化hHiI]$")
 async def init(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -84,12 +89,24 @@ async def init(bot, ev: CQEvent):
     if not os.path.exists(icon_path):
         print("初始化图标目录...")
         os.mkdir(icon_path)
-    if not os.path.exists(gacha_path):
-        print("初始化gacha目录...")
-        os.mkdir(gacha_path)
     if not os.path.exists(data_path):
         print("初始化data目录...")
         os.mkdir(data_path)
+    for each in all_json:
+        if not os.path.exists(each):
+            print("初始化配置文件json...")
+            open(each, 'w')
+            if each == config_path:
+                configs = []
+                basic_config = {
+                    "group": ev.group_id,
+                    "crt_path": "None",
+                    "follow_latest": FOLLOW_LATEST_POOL
+                }
+                configs.append(basic_config)
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
     msg = "初始化完成！"
     await bot.send(ev, msg)
 
@@ -108,11 +125,14 @@ async def get_fgo_data(bot, ev: CQEvent):
 
     crt_file = None
     if os.path.exists(config_path):
-        configs = json.load(open(config_path, encoding="utf-8"))
-        for each in configs:
-            if each["group"] == ev.group_id:
-                if not crt_file == "None":
-                    crt_file = each["crt_path"]
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "None":
+                        crt_file = each["crt_path"]
+        except json.decoder.JSONDecodeError:
+            pass
 
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
     if not bg_stat == 0:
@@ -126,12 +146,61 @@ async def get_fgo_data(bot, ev: CQEvent):
 
 @sv.on_rex(r"^[获hH更gG][取qQ新xX][fFbB][gG][oO][卡kK][池cC]$|^[fFbB][gG][oO][卡kK][池cC][获hH更gG][取qQ新xX]$")
 async def get_fgo_pool(bot, ev: CQEvent):
+    global FOLLOW_LATEST_POOL
     await bot.send(ev, "开始更新....")
-    download_stat = await getgachapools()
+    if os.path.exists(config_path):
+        configs = json.load(open(config_path, encoding="utf-8"))
+        for each in configs:
+            if each["group"] == ev.group_id:
+                FOLLOW_LATEST_POOL = each["follow_latest"]
+    download_stat = await getgachapools(FOLLOW_LATEST_POOL)
     if not download_stat == 0:
         await bot.send(ev, f'更新失败……{download_stat}')
     else:
         await bot.send(ev, "获取卡池完成")
+
+
+@sv.on_rex(r"^[gG跟][sS随][zZ最jJ剧][xX新qQ情][kK卡][cC池]$")
+async def follow_latest(bot, ev: CQEvent):
+    global FOLLOW_LATEST_POOL
+    args = ev.message.extract_plain_text()
+    if not os.path.exists(config_path):
+        print("初始化配置文件json...")
+        open(config_path, 'w')
+        configs = []
+    else:
+        configs = json.load(open(config_path, encoding="utf-8"))
+
+    rule_latest = re.compile(r"^[gG跟][sS随][zZ最][xX新][kK卡][cC池]$")
+    rule_story = re.compile(r"^[gG跟][sS随][jJ剧][qQ情][kK卡][cC池]$")
+    if re.match(rule_latest, args):
+        FOLLOW_LATEST_POOL = True
+    if re.match(rule_story, args):
+        FOLLOW_LATEST_POOL = False
+
+    crt_config = {
+        "group": ev.group_id,
+        "crt_path": "ca-certificates.crt",
+        "follow_latest": FOLLOW_LATEST_POOL
+    }
+
+    exists = False
+    for i in range(len(configs)):
+        if configs[i]["group"] == ev.group_id:
+            crt_config["crt_path"] = configs[i]["crt_path"]
+            configs[i] = crt_config
+            exists = True
+
+    if not exists:
+        configs.append(crt_config)
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    if FOLLOW_LATEST_POOL:
+        await bot.send(ev, "切换成功，当前跟随最新卡池")
+    else:
+        await bot.send(ev, "切换成功，当前跟随剧情卡池")
 
 
 async def check_jewel(bot, ev):
@@ -192,6 +261,7 @@ async def check_pool(bot, ev: CQEvent):
         await bot.send(ev, msg)
 
 
+# noinspection PyTypeChecker
 @sv.on_rex(r"^[切qQsS][换hHwW][fFbB][gG][oO][卡kK][池cC](\s\d+)?$|^[fFbB][gG][oO][卡kK][池cC][切qQsS][换hHwW](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_id = ev.message.extract_plain_text()
@@ -659,16 +729,20 @@ async def enable_crt(bot, ev: CQEvent):
 
     crt_config = {
         "group": ev.group_id,
-        "crt_path": crt
+        "crt_path": crt,
+        "follow_latest": FOLLOW_LATEST_POOL
     }
 
     exists = False
     for i in range(len(configs)):
         if configs[i]["group"] == ev.group_id:
+            crt_config["follow_latest"] = configs[i]["follow_latest"]
             configs[i] = crt_config
             exists = True
+
     if not exists:
         configs.append(crt_config)
+
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
@@ -701,3 +775,17 @@ async def enable_crt(bot, ev: CQEvent):
             await bot.finish(ev, "本群已禁用crt文件")
         else:
             await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
+
+
+@sv.scheduled_job('cron', hour=8)
+async def update_pool():
+    # 自动更新卡池
+    await getgachapools(True)
+    crt_file = os.path.join(runtime_path, crt_path)
+    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
+    if not bg_stat == 0:
+        print(f'下载bg失败……{bg_stat}')
+    print("开始下载icon")
+    icon_stat = await downloadicons(crt_file)
+    if not icon_stat == 0:
+        print(f'下载icons失败……{bg_stat}')

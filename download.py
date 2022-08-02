@@ -25,3 +25,5 @@ async def download(url, path, mute=False, crt_path=None):
     except Exception as e:
         print(traceback.format_exc())
         return e
+        # you can use this comment when you do not know what exception to catch:
+        # noinspection PyBroadException

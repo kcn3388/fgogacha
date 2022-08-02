@@ -20,7 +20,7 @@ async def gacha(gid):
 
     if not exists:
         print("no banner")
-        return 12
+        return 12, 0, 0
 
     gacha_data = json.load(open(gacha_path, encoding="utf-8"))
     data = {}
@@ -37,7 +37,10 @@ async def gacha(gid):
         print("data error")
         return 13
 
-    pool_data = {}
+    pool_data = {
+        "group": gid,
+        "data": {}
+    }
     for each in data["servants"]:
         each["weight"] /= 100
         each["weight"] = round(each["weight"], 3)
@@ -45,7 +48,7 @@ async def gacha(gid):
             each["type"]: each["ids"],
             each["type"] + "_rate": each["weight"]
         }
-        pool_data.update(d)
+        pool_data["data"].update(d)
 
     for each in data["crafts"]:
         each["weight"] /= 100
@@ -54,12 +57,27 @@ async def gacha(gid):
             each["type"]: each["ids"],
             each["type"] + "_rate": each["weight"]
         }
-        pool_data.update(d)
+        pool_data["data"].update(d)
+
+    if not os.path.exists(banner_data_path):
+        print("初始化数据json...")
+        open(banner_data_path, 'w')
+        banners = []
+    else:
+        banners = json.load(open(banner_path, encoding="utf-8"))
+
+    exists = False
+    for i in range(len(banners)):
+        if banners[i]["group"] == gid:
+            banners[i] = pool_data
+            exists = True
+    if not exists:
+        banners.append(pool_data)
 
     with open(banner_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(pool_data, indent=2, ensure_ascii=False))
 
-    result, has_pup5, has_pup4 = await get_result(pool_data)
+    result, has_pup5, has_pup4 = await get_result(pool_data["data"])
     return result, has_pup5, has_pup4
 
 

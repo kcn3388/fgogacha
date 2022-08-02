@@ -7,20 +7,28 @@ from .solve_svt import *
 
 runtime_path = os.path.dirname(__file__)
 pools_path = os.path.join(runtime_path, 'data/pools.json')
+old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 gacha_path = os.path.join(runtime_path, 'data/gacha.json')
 icons_path = os.path.join(runtime_path, 'data/icons.json')
 
 
-async def getgachapools():
+async def getgachapools(islatest=True):
     try:
         pool_url = "https://fgo.wiki/w/%E6%8A%BD%E5%8D%A1%E6%A8%A1%E6%8B%9F%E5%99%A8"
         print(f"Downloading {pool_url} for pools.json")
         pools_page = await aiorequests.get(pool_url, timeout=20, verify=config.RES_DIR + "ca-certificates.crt")
+        # debug_path = os.path.join(runtime_path, "data/html.txt")
+        # with open(debug_path, "w", encoding="utf-8") as f:
+        #     f.write(await pools_page.text)
         pools = []
         gacha_data = []
         soup = BeautifulSoup(await pools_page.content, 'html.parser')
         all_a = soup.find_all("a", href=True, title=True)
+        id_counter = 0
+        default_pool = None
         for each in all_a:
+            if each.findParent("li"):
+                continue
             title = each.get("title")
             href = each.get("href")
             if title.endswith("模拟器") and re.search("福袋", title) is None:
@@ -28,14 +36,21 @@ async def getgachapools():
                 title = title.replace("/模拟器", "")
                 title = title.replace("模拟器", "")
                 t = {
-                    "id": 0,
+                    "id": id_counter,
                     "title": title,
                     "href": 'https://fgo.wiki' + href,
                     "banner": "剧情卡池",
                     "type": "normal"
                 }
+                if islatest:
+                    if id_counter == 0:
+                        default_pool = t
+                else:
+                    if title == "剧情召唤/国服":
+                        default_pool = t
                 pools.append(t)
-        pools = await drop_dup_pool(pools)
+                id_counter += 1
+        # pools = await drop_dup_pool(pools)
 
         print("Downloading pools for gacha.json and icons.json")
         icons = {
@@ -59,6 +74,7 @@ async def getgachapools():
             if s is not None:
                 i["banner"] = s.string
             else:
+                # noinspection PyUnresolvedReferences
                 i["banner"] = i["title"]
 
             print(i["banner"])
@@ -189,8 +205,29 @@ async def getgachapools():
                 is_daily = False
                 pools[pools.index(i)] = daily
 
-        with open(pools_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(pools, indent=2, ensure_ascii=False))
+        try:
+            old_pools = json.load(open(pools_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            old_pools = []
+        if not pools == old_pools:
+            with open(pools_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(pools, indent=2, ensure_ascii=False))
+            with open(old_pools_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(old_pools, indent=2, ensure_ascii=False))
+
+            print("because of update pool, reset all groups' banner to story pool")
+
+            banner_path = os.path.join(runtime_path, 'data/banner.json')
+            try:
+                banners = json.load(open(banner_path, encoding="utf-8"))
+            except json.decoder.JSONDecodeError:
+                banners = []
+
+            for each in banners:
+                each["banner"] = default_pool
+
+            with open(banner_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(banners, indent=2, ensure_ascii=False))
 
         with open(gacha_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(gacha_data, indent=2, ensure_ascii=False))
@@ -213,12 +250,12 @@ def data_preprocessing(string):
     s = s.replace("\"", "")
     return s
 
-
-async def drop_dup_pool(pools):
-    print("start drop duplicate pool")
-    pools_out = [dict(t) for t in set([tuple(d.items()) for d in pools])]
-    counter = 0
-    for each in pools_out:
-        each["id"] = counter
-        counter += 1
-    return pools_out
+#
+# async def drop_dup_pool(pools):
+#     print("start drop duplicate pool")
+#     pools_out = [dict(t) for t in set([tuple(d.items()) for d in pools])]
+#     counter = 0
+#     for each in pools_out:
+#         each["id"] = counter
+#         counter += 1
+#     return pools_out

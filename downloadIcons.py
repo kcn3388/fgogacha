@@ -16,8 +16,14 @@ async def downloadicons(crt_path):
         os.mkdir(svt_path)
     if not os.path.exists(cft_path):
         os.mkdir(cft_path)
-    with open(icons_path, 'r', encoding="utf-8") as f:
-        icons = json.load(f)
+    try:
+        with open(icons_path, 'r', encoding="utf-8") as f:
+            icons = json.load(f)
+    except json.decoder.JSONDecodeError:
+        icons = {
+            "svtIcons": [],
+            "cftIcons": [],
+        }
     basic_url = "https://fgo.wiki"
     rule = re.compile("Servant.+jpg")
     print("从者路径解析完成")
