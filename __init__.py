@@ -62,8 +62,8 @@ sv = Service(
 )
 
 
-@sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡"))
-@sv.on_rex(r"^[fFbB][gG][oO][抽cC][卡kK][帮bB][助zZ]$")
+@sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡", "帮助bgo抽卡", "帮助BGO抽卡"))
+@sv.on_rex(r"(?i)^[fb]go[抽c][卡k][帮b][助z]$")
 async def bangzhu(bot, ev):
     _name = "涩茄子"
     _uin = "2087332430"
@@ -78,7 +78,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][初cCiI][始sSnN][化hHiI]$")
+@sv.on_rex(r"(?i)^[fb]go[数s][据j][初ci][始sn][化hi]$")
 async def init(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -111,7 +111,7 @@ async def init(bot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv.on_rex(r"^[fFbB][gG][oO][数sS][据jJ][下xXdD][载zZlL]")
+@sv.on_rex(r"(?i)^[fb]go[数s][据j][下xd][载zl]")
 async def get_fgo_data(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -144,7 +144,7 @@ async def get_fgo_data(bot, ev: CQEvent):
     await bot.send(ev, "下载完成")
 
 
-@sv.on_rex(r"^[获hH更gG][取qQ新xX][fFbB][gG][oO][卡kK][池cC]$|^[fFbB][gG][oO][卡kK][池cC][获hH更gG][取qQ新xX]$")
+@sv.on_rex(r"(?i)^[获h更g][取q新x][fb]go[卡k][池c]$|^[fb]go[卡k][池c][获h更g][取q新x]$")
 async def get_fgo_pool(bot, ev: CQEvent):
     global FOLLOW_LATEST_POOL
     await bot.send(ev, "开始更新....")
@@ -160,7 +160,7 @@ async def get_fgo_pool(bot, ev: CQEvent):
         await bot.send(ev, "获取卡池完成")
 
 
-@sv.on_rex(r"^[gG跟][sS随][zZ最jJ剧][xX新qQ情][kK卡][cC池]$")
+@sv.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
 async def follow_latest(bot, ev: CQEvent):
     global FOLLOW_LATEST_POOL
     args = ev.message.extract_plain_text()
@@ -171,8 +171,8 @@ async def follow_latest(bot, ev: CQEvent):
     else:
         configs = json.load(open(config_path, encoding="utf-8"))
 
-    rule_latest = re.compile(r"^[gG跟][sS随][zZ最][xX新][kK卡][cC池]$")
-    rule_story = re.compile(r"^[gG跟][sS随][jJ剧][qQ情][kK卡][cC池]$")
+    rule_latest = re.compile(r"(?i)^[g跟][s随][z最][x新][k卡][c池]$")
+    rule_story = re.compile(r"(?i)^[g跟][s随][j剧][q情][k卡][c池]$")
     if re.match(rule_latest, args):
         FOLLOW_LATEST_POOL = True
     if re.match(rule_story, args):
@@ -210,7 +210,7 @@ async def check_jewel(bot, ev):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
 
 
-@sv.on_rex(r"^[查cC][询xX][fFbB][gG][oO][卡kK][池cC]|^[fFbB][gG][oO][卡kK][池cC][查cC][询xX]$")
+@sv.on_rex(r"(?i)^[查c][询x][fb]go[卡k][池c]$|^[fb]go[卡k][池c][查c][询x]$")
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
@@ -262,7 +262,7 @@ async def check_pool(bot, ev: CQEvent):
 
 
 # noinspection PyTypeChecker
-@sv.on_rex(r"^[切qQsS][换hHwW][fFbB][gG][oO][卡kK][池cC](\s\d+)?$|^[fFbB][gG][oO][卡kK][池cC][切qQsS][换hHwW](\s\d+)?$")
+@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$|^[fb]go[卡k][池c][切qs][换hw](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_id = ev.message.extract_plain_text()
     p_id = p_id.split(" ")
@@ -312,8 +312,7 @@ async def switch_pool(bot, ev: CQEvent):
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
 
 
-@sv.on_rex(r"^[切qQsS][换hHwW][fFbB][gG][oO][日rRdD][替tTpP][卡kK][池cC](\s\d+\s\d+)?$"
-           r"|^[fFbB][gG][oO][日rRdD][替tTpP][卡kK][池cC][切qQsS][换hHwW](\s\d+\s\d+)?$")
+@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$|^[fb]go[日rd][替tp][卡k][池c][切qs][换hw](\s\d+\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if ids == "":
@@ -380,7 +379,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
-@sv.on_rex(r'^[fFbB][gG][oO](十|10|s|S)(连|l|L)')
+@sv.on_rex(r'(?i)^[fb]go(十|10|s)(连|l)$')
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -536,7 +535,7 @@ async def gacha_10(bot, ev: CQEvent):
     await bot.send(ev, msg, at_sender=True)
 
 
-@sv.on_rex(r'^[fFbB][gG][oO](百|100|b|B)(连|l|L)')
+@sv.on_rex(r'(?i)^[fb]go(百|100|b)(连|l)$')
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -715,7 +714,7 @@ async def enable_crt(bot, ev: CQEvent):
         await bot.send(ev, "食用指南：指令 + crt文件路径，留空设置为默认路径")
         crt = crt_path
 
-    rule = re.compile(r"^[nN][oO][nN][eE]$")
+    rule = re.compile(r"^(?i)none$")
     match = re.match(rule, crt)
     if match:
         crt = "None"
