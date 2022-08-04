@@ -6,11 +6,12 @@ from PIL import Image
 from hoshino import priv, Service
 from hoshino.typing import *
 from hoshino.util import DailyNumberLimiter
-
+from aiocqhttp import ActionFailed
 from .download import *
 from .getGachaPools import *
 from .downloadIcons import *
 from .gacha import *
+from .getnews import *
 
 jewel_limit = DailyNumberLimiter(3000)
 tenjo_limit = DailyNumberLimiter(10)
@@ -35,6 +36,8 @@ pools_path = os.path.join(runtime_path, 'data/pools.json')
 gacha_path = os.path.join(runtime_path, 'data/gacha.json')
 icons_path = os.path.join(runtime_path, 'data/icons.json')
 banner_data_path = os.path.join(runtime_path, 'data/b_data.json')
+news_path = os.path.join(runtime_path, 'data/news.json')
+news_detail_path = os.path.join(runtime_path, 'data/news_detail.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
 frame_path = os.path.join(runtime_path, 'background.png')
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
@@ -49,6 +52,9 @@ sv_help = '''
 [切换fgo卡池 + 卡池编号] 切换需要的卡池
 [切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池
 [fgo十连/fgo百连] 紧张刺激的抽卡
+
+[获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
+[查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
 '''.strip()
 
 sv = Service(
@@ -111,7 +117,7 @@ async def init(bot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv.on_rex(r"(?i)^[fb]go[数s][据j][下xd][载zl]")
+@sv.on_rex(r"(?i)^([下xd][载zl])?[fb]go[数s][据j]([下xd][载zl])?$")
 async def get_fgo_data(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -123,14 +129,15 @@ async def get_fgo_data(bot, ev: CQEvent):
     await bot.send(ev, "开始下载....")
     print("开始下载bg")
 
-    crt_file = None
+    crt_file = False
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "None":
-                        crt_file = each["crt_path"]
+                    if not crt_file == "False":
+                        crt_file = os.path.join(runtime_path, each["crt_path"])
+                    break
         except json.decoder.JSONDecodeError:
             pass
 
@@ -144,16 +151,20 @@ async def get_fgo_data(bot, ev: CQEvent):
     await bot.send(ev, "下载完成")
 
 
-@sv.on_rex(r"(?i)^[获h更g][取q新x][fb]go[卡k][池c]$|^[fb]go[卡k][池c][获h更g][取q新x]$")
+@sv.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
 async def get_fgo_pool(bot, ev: CQEvent):
     global FOLLOW_LATEST_POOL
     await bot.send(ev, "开始更新....")
+    crt_file = False
     if os.path.exists(config_path):
         configs = json.load(open(config_path, encoding="utf-8"))
         for each in configs:
             if each["group"] == ev.group_id:
                 FOLLOW_LATEST_POOL = each["follow_latest"]
-    download_stat = await getgachapools(FOLLOW_LATEST_POOL)
+                if not crt_file == "False":
+                    crt_file = os.path.join(runtime_path, each["crt_path"])
+                break
+    download_stat = await getgachapools(FOLLOW_LATEST_POOL, crt_file)
     if not download_stat == 0:
         await bot.send(ev, f'更新失败……{download_stat}')
     else:
@@ -190,6 +201,7 @@ async def follow_latest(bot, ev: CQEvent):
             crt_config["crt_path"] = configs[i]["crt_path"]
             configs[i] = crt_config
             exists = True
+            break
 
     if not exists:
         configs.append(crt_config)
@@ -210,7 +222,7 @@ async def check_jewel(bot, ev):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
 
 
-@sv.on_rex(r"(?i)^[查c][询x][fb]go[卡k][池c]$|^[fb]go[卡k][池c][查c][询x]$")
+@sv.on_rex(r"(?i)^([查c][询x])?[fb]go[卡k][池c]([查c][询x])?$")
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
@@ -234,6 +246,7 @@ async def check_pool(bot, ev: CQEvent):
             if each["group"] == ev.group_id:
                 banner = each
                 exists = True
+                break
 
         if not exists:
             print("no banner")
@@ -302,6 +315,7 @@ async def switch_pool(bot, ev: CQEvent):
         if banners[i]["group"] == ev.group_id:
             banners[i] = banner
             exists = True
+            break
     if not exists:
         banners.append(banner)
     with open(banner_path, "w", encoding="utf-8") as f:
@@ -312,7 +326,7 @@ async def switch_pool(bot, ev: CQEvent):
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
 
 
-@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$|^[fb]go[日rd][替tp][卡k][池c][切qs][换hw](\s\d+\s\d+)?$")
+@sv.on_rex(r"(?i)^([切qs][换hw])?[fb]go[日rd][替tp][卡k][池c]([切qs][换hw])?(\s\d+\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if ids == "":
@@ -366,6 +380,7 @@ async def switch_pool(bot, ev: CQEvent):
         if banners[i]["group"] == ev.group_id:
             banners[i] = banner
             exists = True
+            break
     if not exists:
         banners.append(banner)
     with open(banner_path, "w", encoding="utf-8") as f:
@@ -379,7 +394,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
-@sv.on_rex(r'(?i)^[fb]go(十|10|s)(连|l)$')
+@sv.on_rex(r'(?i)^[fb]go(十|10|s)[连l]$')
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -535,7 +550,7 @@ async def gacha_10(bot, ev: CQEvent):
     await bot.send(ev, msg, at_sender=True)
 
 
-@sv.on_rex(r'(?i)^[fb]go(百|100|b)(连|l)$')
+@sv.on_rex(r'(?i)^[fb]go(百|100|b)[连l]$')
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
 
@@ -714,17 +729,20 @@ async def enable_crt(bot, ev: CQEvent):
         await bot.send(ev, "食用指南：指令 + crt文件路径，留空设置为默认路径")
         crt = crt_path
 
-    rule = re.compile(r"^(?i)none$")
+    rule = re.compile(r"^(?i)false$")
     match = re.match(rule, crt)
     if match:
-        crt = "None"
+        crt = "False"
 
     if not os.path.exists(config_path):
         print("初始化配置文件json...")
         open(config_path, 'w')
         configs = []
     else:
-        configs = json.load(open(config_path, encoding="utf-8"))
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            configs = []
 
     crt_config = {
         "group": ev.group_id,
@@ -738,6 +756,7 @@ async def enable_crt(bot, ev: CQEvent):
             crt_config["follow_latest"] = configs[i]["follow_latest"]
             configs[i] = crt_config
             exists = True
+            break
 
     if not exists:
         configs.append(crt_config)
@@ -745,7 +764,7 @@ async def enable_crt(bot, ev: CQEvent):
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
-    if not crt == "None":
+    if not crt == "False":
         await bot.finish(ev, f"已配置crt文件，文件路径：{crt}")
     else:
         await bot.finish(ev, f"已禁用crt文件")
@@ -767,6 +786,7 @@ async def enable_crt(bot, ev: CQEvent):
         if each["group"] == ev.group_id:
             exists = True
             crt_config = each
+            break
     if not exists:
         await bot.finish(ev, "本群未配置crt")
     else:
@@ -779,12 +799,113 @@ async def enable_crt(bot, ev: CQEvent):
 @sv.scheduled_job('cron', hour=8)
 async def update_pool():
     # 自动更新卡池
-    await getgachapools(True)
+    await getgachapools(True, False)
     crt_file = os.path.join(runtime_path, crt_path)
+    # 自动更新新闻
+    await get_news(6, False)
+    # 自动下载资源
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
     if not bg_stat == 0:
         print(f'下载bg失败……{bg_stat}')
     print("开始下载icon")
-    icon_stat = await downloadicons(crt_file)
+    icon_stat = await downloadicons(False)
     if not icon_stat == 0:
         print(f'下载icons失败……{bg_stat}')
+
+
+@sv.on_rex(r"(?i)^([获h][取q])?[fb]go[新x][闻w]([获h][取q])?(\s\d+)?$")
+async def get_offical_news(bot, ev: CQEvent):
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(runtime_path, each["crt_path"])
+                    break
+        except json.decoder.JSONDecodeError:
+            pass
+    num = ev.message.extract_plain_text().split(" ")
+    if len(num) > 1:
+        num = int(num[1])
+    else:
+        num = 6
+    news, same = await get_news(num, crt_file)
+    if same:
+        await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
+    else:
+        await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
+
+
+@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c])?(\s.+)?$")
+async def get_local_news(bot, ev: CQEvent):
+    if not os.path.exists(news_detail_path):
+        await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+    index = ev.message.extract_plain_text().split(" ")
+    if len(index) > 1:
+        index = index[1]
+    else:
+        index = 0
+    try:
+        news = json.load(open(news_detail_path, encoding="utf-8"))
+    except json.decoder.JSONDecodeError:
+        await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+    # noinspection PyUnboundLocalVariable
+    news_num = len(news)
+    if str(index).isdigit():
+        if not int(index):
+            await bot.finish(ev, f"本地共有{news_num}条新闻，请用编号查对应新闻~")
+        index = int(index) - 1
+        # noinspection PyUnboundLocalVariable
+        msg = news[index]["content"]
+        _name = "涩茄子"
+        _uin = "2087332430"
+        _news = {
+            "type": "node",
+            "data": {
+                "name": _name,
+                "uin": _uin,
+                "content": msg
+            }
+        }
+        try:
+            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
+        except ActionFailed:
+            await bot.send(ev, "转发消息失败……尝试直接发送~")
+            await bot.send(ev, msg)
+    if index == "all":
+        news_all = []
+        # noinspection PyUnboundLocalVariable
+        for i in range(news_num):
+            msg = news[i]["content"]
+            _news = {
+                "type": "node",
+                "data": {
+                    "name": '涩茄子',
+                    "uin": '2087332430',
+                    "content": msg
+                }
+            }
+            news_all.append(_news)
+        try:
+            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=news_all)
+        except ActionFailed:
+            if news_num < 10:
+                await bot.send(ev, f"发送合集失败，尝试拆分发送！\n共有{news_num}条新闻~")
+                try:
+                    for i in range(news_num):
+                        msg = news[index]["content"]
+                        _news = {
+                            "type": "node",
+                            "data": {
+                                "name": '涩茄子',
+                                "uin": '2087332430',
+                                "content": msg
+                            }
+                        }
+                        await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
+                except ActionFailed:
+                    await bot.send(ev, f"发送失败！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")
+            else:
+                await bot.send(ev, f"新闻太多啦！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")

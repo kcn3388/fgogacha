@@ -2,6 +2,7 @@ import re
 import json
 import os
 from .download import *
+from hoshino import config
 
 runtime_path = os.path.dirname(__file__)
 icons_path = os.path.join(runtime_path, 'data/icons.json')
