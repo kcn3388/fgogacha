@@ -1,4 +1,4 @@
-from hoshino import aiorequests, config
+from hoshino import aiorequests
 from bs4 import BeautifulSoup
 import json
 import os
@@ -209,35 +209,44 @@ async def getgachapools(islatest=True, crt_file=None):
                 is_daily = False
                 pools[pools.index(i)] = daily
 
-        try:
-            old_pools = json.load(open(pools_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            old_pools = []
-        if not pools == old_pools:
-            with open(pools_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(pools, indent=2, ensure_ascii=False))
-            with open(old_pools_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(old_pools, indent=2, ensure_ascii=False))
-
-            print("because of update pool, reset all groups' banner to story pool")
-
-            banner_path = os.path.join(runtime_path, 'data/banner.json')
-            try:
-                banners = json.load(open(banner_path, encoding="utf-8"))
-            except json.decoder.JSONDecodeError:
-                banners = []
-
-            for each in banners:
-                each["banner"] = default_pool
-
-            with open(banner_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(banners, indent=2, ensure_ascii=False))
-
         with open(gacha_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(gacha_data, indent=2, ensure_ascii=False))
 
         with open(icons_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(icons, indent=2, ensure_ascii=False))
+
+        try:
+            old_pools = json.load(open(pools_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            old_pools = []
+
+        if pools == old_pools:
+            print("skip existing pools")
+            return 1
+
+        with open(pools_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(pools, indent=2, ensure_ascii=False))
+        with open(old_pools_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(old_pools, indent=2, ensure_ascii=False))
+
+        print("because of update pool, reset all groups' banner to the default pool")
+
+        banner_path = os.path.join(runtime_path, 'data/banner.json')
+        try:
+            banners = json.load(open(banner_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            banners = []
+
+        if islatest:
+            if pools[0]["type"] == "daily pickup":
+                default_pool["type"] = "daily pickup"
+                default_pool["s_id"] = 0
+
+        for each in banners:
+            each["banner"] = default_pool
+
+        with open(banner_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(banners, indent=2, ensure_ascii=False))
 
         print("finish...")
         return 0

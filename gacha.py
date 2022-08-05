@@ -6,7 +6,7 @@ import time
 runtime_path = os.path.dirname(__file__)
 banner_path = os.path.join(runtime_path, 'data/banner.json')
 gacha_path = os.path.join(runtime_path, 'data/gacha.json')
-banner_data_path = os.path.join(runtime_path, 'data/b_data.json')
+pool_detail_data_path = os.path.join(runtime_path, 'data/b_data.json')
 
 
 async def gacha(gid):
@@ -59,23 +59,26 @@ async def gacha(gid):
         }
         pool_data["data"].update(d)
 
-    if not os.path.exists(banner_data_path):
+    if not os.path.exists(pool_detail_data_path):
         print("初始化数据json...")
-        open(banner_data_path, 'w')
-        banners = []
+        open(pool_detail_data_path, 'w')
+        pool_detail_data = []
     else:
-        banners = json.load(open(banner_path, encoding="utf-8"))
+        try:
+            pool_detail_data = json.load(open(pool_detail_data_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pool_detail_data = []
 
     exists = False
-    for i in range(len(banners)):
-        if banners[i]["group"] == gid:
-            banners[i] = pool_data
+    for i in range(len(pool_detail_data)):
+        if pool_detail_data[i]["group"] == gid:
+            pool_detail_data[i] = pool_data
             exists = True
     if not exists:
-        banners.append(pool_data)
+        pool_detail_data.append(pool_data)
 
-    with open(banner_data_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(pool_data, indent=2, ensure_ascii=False))
+    with open(pool_detail_data_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
     result, has_pup5, has_pup4 = await get_result(pool_data["data"])
     return result, has_pup5, has_pup4

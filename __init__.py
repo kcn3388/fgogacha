@@ -103,13 +103,14 @@ async def init(bot, ev: CQEvent):
             print("初始化配置文件json...")
             open(each, 'w')
             if each == config_path:
-                configs = []
                 basic_config = {
                     "group": ev.group_id,
-                    "crt_path": "None",
-                    "follow_latest": FOLLOW_LATEST_POOL
+                    "crt_path": crt_path
                 }
-                configs.append(basic_config)
+                configs = {
+                    "follow_latest": FOLLOW_LATEST_POOL,
+                    "groups": [basic_config]
+                }
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
@@ -133,11 +134,11 @@ async def get_fgo_data(bot, ev: CQEvent):
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs:
+            for each in configs["groups"]:
                 if each["group"] == ev.group_id:
                     if not crt_file == "False":
                         crt_file = os.path.join(runtime_path, each["crt_path"])
-                    break
+                        break
         except json.decoder.JSONDecodeError:
             pass
 
@@ -157,18 +158,33 @@ async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
     if os.path.exists(config_path):
-        configs = json.load(open(config_path, encoding="utf-8"))
-        for each in configs:
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            basic_config = {
+                "group": ev.group_id,
+                "crt_path": crt_path
+            }
+            configs = {
+                "follow_latest": FOLLOW_LATEST_POOL,
+                "groups": [basic_config]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+        FOLLOW_LATEST_POOL = configs["follow_latest"]
+        for each in configs["groups"]:
             if each["group"] == ev.group_id:
-                FOLLOW_LATEST_POOL = each["follow_latest"]
                 if not crt_file == "False":
                     crt_file = os.path.join(runtime_path, each["crt_path"])
-                break
+                    break
     download_stat = await getgachapools(FOLLOW_LATEST_POOL, crt_file)
-    if not download_stat == 0:
-        await bot.send(ev, f'更新失败……{download_stat}')
-    else:
+    if not download_stat:
         await bot.send(ev, "获取卡池完成")
+    elif download_stat:
+        await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
+    else:
+        await bot.send(ev, f'更新失败……{download_stat}')
 
 
 @sv.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
@@ -178,9 +194,28 @@ async def follow_latest(bot, ev: CQEvent):
     if not os.path.exists(config_path):
         print("初始化配置文件json...")
         open(config_path, 'w')
-        configs = []
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "groups": [basic_config]
+        }
     else:
-        configs = json.load(open(config_path, encoding="utf-8"))
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            basic_config = {
+                "group": ev.group_id,
+                "crt_path": crt_path
+            }
+            configs = {
+                "follow_latest": FOLLOW_LATEST_POOL,
+                "groups": [basic_config]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
     rule_latest = re.compile(r"(?i)^[g跟][s随][z最][x新][k卡][c池]$")
     rule_story = re.compile(r"(?i)^[g跟][s随][j剧][q情][k卡][c池]$")
@@ -189,22 +224,7 @@ async def follow_latest(bot, ev: CQEvent):
     if re.match(rule_story, args):
         FOLLOW_LATEST_POOL = False
 
-    crt_config = {
-        "group": ev.group_id,
-        "crt_path": "ca-certificates.crt",
-        "follow_latest": FOLLOW_LATEST_POOL
-    }
-
-    exists = False
-    for i in range(len(configs)):
-        if configs[i]["group"] == ev.group_id:
-            crt_config["crt_path"] = configs[i]["crt_path"]
-            configs[i] = crt_config
-            exists = True
-            break
-
-    if not exists:
-        configs.append(crt_config)
+    configs["follow_latest"] = FOLLOW_LATEST_POOL
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -362,12 +382,12 @@ async def switch_pool(bot, ev: CQEvent):
                 if sub_pool["id"] == int(s_id):
                     sp = {
                         "id": each["id"],
-                        "s_id": sub_pool["id"],
                         "title": each["title"],
                         "href": each["href"],
                         "banner": each["banner"],
                         "sub_title": sub_pool["sub_title"],
-                        "type": each["type"]
+                        "type": each["type"],
+                        "s_id": sub_pool["id"]
                     }
                     banner["banner"] = sp
                     break
@@ -737,29 +757,43 @@ async def enable_crt(bot, ev: CQEvent):
     if not os.path.exists(config_path):
         print("初始化配置文件json...")
         open(config_path, 'w')
-        configs = []
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "groups": [basic_config]
+        }
     else:
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
         except json.decoder.JSONDecodeError:
-            configs = []
+            basic_config = {
+                "group": ev.group_id,
+                "crt_path": crt_path
+            }
+            configs = {
+                "follow_latest": FOLLOW_LATEST_POOL,
+                "groups": [basic_config]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
     crt_config = {
         "group": ev.group_id,
-        "crt_path": crt,
-        "follow_latest": FOLLOW_LATEST_POOL
+        "crt_path": crt
     }
 
     exists = False
-    for i in range(len(configs)):
-        if configs[i]["group"] == ev.group_id:
-            crt_config["follow_latest"] = configs[i]["follow_latest"]
-            configs[i] = crt_config
+    for each in configs["groups"]:
+        if each["group"] == ev.group_id:
+            each["crt_path"] = crt
             exists = True
             break
 
     if not exists:
-        configs.append(crt_config)
+        configs["groups"].append(crt_config)
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -778,11 +812,24 @@ async def enable_crt(bot, ev: CQEvent):
     if not os.path.exists(config_path):
         await bot.finish(ev, "未配置crt文件")
 
-    configs = json.load(open(config_path, encoding="utf-8"))
+    try:
+        configs = json.load(open(config_path, encoding="utf-8"))
+    except json.decoder.JSONDecodeError:
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "groups": [basic_config]
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
     crt_config = {}
 
     exists = False
-    for each in configs:
+    for each in configs["groups"]:
         if each["group"] == ev.group_id:
             exists = True
             crt_config = each
@@ -790,7 +837,7 @@ async def enable_crt(bot, ev: CQEvent):
     if not exists:
         await bot.finish(ev, "本群未配置crt")
     else:
-        if crt_config['crt_path'] == "None":
+        if crt_config['crt_path'] == "False":
             await bot.finish(ev, "本群已禁用crt文件")
         else:
             await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
@@ -819,11 +866,11 @@ async def get_offical_news(bot, ev: CQEvent):
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs:
+            for each in configs["groups"]:
                 if each["group"] == ev.group_id:
                     if not crt_file == "False":
                         crt_file = os.path.join(runtime_path, each["crt_path"])
-                    break
+                        break
         except json.decoder.JSONDecodeError:
             pass
     num = ev.message.extract_plain_text().split(" ")
