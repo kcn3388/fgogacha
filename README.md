@@ -1,17 +1,27 @@
-<h1 style="text-align: center">Fate Grand Order Gacha Simulator</h1>
+<div style="text-align: center">
 
-<p style="text-align: center">
+# Fate Grand Order Gacha Simulator
+
+</div>
+
+<div style="text-align: center">
     <img src="https://img.shields.io/github/v/release/kcn3388/fgogacha" alt="">
     <img src="https://img.shields.io/github/release-date/kcn3388/fgogacha" alt="">
     <img src="https://img.shields.io/github/license/kcn3388/fgogacha" alt="">
-</p>
+</div>
 
-<p style="text-align: center">
+<div style="text-align: center">
+
 FGO 模拟抽卡插件 for [HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)<br>
 GitHub与问题反馈: https://github.com/kcn3388/fgogacha
-</p>
 
-<h3 style="text-align: center">要是觉得好用可以点个小星星呀</h3>
+</div>
+
+<div style="text-align: center">
+
+## 要是觉得好用可以点个小星星呀
+
+</div>
 
 更新日志
 ======
