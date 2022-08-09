@@ -13,6 +13,11 @@ from .downloadIcons import *
 from .gacha import *
 from .getnews import *
 
+# 更新时间间隔，单位为分钟
+flush_minute = 60
+# 更新时间间隔，单位为小时
+flush_hour = 0
+
 jewel_limit = DailyNumberLimiter(3000)
 tenjo_limit = DailyNumberLimiter(10)
 
@@ -41,6 +46,7 @@ news_detail_path = os.path.join(runtime_path, 'data/news_detail.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
 frame_path = os.path.join(runtime_path, 'background.png')
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
+crt_folder_path = os.path.join(runtime_path, "crt/")
 crt_path = "ca-certificates.crt"
 
 sv_help = '''
@@ -88,6 +94,8 @@ async def bangzhu(bot, ev):
 async def init(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+    if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
+        await bot.finish(ev, "未配置默认crt文件！请从GitHub获取默认crt文件再运行此插件！")
     if not os.path.exists(basic_path):
         print("数据初始化...")
         print("初始化资源根目录...")
@@ -137,7 +145,7 @@ async def get_fgo_data(bot, ev: CQEvent):
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
                     if not crt_file == "False":
-                        crt_file = os.path.join(runtime_path, each["crt_path"])
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -176,7 +184,7 @@ async def get_fgo_pool(bot, ev: CQEvent):
         for each in configs["groups"]:
             if each["group"] == ev.group_id:
                 if not crt_file == "False":
-                    crt_file = os.path.join(runtime_path, each["crt_path"])
+                    crt_file = os.path.join(crt_folder_path, each["crt_path"])
                     break
     download_stat = await getgachapools(FOLLOW_LATEST_POOL, crt_file)
     if not download_stat:
@@ -843,21 +851,71 @@ async def enable_crt(bot, ev: CQEvent):
             await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
-@sv.scheduled_job('cron', hour=8)
+@sv.scheduled_job('interval', hours=flush_hour, minutes=flush_minute)
 async def update_pool():
+    if not os.path.exists(data_path):
+        print("资源未初始化……结束")
+        return
+    print("开始自动更新fgo")
+
+    # 寻找crt
+    if not os.path.exists(config_path):
+        crt_file = os.path.join(crt_folder_path, crt_path)
+        if not os.path.exists(crt_file):
+            crt_file = False
+    else:
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            crt_file = configs["groups"][0]["crt_path"]
+            if not crt_file == "False":
+                crt_file = os.path.join(crt_folder_path, crt_file)
+            else:
+                crt_file = os.path.join(crt_folder_path, crt_path)
+                if not os.path.exists(crt_file):
+                    crt_file = False
+        except json.decoder.JSONDecodeError:
+            crt_file = os.path.join(crt_folder_path, crt_path)
+            if not os.path.exists(crt_file):
+                crt_file = False
+
     # 自动更新卡池
-    await getgachapools(True, False)
-    crt_file = os.path.join(runtime_path, crt_path)
+    # 做一次try，如果报错后续均不使用crt
+    try:
+        await getgachapools(True, crt_file)
+    except Exception as e:
+        print("发生错误：" + str(e) + "\n取消使用crt")
+        crt_file = False
+        await getgachapools(True, crt_file)
+
     # 自动更新新闻
-    await get_news(6, False)
+    # 做一次try，如果报错后续均不使用crt
+    try:
+        await get_news(6, crt_file)
+    except Exception as e:
+        print("发生错误：" + str(e) + "\n取消使用crt")
+        crt_file = False
+        await get_news(6, crt_file)
+
     # 自动下载资源
-    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
-    if not bg_stat == 0:
-        print(f'下载bg失败……{bg_stat}')
-    print("开始下载icon")
-    icon_stat = await downloadicons(False)
-    if not icon_stat == 0:
-        print(f'下载icons失败……{bg_stat}')
+    # 做一次try，如果报错后续均不使用crt
+    try:
+        bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
+        if not bg_stat == 0:
+            print(f'下载bg失败……{bg_stat}')
+        icon_stat = await downloadicons(crt_file)
+        if not icon_stat == 0:
+            print(f'下载icons失败……{bg_stat}')
+    except Exception as e:
+        print("发生错误：" + str(e) + "\n取消使用crt")
+        crt_file = False
+        bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
+        if not bg_stat == 0:
+            print(f'下载bg失败……{bg_stat}')
+        icon_stat = await downloadicons(crt_file)
+        if not icon_stat == 0:
+            print(f'下载icons失败……{bg_stat}')
+
+    print("结束自动更新fgo")
 
 
 @sv.on_rex(r"(?i)^([获h][取q])?[fb]go[新x][闻w]([获h][取q])?(\s\d+)?$")
@@ -869,7 +927,7 @@ async def get_offical_news(bot, ev: CQEvent):
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
                     if not crt_file == "False":
-                        crt_file = os.path.join(runtime_path, each["crt_path"])
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
