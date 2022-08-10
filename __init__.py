@@ -12,6 +12,7 @@ from .downloadIcons import *
 from .gacha import *
 from .getGachaPools import *
 from .getnews import *
+from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 
 # 更新时间间隔，单位为秒
 flush_second = 0
@@ -1106,6 +1107,13 @@ async def set_update_time(bot, ev: CQEvent):
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
+    reload_path = os.path.join(os.path.dirname(__file__), 'loop.py')
+    count = Counter.count + 1
+    _content = f'''class Counter:
+        count = {count}'''
+    with open(reload_path, 'w') as f:
+        f.write(_content)
+
     await bot.finish(ev, f"设置完成，当前自动更新时间：{configs['flush_hour']}小时"
                          f"{configs['flush_minute']}分钟{configs['flush_second']}秒\n"
-                         f"请记得设置完成后重启机器人哦~")
+                         f"机器人重启中~")
