@@ -15,6 +15,7 @@
 
 FGO 模拟抽卡插件 for [HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)<br>
 GitHub与问题反馈: https://github.com/kcn3388/fgogacha
+WIKI：https://github.com/kcn3388/fgogacha/wiki
 
 </div>
 
@@ -33,7 +34,7 @@ GitHub与问题反馈: https://github.com/kcn3388/fgogacha
   - 新功能：手动设置自动更新时间间隔
     - 指令：``设置fgo时间 + 小时 + 分钟 + 秒``
       - 例如：``设置fgo时间 1小时60分钟60秒``
-      - 至少输入其中一个时间
+      - 至少输入其中一个时间参数
       - 由于HoshinoBot的定时工作逻辑，设置完成后需要重启机器人
 - 🚀 v1.3.3 (2022-08-10)
   - 修正了几个潜在的bug
