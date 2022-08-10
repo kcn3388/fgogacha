@@ -30,9 +30,13 @@ async def get_news(page_size=6, crt_file=None):
     all_news = []
     for each in news_ids:
         single_news_url = f"https://api.biligame.com/news/{each}.action"
+        single_news_page = f"https://game.bilibili.com/fgo/news.html#!news/0/0/{each}"
+        single_news_page_mobile = f"https://game.bilibili.com/fgo/h5/news.html#detailId={each}"
         single_news = await aiorequests.get(single_news_url, headers=headers, verify=crt_file)
         single_news = json.loads(await single_news.text)["data"]
         single_news["content"] = await solve_content(single_news["content"])
+        single_news["page"] = single_news_page
+        single_news["mobile_page"] = single_news_page_mobile
         all_news.append(single_news)
 
     same = False

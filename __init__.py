@@ -943,7 +943,7 @@ async def get_offical_news(bot, ev: CQEvent):
         await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
 
 
-@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c])?(\s.+)?$")
+@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c])?([询x])?(\s.+)?$")
 async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
@@ -978,7 +978,13 @@ async def get_local_news(bot, ev: CQEvent):
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
         except ActionFailed:
             await bot.send(ev, "转发消息失败……尝试直接发送~")
-            await bot.send(ev, msg)
+            try:
+                await bot.send(ev, msg)
+            except ActionFailed:
+                await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
+                                   f"标题：{news[index]['title']}\n"
+                                   f"电脑版网页：{news[index]['page']}\n"
+                                   f"手机版网页：{news[index]['mobile_page']}")
     if index == "all":
         news_all = []
         # noinspection PyUnboundLocalVariable
@@ -998,19 +1004,22 @@ async def get_local_news(bot, ev: CQEvent):
         except ActionFailed:
             if news_num < 10:
                 await bot.send(ev, f"发送合集失败，尝试拆分发送！\n共有{news_num}条新闻~")
-                try:
-                    for i in range(news_num):
-                        msg = news[index]["content"]
-                        _news = {
-                            "type": "node",
-                            "data": {
-                                "name": '涩茄子',
-                                "uin": '2087332430',
-                                "content": msg
-                            }
+                for i in range(news_num):
+                    msg = news[i]["content"]
+                    _news = {
+                        "type": "node",
+                        "data": {
+                            "name": '涩茄子',
+                            "uin": '2087332430',
+                            "content": msg
                         }
+                    }
+                    try:
                         await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
-                except ActionFailed:
-                    await bot.send(ev, f"发送失败！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")
+                    except ActionFailed:
+                        await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
+                                           f"标题：{news[i]['title']}\n"
+                                           f"电脑版网页：{news[i]['page']}\n"
+                                           f"手机版网页：{news[i]['mobile_page']}")
             else:
                 await bot.send(ev, f"新闻太多啦！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")
