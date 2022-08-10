@@ -12,10 +12,11 @@
 </div>
 
 <div align="center">
+<br>
 
 FGO 模拟抽卡插件 for [HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)<br>
-GitHub与问题反馈: https://github.com/kcn3388/fgogacha
-WIKI：https://github.com/kcn3388/fgogacha/wiki
+GitHub与问题反馈: https://github.com/kcn3388/fgogacha <br>
+WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 </div>
 
