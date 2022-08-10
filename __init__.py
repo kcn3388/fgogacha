@@ -2,17 +2,19 @@ import base64
 import io
 
 from PIL import Image
+from aiocqhttp import ActionFailed
 
 from hoshino import priv, Service
 from hoshino.typing import *
 from hoshino.util import DailyNumberLimiter
-from aiocqhttp import ActionFailed
 from .download import *
-from .getGachaPools import *
 from .downloadIcons import *
 from .gacha import *
+from .getGachaPools import *
 from .getnews import *
 
+# 更新时间间隔，单位为秒
+flush_second = 0
 # 更新时间间隔，单位为分钟
 flush_minute = 60
 # 更新时间间隔，单位为小时
@@ -49,6 +51,16 @@ all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner
 crt_folder_path = os.path.join(runtime_path, "crt/")
 crt_path = "ca-certificates.crt"
 
+try:
+    configs_schedule = json.load(open(config_path, encoding="utf-8"))
+    flush_hour = configs_schedule["flush_hour"]
+    flush_minute = configs_schedule["flush_minute"]
+    flush_second = configs_schedule["flush_second"]
+except json.decoder.JSONDecodeError:
+    pass
+except KeyError:
+    pass
+
 sv_help = '''
 [fgo数据初始化] 初始化数据文件及目录
 [fgo数据下载] 下载从者及礼装图标
@@ -61,6 +73,9 @@ sv_help = '''
 
 [获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
 [查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
+
+[设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
+ - 例如：``设置fgo时间 1小时60分钟60秒``
 '''.strip()
 
 sv = Service(
@@ -117,6 +132,9 @@ async def init(bot, ev: CQEvent):
                 }
                 configs = {
                     "follow_latest": FOLLOW_LATEST_POOL,
+                    "flush_hour": flush_hour,
+                    "flush_minute": flush_minute,
+                    "flush_second": flush_second,
                     "groups": [basic_config]
                 }
                 with open(config_path, "w", encoding="utf-8") as f:
@@ -175,6 +193,9 @@ async def get_fgo_pool(bot, ev: CQEvent):
             }
             configs = {
                 "follow_latest": FOLLOW_LATEST_POOL,
+                "flush_hour": flush_hour,
+                "flush_minute": flush_minute,
+                "flush_second": flush_second,
                 "groups": [basic_config]
             }
             with open(config_path, "w", encoding="utf-8") as f:
@@ -208,6 +229,9 @@ async def follow_latest(bot, ev: CQEvent):
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
             "groups": [basic_config]
         }
     else:
@@ -771,6 +795,9 @@ async def enable_crt(bot, ev: CQEvent):
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
             "groups": [basic_config]
         }
     else:
@@ -783,6 +810,9 @@ async def enable_crt(bot, ev: CQEvent):
             }
             configs = {
                 "follow_latest": FOLLOW_LATEST_POOL,
+                "flush_hour": flush_hour,
+                "flush_minute": flush_minute,
+                "flush_second": flush_second,
                 "groups": [basic_config]
             }
             with open(config_path, "w", encoding="utf-8") as f:
@@ -829,6 +859,9 @@ async def enable_crt(bot, ev: CQEvent):
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
             "groups": [basic_config]
         }
         with open(config_path, "w", encoding="utf-8") as f:
@@ -851,7 +884,7 @@ async def enable_crt(bot, ev: CQEvent):
             await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
-@sv.scheduled_job('interval', hours=flush_hour, minutes=flush_minute)
+@sv.scheduled_job('interval', hours=flush_hour, minutes=flush_minute, seconds=flush_second)
 async def update_pool():
     if not os.path.exists(data_path):
         print("资源未初始化……结束")
@@ -1023,3 +1056,56 @@ async def get_local_news(bot, ev: CQEvent):
                                            f"手机版网页：{news[i]['mobile_page']}")
             else:
                 await bot.send(ev, f"新闻太多啦！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")
+
+
+@sv.on_rex(r"(?i)^([设s][置z])?[fb]go[时s][间j]([设s][置z])?"
+           r"\s?(\d+(h((our)?s?)?|小时))?"
+           r"\s?(\d+(m((inute)?s?)?|分钟))?"
+           r"\s?(\d+(s((econd)?s?)?|秒))?$")
+async def set_update_time(bot, ev: CQEvent):
+    msg = ev.message.extract_plain_text()
+    times = msg.split(" ")
+    try:
+        configs = json.load(open(config_path, encoding="utf-8"))
+    except json.decoder.JSONDecodeError:
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
+            "groups": [basic_config]
+        }
+    rule_c = re.compile("(?i)^([设s][置z])?[fb]go[时s][间j]([设s][置z])?$")
+    if re.search(rule_c, times[0]) and len(times) == 1:
+        await bot.send(ev, "食用指南：设置fgo时间 + 小时 + 分钟 + 秒（至少存在一个）")
+        await bot.finish(ev, f"当前自动更新时间：{configs['flush_hour']}小时"
+                             f"{configs['flush_minute']}分钟{configs['flush_second']}秒")
+
+    rule_h = re.compile(r"(?i)\d+(h((our)?s?)?|小时)")
+    rule_m = re.compile(r"(?i)\d+(m((inute)?s?)?|分钟)")
+    rule_s = re.compile(r"(?i)\d+(s((econd)?s?)?|秒)")
+
+    for each in times:
+        if re.findall(rule_h, each):
+            hour = re.search(rule_h, each).group(0)
+            hour = re.findall(r"\d+", hour)
+            configs["flush_hour"] = int(hour[0])
+        if re.findall(rule_m, each):
+            minute = re.search(rule_m, each).group(0)
+            minute = re.findall(r"\d+", minute)
+            configs["flush_minute"] = int(minute[0])
+        if re.findall(rule_s, each):
+            second = re.search(rule_s, each).group(0)
+            second = re.findall(r"\d+", second)
+            configs["flush_second"] = int(second[0])
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    await bot.finish(ev, f"设置完成，当前自动更新时间：{configs['flush_hour']}小时"
+                         f"{configs['flush_minute']}分钟{configs['flush_second']}秒\n"
+                         f"请记得设置完成后重启机器人哦~")
