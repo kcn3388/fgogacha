@@ -24,18 +24,25 @@ async def get_all_cmd(crt_file=False):
     except Exception as e:
         return e
 
+    raw_data = await get_all.text
     rule = re.compile(r'override_data(\s)?=(\s)?\".+method_link_text=')
-    data = re.search(rule, await get_all.text).group(0)
+    data = re.search(rule, raw_data).group(0)
     data = re.sub(r'override_data(\s)?=(\s)?\"', "", data).split("\\n")
     for i in range(len(data) - 1, -1, -1):
+        data[i] = data[i].replace('\\\"', '"')
         if data[i] == '':
             data.pop(i)
 
     commands = []
 
+    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+(纹章\d+)?.png")
+    all_cmd_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
+    rule_png = re.compile(r"/images/.+.png")
+    for i in range(len(all_cmd_icons) - 1, -1, -1):
+        if not re.match(rule_png, all_cmd_icons[i]):
+            all_cmd_icons.pop(i)
+
     for i in range(0, len(data), 10):
-        if '\\\"' in data[i + 3]:
-            data[i + 3] = data[i + 3].replace('\\\"', '"')
         cmd = {
             "id": data[i].replace("id=", ""),
             "name": data[i + 1].replace("name=", ""),
@@ -48,6 +55,18 @@ async def get_all_cmd(crt_file=False):
             "method_link": data[i + 8].replace("method_link=", ""),
             "method_link_text": data[i + 9].replace("method_link_text=", "")
         }
+        cid = cmd["id"]
+        if int(cid) < 10:
+            cid = "00" + cid
+        if 10 <= int(cid) < 100:
+            cid = "0" + cid
+        rule_cmd = re.compile(rf"/images/.+纹章{cid}.png")
+        for each in all_cmd_icons:
+            if re.match(rule_cmd, each):
+                cmd["cmd_online_icon"] = each
+                cmd["skill_online_icon"] = all_cmd_icons[all_cmd_icons.index(each) + 1]
+                cmd["cmd_icon"] = each.split("/").pop()
+                cmd["skill_icon"] = all_cmd_icons[all_cmd_icons.index(each) + 1].split("/").pop()
         commands.append(cmd)
 
     old_all_cmd = []

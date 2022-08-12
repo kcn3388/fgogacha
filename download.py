@@ -1,3 +1,5 @@
+import os.path
+
 from hoshino import aiorequests
 
 headers = {
@@ -12,18 +14,24 @@ async def download(url, path, mute=False, crt_path=False):
         print("start download img resources")
     try:
         png = await (await aiorequests.get(url, timeout=20, verify=crt_path, headers=headers)).content
-        with open(path, "wb") as f:
-            f.write(png)
-        if not mute:
-            print("finish")
-        return 0
+        if not os.path.exists(path):
+            with open(path, "wb") as f:
+                f.write(png)
+            if not mute:
+                print("finish")
+            return 0
+        else:
+            return 1
     except OSError:
         png = await (await aiorequests.get(url, timeout=20, verify=False, headers=headers)).content
-        with open(path, "wb") as f:
-            f.write(png)
-        if not mute:
-            print("finish")
-        return 0
+        if not os.path.exists(path):
+            with open(path, "wb") as f:
+                f.write(png)
+            if not mute:
+                print("finish")
+            return 0
+        else:
+            return 1
     except Exception as e:
         return e
         # you can use this comment when you do not know what exception to catch:

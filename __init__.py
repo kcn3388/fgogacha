@@ -175,6 +175,8 @@ async def get_fgo_data(bot, ev: CQEvent):
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
     if not isinstance(bg_stat, int):
         await bot.send(ev, f'下载bg失败，原因：\n{bg_stat}')
+    if bg_stat:
+        sv.logger.info(f'bg已存在，跳过……')
     sv.logger.info("开始下载icon")
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
@@ -929,6 +931,8 @@ async def update_pool():
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
     if not isinstance(bg_stat, int):
         sv.logger.warning(f'下载bg失败，原因：{bg_stat}')
+    if bg_stat:
+        sv.logger.info(f'bg已存在，跳过……')
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         sv.logger.warning(f'下载icons失败，原因：{bg_stat}')
