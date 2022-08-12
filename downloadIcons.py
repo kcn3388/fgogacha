@@ -13,6 +13,7 @@ cft_path = icon_path + "cft_icons/"
 
 
 async def downloadicons(crt_path):
+    download_stat = 0
     if not os.path.exists(svt_path):
         os.mkdir(svt_path)
     if not os.path.exists(cft_path):
@@ -34,36 +35,40 @@ async def downloadicons(crt_path):
         for i in icons["svtIcons"]:
             ret = re.search(rule, i).group(0)
             if os.path.exists(svt_path + ret):
+                download_stat = 1
                 continue
-            await download(basic_url + i, svt_path + ret, True, crt_path)
+            download_stat = await download(basic_url + i, svt_path + ret, True, crt_path)
         for j in icons["cftIcons"]:
             ret = re.search(rule2, j).group(0)
             if os.path.exists(cft_path + ret):
+                download_stat = 1
                 continue
-            e = await download(basic_url + j, cft_path + ret, True, crt_path)
-            if not isinstance(e, int):
+            download_stat = await download(basic_url + j, cft_path + ret, True, crt_path)
+            if not isinstance(download_stat, int):
                 print("download icons error")
-                return e
+                return download_stat
         print("finish download icons")
-        return 0
+        return download_stat
     except OSError:
         for i in icons["svtIcons"]:
             ret = re.search(rule, i).group(0)
             if os.path.exists(svt_path + ret):
+                download_stat = 1
                 continue
-            e = await download(basic_url + i, svt_path + ret, True, crt_path)
-            if not isinstance(e, int):
+            download_stat = await download(basic_url + i, svt_path + ret, True, crt_path)
+            if not isinstance(download_stat, int):
                 print("download icons error")
-                return e
+                return download_stat
         for j in icons["cftIcons"]:
             ret = re.search(rule2, j).group(0)
             if os.path.exists(cft_path + ret):
+                download_stat = 1
                 continue
-            e = await download(basic_url + j, cft_path + ret, True, crt_path)
-            if not isinstance(e, int):
+            download_stat = await download(basic_url + j, cft_path + ret, True, crt_path)
+            if not isinstance(download_stat, int):
                 print("download icons error")
-                return e
+                return download_stat
         print("finish download icons")
-        return 0
+        return download_stat
     except Exception as e:
         return e

@@ -181,7 +181,13 @@ async def get_fgo_data(bot, ev: CQEvent):
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         await bot.send(ev, f'下载icons失败，原因：\n{bg_stat}')
-    await bot.send(ev, "下载完成")
+    if icon_stat:
+        sv.logger.info(f'icon没有更新，跳过……')
+
+    if bg_stat and icon_stat:
+        await bot.send(ev, "没有新的资源~晚点再来看看吧~")
+    else:
+        await bot.send(ev, "下载完成")
 
 
 @sv.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
@@ -280,7 +286,7 @@ async def check_jewel(bot, ev):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
 
 
-@sv.on_rex(r"(?i)^([查c][询x])?[fb]go[卡k][池c]([查c][询x])?$")
+@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[卡k][池c]([查c][询x])?$")
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
@@ -936,6 +942,8 @@ async def update_pool():
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         sv.logger.warning(f'下载icons失败，原因：{bg_stat}')
+    if icon_stat:
+        sv.logger.info(f'icon没有更新，跳过……')
 
     sv.logger.info("结束自动更新fgo")
 
@@ -967,7 +975,7 @@ async def get_offical_news(bot, ev: CQEvent):
         await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
 
 
-@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c])?([询x])?(\s.+)?$")
+@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c][询x])?(\s.+)?$")
 async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
