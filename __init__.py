@@ -93,6 +93,10 @@ sv_help = '''
 - 从者包括职介和指令卡
 - 礼装/纹章包括技能
 [下载全部卡片资源] 从上述数据中下载对应静态资源
+- 子命令：
+  - 下载全部从者资源
+  - 下载全部礼装资源
+  - 下载全部纹章资源
 '''.strip()
 
 sv = Service(
@@ -1248,6 +1252,95 @@ async def down_all_card_res(bot, ev: CQEvent):
         sv.logger.info("下载礼装完成")
         await bot.send(ev, "下载礼装完成~")
 
+    await bot.send(ev, "开始下载纹章")
+    cmd_stat = await download_cmd(crt_file)
+    if not isinstance(cmd_stat, int):
+        await bot.finish(ev, f'下载纹章资源失败，原因：\n{cmd_stat}')
+    if cmd_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "纹章资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载纹章完成")
+        await bot.send(ev, "下载纹章完成~")
+
+    await bot.finish(ev, "下载完成")
+
+
+@sv.on_fullmatch("下载全部从者资源")
+async def down_all_card_res(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+
+    await bot.send(ev, "开始下载，进度请查看后台~")
+    await bot.send(ev, "开始下载从者")
+    svt_stat = await download_svt(crt_file)
+    if not isinstance(svt_stat, int):
+        await bot.finish(ev, f'下载从者资源失败，原因：\n{svt_stat}')
+    if svt_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "从者资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载从者完成")
+        await bot.send(ev, "下载从者完成~")
+
+
+@sv.on_fullmatch("下载全部礼装资源")
+async def down_all_card_res(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+
+    await bot.send(ev, "开始下载，进度请查看后台~")
+    await bot.send(ev, "开始下载礼装")
+    cft_stat = await download_cft(crt_file)
+    if not isinstance(cft_stat, int):
+        await bot.finish(ev, f'下载礼装资源失败，原因：\n{cft_stat}')
+    if cft_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "礼装资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载礼装完成")
+        await bot.send(ev, "下载礼装完成~")
+
+
+@sv.on_fullmatch("下载全部纹章资源")
+async def down_all_card_res(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+
+    await bot.send(ev, "开始下载，进度请查看后台~")
     await bot.send(ev, "开始下载纹章")
     cmd_stat = await download_cmd(crt_file)
     if not isinstance(cmd_stat, int):

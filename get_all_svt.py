@@ -42,6 +42,7 @@ async def get_all_svt(crt_file=False):
         if not re.match(rule_png, all_svt_icons[i]):
             all_svt_icons.pop(i)
 
+    banned_id = ["333", "240", "168", "151", "149", "83", "152"]
     for i in range(0, len(data), 8):
         svt = {
             "id": data[i].replace("id=", ""),
@@ -62,16 +63,7 @@ async def get_all_svt(crt_file=False):
         for each in all_svt_icons:
             if re.match(rule_cmd, each):
                 i_each = all_svt_icons.index(each)
-                if all_svt_icons[i_each + 1].split("/").pop().startswith("Beast"):
-                    svt["online"] = {
-                        "svt_icon": each,
-                        "class_icon": all_svt_icons[i_each + 1]
-                    }
-                    svt["local"] = {
-                        "svt_icon": each.split("/").pop(),
-                        "class_icon": all_svt_icons[i_each + 1].split("/").pop()
-                    }
-                if svt["id"] == "83" or svt["id"] == "152":
+                if svt["id"] in banned_id:
                     svt["online"] = {
                         "svt_icon": each,
                         "class_icon": all_svt_icons[i_each + 1]
