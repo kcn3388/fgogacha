@@ -38,6 +38,8 @@ async def downloadicons(crt_path):
                 download_stat = 1
                 continue
             download_stat = await download(basic_url + i, svt_path + ret, True, crt_path)
+            if not isinstance(download_stat, int):
+                print("download icons error, reason:" + str(download_stat))
         for j in icons["cftIcons"]:
             ret = re.search(rule2, j).group(0)
             if os.path.exists(cft_path + ret):
@@ -45,8 +47,7 @@ async def downloadicons(crt_path):
                 continue
             download_stat = await download(basic_url + j, cft_path + ret, True, crt_path)
             if not isinstance(download_stat, int):
-                print("download icons error")
-                return download_stat
+                print("download icons error, reason:" + str(download_stat))
         print("finish download icons")
         return download_stat
     except OSError:
@@ -57,8 +58,7 @@ async def downloadicons(crt_path):
                 continue
             download_stat = await download(basic_url + i, svt_path + ret, True, crt_path)
             if not isinstance(download_stat, int):
-                print("download icons error")
-                return download_stat
+                print("download icons error, reason:" + str(download_stat))
         for j in icons["cftIcons"]:
             ret = re.search(rule2, j).group(0)
             if os.path.exists(cft_path + ret):
@@ -66,8 +66,7 @@ async def downloadicons(crt_path):
                 continue
             download_stat = await download(basic_url + j, cft_path + ret, True, crt_path)
             if not isinstance(download_stat, int):
-                print("download icons error")
-                return download_stat
+                print("download icons error, reason:" + str(download_stat))
         print("finish download icons")
         return download_stat
     except Exception as e:

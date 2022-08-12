@@ -9,6 +9,7 @@ from hoshino.typing import *
 from hoshino.util import DailyNumberLimiter
 from .download import *
 from .downloadIcons import *
+from .download_all_res import *
 from .gacha import *
 from .getGachaPools import *
 from .get_all_cft import *
@@ -66,20 +67,32 @@ except KeyError:
     pass
 
 sv_help = '''
-[fgo数据初始化] 初始化数据文件及目录
-[fgo数据下载] 下载从者及礼装图标
- - 务必先初始化数据再执行下载！
+# 抽卡模拟相关
+[fgo十连] fgo抽卡
+[fgo百连] 100抽
 [获取fgo卡池] 从mooncell获取卡池数据
 [查询fgo卡池] 查询本地缓存的卡池以及本群卡池
 [切换fgo卡池 + 卡池编号] 切换需要的卡池
 [切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池
-[fgo十连/fgo百连] 紧张刺激的抽卡
 
+# 抽卡管理命令:
+[fgo数据初始化] 初始化数据文件及目录，务必安装后先执行此命令！
+[fgo数据下载] 下载从者及礼装图标，务必先初始化数据再执行下载！
+[跟随最新/剧情卡池] 设置卡池数据更新后跟随最新国服卡池还是国服剧情卡池
+[fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
+[fgo_check_crt] 检查本群crt文件配置状态
+[设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
+- 例如：``设置fgo时间 1小时60分钟60秒``
+
+# 新闻相关：
 [获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
 [查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
-
-[设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
- - 例如：``设置fgo时间 1小时60分钟60秒``
+ 
+# 数据管理相关
+[获取全部从者/礼装/纹章] 获取从者/礼装/纹章的相关内容
+- 从者包括职介和指令卡
+- 礼装/纹章包括技能
+[下载全部卡片资源] 从上述数据中下载对应静态资源
 '''.strip()
 
 sv = Service(
@@ -180,7 +193,7 @@ async def get_fgo_data(bot, ev: CQEvent):
     sv.logger.info("开始下载icon")
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
-        await bot.send(ev, f'下载icons失败，原因：\n{bg_stat}')
+        await bot.send(ev, f'下载icons失败，原因：\n{icon_stat}')
     if icon_stat:
         sv.logger.info(f'icon没有更新，跳过……')
 
@@ -230,6 +243,8 @@ async def get_fgo_pool(bot, ev: CQEvent):
 
 @sv.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
 async def follow_latest(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     global FOLLOW_LATEST_POOL
     args = ev.message.extract_plain_text()
     if not os.path.exists(config_path):
@@ -941,7 +956,7 @@ async def update_pool():
         sv.logger.info(f'bg已存在，跳过……')
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
-        sv.logger.warning(f'下载icons失败，原因：{bg_stat}')
+        sv.logger.warning(f'下载icons失败，原因：{icon_stat}')
     if icon_stat:
         sv.logger.info(f'icon没有更新，跳过……')
 
@@ -1062,6 +1077,8 @@ async def get_local_news(bot, ev: CQEvent):
            r"\s?(\d+(m((inute)?s?)?|分钟))?"
            r"\s?(\d+(s((econd)?s?)?|秒))?$")
 async def set_update_time(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     msg = ev.message.extract_plain_text()
     times = msg.split(" ")
     try:
@@ -1119,6 +1136,8 @@ async def set_update_time(bot, ev: CQEvent):
 
 @sv.on_fullmatch("获取全部从者")
 async def get_all_mooncell_svt(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     crt_file = False
     if os.path.exists(config_path):
         try:
@@ -1142,6 +1161,8 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
 
 @sv.on_fullmatch("获取全部礼装")
 async def get_all_mooncell_cft(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     crt_file = False
     if os.path.exists(config_path):
         try:
@@ -1165,6 +1186,8 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
 
 @sv.on_fullmatch("获取全部纹章")
 async def get_all_mooncell_cmd(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     crt_file = False
     if os.path.exists(config_path):
         try:
@@ -1184,3 +1207,31 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
         await bot.finish(ev, "纹章列表已是最新~稍后再来试试吧~")
     else:
         await bot.finish(ev, "纹章列表获取完成~")
+
+
+@sv.on_fullmatch("下载全部卡片资源")
+async def down_all_card_res(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+
+    sv.logger.info("开始下载全部资源")
+    icon_stat = await download_all_res(crt_file)
+    if not isinstance(icon_stat, int):
+        await bot.finish(ev, f'下载全部资源失败，原因：\n{icon_stat}')
+    if icon_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.finish(ev, "全部资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载完成")
+        await bot.finish(ev, "下载完成~")
