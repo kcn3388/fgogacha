@@ -1225,13 +1225,36 @@ async def down_all_card_res(bot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             pass
 
-    sv.logger.info("开始下载全部资源")
-    icon_stat = await download_all_res(crt_file)
-    if not isinstance(icon_stat, int):
-        await bot.finish(ev, f'下载全部资源失败，原因：\n{icon_stat}')
-    if icon_stat:
+    await bot.send(ev, "开始下载，进度请查看后台~")
+    await bot.send(ev, "开始下载从者")
+    svt_stat = await download_svt(crt_file)
+    if not isinstance(svt_stat, int):
+        await bot.finish(ev, f'下载从者资源失败，原因：\n{svt_stat}')
+    if svt_stat:
         sv.logger.info('资源没有更新，跳过……')
-        await bot.finish(ev, "全部资源已是最新~稍后再来试试吧~")
+        await bot.send(ev, "从者资源已是最新~稍后再来试试吧~")
     else:
-        sv.logger.info("下载完成")
-        await bot.finish(ev, "下载完成~")
+        sv.logger.info("下载从者完成")
+        await bot.send(ev, "下载从者完成~")
+
+    await bot.send(ev, "开始下载礼装")
+    cft_stat = await download_cft(crt_file)
+    if not isinstance(cft_stat, int):
+        await bot.finish(ev, f'下载礼装资源失败，原因：\n{cft_stat}')
+    if cft_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "礼装资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载礼装完成")
+        await bot.send(ev, "下载礼装完成~")
+
+    await bot.send(ev, "开始下载纹章")
+    cmd_stat = await download_cmd(crt_file)
+    if not isinstance(cmd_stat, int):
+        await bot.finish(ev, f'下载纹章资源失败，原因：\n{cmd_stat}')
+    if cmd_stat:
+        sv.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "纹章资源已是最新~稍后再来试试吧~")
+    else:
+        sv.logger.info("下载纹章完成")
+        await bot.send(ev, "下载纹章完成~")

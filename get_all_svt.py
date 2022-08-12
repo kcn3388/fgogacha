@@ -71,6 +71,15 @@ async def get_all_svt(crt_file=False):
                         "svt_icon": each.split("/").pop(),
                         "class_icon": all_svt_icons[i_each + 1].split("/").pop()
                     }
+                if svt["id"] == "83" or svt["id"] == "152":
+                    svt["online"] = {
+                        "svt_icon": each,
+                        "class_icon": all_svt_icons[i_each + 1]
+                    }
+                    svt["local"] = {
+                        "svt_icon": each.split("/").pop(),
+                        "class_icon": all_svt_icons[i_each + 1].split("/").pop()
+                    }
                 else:
                     svt["online"] = {
                         "svt_icon": each,

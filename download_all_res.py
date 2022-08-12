@@ -22,7 +22,7 @@ cft_json = os.path.join(runtime_path, "data/all_cft.json")
 cmd_json = os.path.join(runtime_path, "data/all_cmd.json")
 
 
-async def download_all_res(crt_file=False):
+async def download_svt(crt_file=False):
     download_stat = 0
     basic_url = "https://fgo.wiki"
     for each in all_path:
@@ -42,8 +42,7 @@ async def download_all_res(crt_file=False):
                             basic_url + i["online"][j], svt_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return download_stat
+                            print("download icons error, reason: " + str(download_stat))
                     # 如果是指令卡
                     rule = re.compile(r"(ultimate|card\d)_icon")
                     if re.match(rule, j):
@@ -51,16 +50,14 @@ async def download_all_res(crt_file=False):
                             basic_url + i["online"][j], card_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return download_stat
+                            print("download icons error, reason: " + str(download_stat))
                     # 如果是职介
                     if j == "class_icon":
                         download_stat = await download(
                             basic_url + i["online"][j], class_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return
+                            print("download icons error, reason: " + str(download_stat))
             if download_stat:
                 print("没有更新数据……")
             else:
@@ -69,6 +66,25 @@ async def download_all_res(crt_file=False):
             print("不存在从者数据……跳过")
     else:
         print("不存在从者数据……跳过")
+
+    if not isinstance(download_stat, int):
+        print("存在下载错误：" + str(download_stat))
+        return download_stat
+
+    if download_stat:
+        print("没有新的资源")
+        return download_stat
+    else:
+        print("从者下载完成")
+        return download_stat
+
+
+async def download_cft(crt_file=False):
+    download_stat = 0
+    basic_url = "https://fgo.wiki"
+    for each in all_path:
+        if not os.path.exists(each):
+            os.mkdir(each)
 
     print("开始下载礼装相关……")
     if os.path.exists(cft_path):
@@ -83,16 +99,14 @@ async def download_all_res(crt_file=False):
                             basic_url + i["online"][j], cft_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return download_stat
+                            print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
                         download_stat = await download(
                             basic_url + i["online"][j], skill_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return
+                            print("download icons error, reason: " + str(download_stat))
             if download_stat:
                 print("没有更新数据……")
             else:
@@ -101,6 +115,25 @@ async def download_all_res(crt_file=False):
             print("不存在礼装数据……跳过")
     else:
         print("不存在礼装数据……跳过")
+
+    if not isinstance(download_stat, int):
+        print("存在下载错误：" + str(download_stat))
+        return download_stat
+
+    if download_stat:
+        print("没有新的资源")
+        return download_stat
+    else:
+        print("礼装下载完成")
+        return download_stat
+
+
+async def download_cmd(crt_file=False):
+    download_stat = 0
+    basic_url = "https://fgo.wiki"
+    for each in all_path:
+        if not os.path.exists(each):
+            os.mkdir(each)
 
     print("开始下载纹章相关……")
     if os.path.exists(cft_path):
@@ -115,16 +148,14 @@ async def download_all_res(crt_file=False):
                             basic_url + i["online"][j], cmd_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return download_stat
+                            print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
                         download_stat = await download(
                             basic_url + i["online"][j], skill_path + i["local"][j], True, crt_file
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error")
-                            return
+                            print("download icons error, reason: " + str(download_stat))
             if download_stat:
                 print("没有更新数据……")
             else:
@@ -135,12 +166,12 @@ async def download_all_res(crt_file=False):
         print("不存在纹章数据……跳过")
 
     if not isinstance(download_stat, int):
-        print("存在下载错误~")
+        print("存在下载错误：" + str(download_stat))
         return download_stat
 
     if download_stat:
         print("没有新的资源")
         return download_stat
     else:
-        print("全部下载完成")
+        print("纹章下载完成")
         return download_stat
