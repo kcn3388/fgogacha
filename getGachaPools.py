@@ -11,16 +11,23 @@ old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 gacha_path = os.path.join(runtime_path, 'data/gacha.json')
 icons_path = os.path.join(runtime_path, 'data/icons.json')
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-cn"
+}
+
 
 async def getgachapools(islatest=True, crt_file=None):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-               "Accept-Language": "zh-cn"
-               }
     try:
         pool_url = "https://fgo.wiki/w/%E6%8A%BD%E5%8D%A1%E6%A8%A1%E6%8B%9F%E5%99%A8"
         print(f"Downloading {pool_url} for pools.json")
-        pools_page = await aiorequests.get(pool_url, timeout=20, headers=headers, verify=crt_file)
+        try:
+            pools_page = await aiorequests.get(pool_url, timeout=20, verify=crt_file, headers=headers)
+        except OSError:
+            pools_page = await aiorequests.get(pool_url, timeout=20, verify=False, headers=headers)
+        except Exception as e:
+            return e
         # debug_path = os.path.join(runtime_path, "data/html.txt")
         # with open(debug_path, "w", encoding="utf-8") as f:
         #     f.write(await pools_page.text)
@@ -64,7 +71,12 @@ async def getgachapools(islatest=True, crt_file=None):
         # counter = 0
         is_daily = False
         for i in pools:
-            raw = await aiorequests.get(i["href"], headers=headers, verify=crt_file)
+            try:
+                raw = await aiorequests.get(i["href"], timeout=20, verify=crt_file, headers=headers)
+            except OSError:
+                raw = await aiorequests.get(i["href"], timeout=20, verify=False, headers=headers)
+            except Exception as e:
+                return e
             data = await raw.text
             rule = re.compile(r"raw_str_list\s?=\s?\['(.*)']")
             # debug_path = os.path.join(runtime_path, f"data/html{counter}.txt")

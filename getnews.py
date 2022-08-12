@@ -7,15 +7,22 @@ runtime_path = os.path.dirname(__file__)
 news_path = os.path.join(runtime_path, 'data/news.json')
 news_detail_path = os.path.join(runtime_path, 'data/news_detail.json')
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-cn"
+}
+
 
 async def get_news(page_size=6, crt_file=None):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-               "Accept-Language": "zh-cn"
-               }
     list_news_url = f"https://api.biligame.com/news/" \
                     f"list.action?gameExtensionId=45&positionId=2&pageNum=1&pageSize={page_size} "
-    list_news = await aiorequests.get(list_news_url, headers=headers, verify=crt_file)
+    try:
+        list_news = await aiorequests.get(list_news_url, timeout=20, verify=crt_file, headers=headers)
+    except OSError:
+        list_news = await aiorequests.get(list_news_url, timeout=20, verify=False, headers=headers)
+    except Exception as e:
+        return -100, e
     list_news = json.loads(await list_news.text)["data"]
 
     with open(news_path, "w", encoding="utf-8") as f:
@@ -32,7 +39,12 @@ async def get_news(page_size=6, crt_file=None):
         single_news_url = f"https://api.biligame.com/news/{each}.action"
         single_news_page = f"https://game.bilibili.com/fgo/news.html#!news/0/0/{each}"
         single_news_page_mobile = f"https://game.bilibili.com/fgo/h5/news.html#detailId={each}"
-        single_news = await aiorequests.get(single_news_url, headers=headers, verify=crt_file)
+        try:
+            single_news = await aiorequests.get(single_news_url, timeout=20, verify=crt_file, headers=headers)
+        except OSError:
+            single_news = await aiorequests.get(single_news_url, timeout=20, verify=False, headers=headers)
+        except Exception as e:
+            return -100, e
         single_news = json.loads(await single_news.text)["data"]
         single_news["content"] = await solve_content(single_news["content"])
         single_news["page"] = single_news_page

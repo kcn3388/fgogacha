@@ -11,6 +11,7 @@ from .download import *
 from .downloadIcons import *
 from .gacha import *
 from .getGachaPools import *
+from .get_all_svt import *
 from .getnews import *
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 
@@ -37,7 +38,7 @@ res_init_path = basic_path + ".init/"
 runtime_path = os.path.dirname(__file__)
 mooncellBackgroundUrl = 'https://fgo.wiki/images/bg/bg-mc-icon.png'
 mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
-data_path = os.path.join(runtime_path, 'data/')
+data_path = os.path.join(runtime_path, 'data')
 banner_path = os.path.join(runtime_path, 'data/banner.json')
 config_path = os.path.join(runtime_path, 'data/config.json')
 pools_path = os.path.join(runtime_path, 'data/pools.json')
@@ -49,7 +50,7 @@ news_detail_path = os.path.join(runtime_path, 'data/news_detail.json')
 seal_path = os.path.join(runtime_path, '海の翁.jpg')
 frame_path = os.path.join(runtime_path, 'background.png')
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
-crt_folder_path = os.path.join(runtime_path, "crt/")
+crt_folder_path = os.path.join(runtime_path, "crt")
 crt_path = "ca-certificates.crt"
 
 try:
@@ -113,18 +114,18 @@ async def init(bot, ev: CQEvent):
     if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
         await bot.finish(ev, "未配置默认crt文件！请从GitHub获取默认crt文件再运行此插件！")
     if not os.path.exists(basic_path):
-        print("数据初始化...")
-        print("初始化资源根目录...")
+        sv.logger.info("数据初始化...")
+        sv.logger.info("初始化资源根目录...")
         os.mkdir(basic_path)
     if not os.path.exists(icon_path):
-        print("初始化图标目录...")
+        sv.logger.info("初始化图标目录...")
         os.mkdir(icon_path)
     if not os.path.exists(data_path):
-        print("初始化data目录...")
+        sv.logger.info("初始化data目录...")
         os.mkdir(data_path)
     for each in all_json:
         if not os.path.exists(each):
-            print("初始化配置文件json...")
+            sv.logger.info("初始化配置文件json...")
             open(each, 'w')
             if each == config_path:
                 basic_config = {
@@ -150,12 +151,12 @@ async def get_fgo_data(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
-        print("资源路径未初始化...")
+        sv.logger.info("资源路径未初始化...")
         await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：fgo数据初始化")
 
-    print("Downloaded bg-mc-icon.png")
+    sv.logger.info("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
-    print("开始下载bg")
+    sv.logger.info("开始下载bg")
 
     crt_file = False
     if os.path.exists(config_path):
@@ -170,12 +171,12 @@ async def get_fgo_data(bot, ev: CQEvent):
             pass
 
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
-    if not bg_stat == 0:
-        await bot.send(ev, f'下载bg失败……{bg_stat}')
-    print("开始下载icon")
+    if not isinstance(bg_stat, int):
+        await bot.send(ev, f'下载bg失败，原因：\n{bg_stat}')
+    sv.logger.info("开始下载icon")
     icon_stat = await downloadicons(crt_file)
-    if not icon_stat == 0:
-        await bot.send(ev, f'下载icons失败……{bg_stat}')
+    if not isinstance(icon_stat, int):
+        await bot.send(ev, f'下载icons失败，原因：\n{bg_stat}')
     await bot.send(ev, "下载完成")
 
 
@@ -209,12 +210,12 @@ async def get_fgo_pool(bot, ev: CQEvent):
                     crt_file = os.path.join(crt_folder_path, each["crt_path"])
                     break
     download_stat = await getgachapools(FOLLOW_LATEST_POOL, crt_file)
+    if not isinstance(download_stat, int):
+        await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
     if not download_stat:
         await bot.send(ev, "获取卡池完成")
     elif download_stat:
         await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
-    else:
-        await bot.send(ev, f'更新失败……{download_stat}')
 
 
 @sv.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
@@ -222,7 +223,7 @@ async def follow_latest(bot, ev: CQEvent):
     global FOLLOW_LATEST_POOL
     args = ev.message.extract_plain_text()
     if not os.path.exists(config_path):
-        print("初始化配置文件json...")
+        sv.logger.info("初始化配置文件json...")
         open(config_path, 'w')
         basic_config = {
             "group": ev.group_id,
@@ -279,7 +280,7 @@ async def check_jewel(bot, ev):
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
-        print("no pool")
+        sv.logger.info("no pool")
         await bot.finish(ev, "没有卡池！请先获取卡池！")
 
     msg = "当前卡池："
@@ -302,7 +303,7 @@ async def check_pool(bot, ev: CQEvent):
                 break
 
         if not exists:
-            print("no banner")
+            sv.logger.info("no banner")
         else:
             b_name = banner["banner"]["banner"]
             title = banner["banner"]["title"]
@@ -341,13 +342,13 @@ async def switch_pool(bot, ev: CQEvent):
 
     pools = json.load(open(pools_path, encoding="utf-8"))
     if not os.path.exists(banner_path):
-        print("初始化数据json...")
+        sv.logger.info("初始化数据json...")
         open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
-        print("no pool")
+        sv.logger.info("no pool")
         await bot.finish(ev, "没有卡池！请先获取卡池！")
 
     banner = {
@@ -396,13 +397,13 @@ async def switch_pool(bot, ev: CQEvent):
         await bot.finish(ev, "食用指南：切换fgo日替卡池 + 卡池编号 + 日替卡池编号", at_sender=True)
 
     if not os.path.exists(banner_path):
-        print("初始化数据json...")
+        sv.logger.info("初始化数据json...")
         open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
-        print("no pool")
+        sv.logger.info("no pool")
         await bot.finish(ev, "没有卡池！请先获取卡池！")
 
     banner = {
@@ -788,7 +789,7 @@ async def enable_crt(bot, ev: CQEvent):
         crt = "False"
 
     if not os.path.exists(config_path):
-        print("初始化配置文件json...")
+        sv.logger.info("初始化配置文件json...")
         open(config_path, 'w')
         basic_config = {
             "group": ev.group_id,
@@ -888,9 +889,9 @@ async def enable_crt(bot, ev: CQEvent):
 @sv.scheduled_job('interval', hours=flush_hour, minutes=flush_minute, seconds=flush_second)
 async def update_pool():
     if not os.path.exists(data_path):
-        print("资源未初始化……结束")
+        sv.logger.info("资源未初始化……结束")
         return
-    print("开始自动更新fgo")
+    sv.logger.info("开始自动更新fgo")
 
     # 寻找crt
     if not os.path.exists(config_path):
@@ -913,43 +914,24 @@ async def update_pool():
                 crt_file = False
 
     # 自动更新卡池
-    # 做一次try，如果报错后续均不使用crt
-    try:
-        await getgachapools(True, crt_file)
-    except Exception as e:
-        print("发生错误：" + str(e) + "\n取消使用crt")
-        crt_file = False
-        await getgachapools(True, crt_file)
+    r = await getgachapools(True, crt_file)
+    if not isinstance(r, int):
+        sv.logger.warning(f"获取卡池失败，原因：{str(r)}")
 
     # 自动更新新闻
-    # 做一次try，如果报错后续均不使用crt
-    try:
-        await get_news(6, crt_file)
-    except Exception as e:
-        print("发生错误：" + str(e) + "\n取消使用crt")
-        crt_file = False
-        await get_news(6, crt_file)
+    news, same = await get_news(6, crt_file)
+    if not isinstance(same, bool) and news == -100:
+        sv.logger.warning(f"获取新闻失败，原因：{str(same)}")
 
     # 自动下载资源
-    # 做一次try，如果报错后续均不使用crt
-    try:
-        bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
-        if not bg_stat == 0:
-            print(f'下载bg失败……{bg_stat}')
-        icon_stat = await downloadicons(crt_file)
-        if not icon_stat == 0:
-            print(f'下载icons失败……{bg_stat}')
-    except Exception as e:
-        print("发生错误：" + str(e) + "\n取消使用crt")
-        crt_file = False
-        bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
-        if not bg_stat == 0:
-            print(f'下载bg失败……{bg_stat}')
-        icon_stat = await downloadicons(crt_file)
-        if not icon_stat == 0:
-            print(f'下载icons失败……{bg_stat}')
+    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
+    if not isinstance(bg_stat, int):
+        sv.logger.warning(f'下载bg失败，原因：{bg_stat}')
+    icon_stat = await downloadicons(crt_file)
+    if not isinstance(icon_stat, int):
+        sv.logger.warning(f'下载icons失败，原因：{bg_stat}')
 
-    print("结束自动更新fgo")
+    sv.logger.info("结束自动更新fgo")
 
 
 @sv.on_rex(r"(?i)^([获h][取q])?[fb]go[新x][闻w]([获h][取q])?(\s\d+)?$")
@@ -971,6 +953,8 @@ async def get_offical_news(bot, ev: CQEvent):
     else:
         num = 6
     news, same = await get_news(num, crt_file)
+    if not isinstance(same, bool) and news == -100:
+        await bot.finish(ev, f"获取新闻出错，原因：\n{str(same)}")
     if same:
         await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
     else:
@@ -1117,3 +1101,26 @@ async def set_update_time(bot, ev: CQEvent):
     await bot.finish(ev, f"设置完成，当前自动更新时间：{configs['flush_hour']}小时"
                          f"{configs['flush_minute']}分钟{configs['flush_second']}秒\n"
                          f"机器人重启中~")
+
+
+@sv.on_fullmatch("获取全部从者")
+async def get_all_mooncell_svt(bot, ev: CQEvent):
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+    all_svt = await get_all_svt(crt_file)
+    if not isinstance(all_svt, int):
+        await bot.finish(ev, f"获取全部从者出错，原因：{all_svt}")
+
+    if all_svt:
+        await bot.finish(ev, "从者列表已是最新~稍后再来试试吧~")
+    else:
+        await bot.finish(ev, "从者列表获取完成~")
