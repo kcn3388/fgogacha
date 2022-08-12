@@ -12,6 +12,7 @@ from .downloadIcons import *
 from .gacha import *
 from .getGachaPools import *
 from .get_all_cft import *
+from .get_all_cmd import *
 from .get_all_svt import *
 from .getnews import *
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
@@ -1148,3 +1149,26 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
         await bot.finish(ev, "礼装列表已是最新~稍后再来试试吧~")
     else:
         await bot.finish(ev, "礼装列表获取完成~")
+
+
+@sv.on_fullmatch("获取全部纹章")
+async def get_all_mooncell_cmd(bot, ev: CQEvent):
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each in configs["groups"]:
+                if each["group"] == ev.group_id:
+                    if not crt_file == "False":
+                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+    all_cmd = await get_all_cmd(crt_file)
+    if not isinstance(all_cmd, int):
+        await bot.finish(ev, f"获取全部纹章出错，原因：{all_cmd}")
+
+    if all_cmd:
+        await bot.finish(ev, "纹章列表已是最新~稍后再来试试吧~")
+    else:
+        await bot.finish(ev, "纹章列表获取完成~")
