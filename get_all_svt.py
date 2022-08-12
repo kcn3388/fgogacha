@@ -63,24 +63,24 @@ async def get_all_svt(crt_file=False):
             if re.match(rule_cmd, each):
                 i_each = all_svt_icons.index(each)
                 svt["online"] = {
-                    "svt_online_icon": each,
-                    "card1_online_icon": all_svt_icons[i_each + 1],
-                    "card2_online_icon": all_svt_icons[i_each + 2],
-                    "card3_online_icon": all_svt_icons[i_each + 3],
-                    "card4_online_icon": all_svt_icons[i_each + 4],
-                    "card5_online_icon": all_svt_icons[i_each + 5],
-                    "ultimate_online_icon": all_svt_icons[i_each + 6],
-                    "class_online_icon": all_svt_icons[i_each + 7]
+                    "svt_icon": each,
+                    "card1_icon": all_svt_icons[i_each + 1],
+                    "card2_icon": all_svt_icons[i_each + 2],
+                    "card3_icon": all_svt_icons[i_each + 3],
+                    "card4_icon": all_svt_icons[i_each + 4],
+                    "card5_icon": all_svt_icons[i_each + 5],
+                    "ultimate_icon": all_svt_icons[i_each + 6],
+                    "class_icon": all_svt_icons[i_each + 7]
                 }
                 svt["local"] = {
-                    "svt_online_icon": each.split("/").pop(),
-                    "card1_online_icon": all_svt_icons[i_each + 1].split("/").pop(),
-                    "card2_online_icon": all_svt_icons[i_each + 2].split("/").pop(),
-                    "card3_online_icon": all_svt_icons[i_each + 3].split("/").pop(),
-                    "card4_online_icon": all_svt_icons[i_each + 4].split("/").pop(),
-                    "card5_online_icon": all_svt_icons[i_each + 5].split("/").pop(),
-                    "ultimate_online_icon": all_svt_icons[i_each + 6].split("/").pop(),
-                    "class_online_icon": all_svt_icons[i_each + 7].split("/").pop()
+                    "svt_icon": each.split("/").pop(),
+                    "card1_icon": all_svt_icons[i_each + 1].split("/").pop(),
+                    "card2_icon": all_svt_icons[i_each + 2].split("/").pop(),
+                    "card3_icon": all_svt_icons[i_each + 3].split("/").pop(),
+                    "card4_icon": all_svt_icons[i_each + 4].split("/").pop(),
+                    "card5_icon": all_svt_icons[i_each + 5].split("/").pop(),
+                    "ultimate_icon": all_svt_icons[i_each + 6].split("/").pop(),
+                    "class_icon": all_svt_icons[i_each + 7].split("/").pop()
                 }
         servants.append(svt)
 
