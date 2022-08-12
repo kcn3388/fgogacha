@@ -24,18 +24,25 @@ async def get_all_cft(crt_file=False):
     except Exception as e:
         return e
 
+    raw_data = await get_all.text
     rule = re.compile(r'override_data(\s)?=(\s)?\".+event=0')
-    data = re.search(rule, await get_all.text).group(0)
+    data = re.search(rule, raw_data).group(0)
     data = re.sub(r'override_data(\s)?=(\s)?\"', "", data).split("\\n")
     for i in range(len(data) - 1, -1, -1):
+        data[i] = data[i].replace('\\\"', '"')
         if data[i] == '':
             data.pop(i)
 
     crafts = []
 
+    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
+    all_cft_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
+    rule_png = re.compile(r"/images/.+\.(png|jpg)")
+    for i in range(len(all_cft_icons) - 1, -1, -1):
+        if not re.match(rule_png, all_cft_icons[i]):
+            all_cft_icons.pop(i)
+
     for i in range(0, len(data), 9):
-        if '\\\"' in data[i + 3]:
-            data[i + 3] = data[i + 3].replace('\\\"', '"')
         cft = {
             "id": data[i].replace("id=", ""),
             "name": data[i + 1].replace("name=", ""),
@@ -47,6 +54,25 @@ async def get_all_cft(crt_file=False):
             "type": data[i + 7].replace("type=", ""),
             "event": data[i + 8].replace("event=", "")
         }
+        cid = cft["id"]
+        if int(cid) < 10:
+            cid = "00" + cid
+        if 10 <= int(cid) < 100:
+            cid = "0" + cid
+        rule_cmd = re.compile(rf"/images/.+礼装{cid}\.(png|jpg)")
+        for each in all_cft_icons:
+            if re.match(rule_cmd, each):
+                i_each = all_cft_icons.index(each)
+                cft["online"] = {
+                    "cft_icon": each,
+                    "skill_icon": all_cft_icons[i_each + 1]
+                }
+
+                cft["local"] = {
+                    "cft_icon": each.split("/").pop(),
+                    "skill_icon": all_cft_icons[i_each + 1].split("/").pop()
+                }
+
         crafts.append(cft)
 
     old_all_cft = []

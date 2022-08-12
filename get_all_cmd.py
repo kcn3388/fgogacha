@@ -35,9 +35,9 @@ async def get_all_cmd(crt_file=False):
 
     commands = []
 
-    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+(纹章\d+)?.png")
+    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
     all_cmd_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
-    rule_png = re.compile(r"/images/.+.png")
+    rule_png = re.compile(r"/images/.+\.(png|jpg)")
     for i in range(len(all_cmd_icons) - 1, -1, -1):
         if not re.match(rule_png, all_cmd_icons[i]):
             all_cmd_icons.pop(i)
@@ -60,13 +60,18 @@ async def get_all_cmd(crt_file=False):
             cid = "00" + cid
         if 10 <= int(cid) < 100:
             cid = "0" + cid
-        rule_cmd = re.compile(rf"/images/.+纹章{cid}.png")
+        rule_cmd = re.compile(rf"/images/.+纹章{cid}\.(png|jpg)")
         for each in all_cmd_icons:
             if re.match(rule_cmd, each):
-                cmd["cmd_online_icon"] = each
-                cmd["skill_online_icon"] = all_cmd_icons[all_cmd_icons.index(each) + 1]
-                cmd["cmd_icon"] = each.split("/").pop()
-                cmd["skill_icon"] = all_cmd_icons[all_cmd_icons.index(each) + 1].split("/").pop()
+                i_each = all_cmd_icons.index(each)
+                cmd["online"] = {
+                    "cmd_icon": each,
+                    "skill_icon": all_cmd_icons[i_each + 1]
+                }
+                cmd["local"] = {
+                    "cmd_icon": each.split("/").pop(),
+                    "skill_icon": all_cmd_icons[i_each + 1].split("/").pop()
+                }
         commands.append(cmd)
 
     old_all_cmd = []

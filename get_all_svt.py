@@ -24,18 +24,25 @@ async def get_all_svt(crt_file=False):
     except Exception as e:
         return e
 
+    raw_data = await get_all.text
     rule = re.compile(r'override_data(\s)?=(\s)?\".+tag=')
-    data = re.search(rule, await get_all.text).group(0)
+    data = re.search(rule, raw_data).group(0)
     data = re.sub(r'override_data(\s)?=(\s)?\"', "", data).split("\\n")
     for i in range(len(data) - 1, -1, -1):
+        data[i] = data[i].replace('\\\"', '"')
         if data[i] == '':
             data.pop(i)
 
     servants = []
 
+    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
+    all_svt_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
+    rule_png = re.compile(r"/images/.+\.(png|jpg)")
+    for i in range(len(all_svt_icons) - 1, -1, -1):
+        if not re.match(rule_png, all_svt_icons[i]):
+            all_svt_icons.pop(i)
+
     for i in range(0, len(data), 8):
-        if '\\\"' in data[i + 3]:
-            data[i + 3] = data[i + 3].replace('\\\"', '"')
         svt = {
             "id": data[i].replace("id=", ""),
             "name_cn": data[i + 1].replace("name_cn=", ""),
@@ -46,6 +53,35 @@ async def get_all_svt(crt_file=False):
             "method": data[i + 6].replace("method=", ""),
             "tag": data[i + 7].replace("tag=", "")
         }
+        cid = svt["id"]
+        if int(cid) < 10:
+            cid = "00" + cid
+        if 10 <= int(cid) < 100:
+            cid = "0" + cid
+        rule_cmd = re.compile(rf"/images/.+Servant{cid}\.(png|jpg)")
+        for each in all_svt_icons:
+            if re.match(rule_cmd, each):
+                i_each = all_svt_icons.index(each)
+                svt["online"] = {
+                    "svt_online_icon": each,
+                    "card1_online_icon": all_svt_icons[i_each + 1],
+                    "card2_online_icon": all_svt_icons[i_each + 2],
+                    "card3_online_icon": all_svt_icons[i_each + 3],
+                    "card4_online_icon": all_svt_icons[i_each + 4],
+                    "card5_online_icon": all_svt_icons[i_each + 5],
+                    "ultimate_online_icon": all_svt_icons[i_each + 6],
+                    "class_online_icon": all_svt_icons[i_each + 7]
+                }
+                svt["local"] = {
+                    "svt_online_icon": each.split("/").pop(),
+                    "card1_online_icon": all_svt_icons[i_each + 1].split("/").pop(),
+                    "card2_online_icon": all_svt_icons[i_each + 2].split("/").pop(),
+                    "card3_online_icon": all_svt_icons[i_each + 3].split("/").pop(),
+                    "card4_online_icon": all_svt_icons[i_each + 4].split("/").pop(),
+                    "card5_online_icon": all_svt_icons[i_each + 5].split("/").pop(),
+                    "ultimate_online_icon": all_svt_icons[i_each + 6].split("/").pop(),
+                    "class_online_icon": all_svt_icons[i_each + 7].split("/").pop()
+                }
         servants.append(svt)
 
     old_all_svt = []
