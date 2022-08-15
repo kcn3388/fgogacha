@@ -38,30 +38,44 @@ async def download_svt(crt_file=False):
                 for j in i["online"]:
                     # 如果是从者
                     if j == "svt_icon":
+                        local = svt_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], svt_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是指令卡
                     rule = re.compile(r"(ultimate|card\d)_icon")
                     if re.match(rule, j):
+                        local = card_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], card_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是职介
                     if j == "class_icon":
+                        local = class_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], class_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
-            if download_stat:
-                print("没有更新数据……")
-            else:
-                print("从者下载完成")
         except json.decoder.JSONDecodeError:
             print("不存在从者数据……跳过")
     else:
@@ -95,22 +109,30 @@ async def download_cft(crt_file=False):
                 for j in i["online"]:
                     # 如果是礼装
                     if j == "cft_icon":
+                        local = cft_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], cft_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
+                        local = skill_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], skill_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
-            if download_stat:
-                print("没有更新数据……")
-            else:
-                print("礼装下载完成")
         except json.decoder.JSONDecodeError:
             print("不存在礼装数据……跳过")
     else:
@@ -144,22 +166,30 @@ async def download_cmd(crt_file=False):
                 for j in i["online"]:
                     # 如果是纹章
                     if j == "cmd_icon":
+                        local = cmd_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], cmd_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
+                        local = skill_path + i["local"][j]
+                        online = basic_url + i["online"][j]
+                        if os.path.exists(local):
+                            download_stat = 1
+                            continue
+                        print(f"======开始下载：{local}======")
                         download_stat = await download(
-                            basic_url + i["online"][j], skill_path + i["local"][j], True, crt_file
+                            online, local, True, crt_file
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
-            if download_stat:
-                print("没有更新数据……")
-            else:
-                print("纹章下载完成")
         except json.decoder.JSONDecodeError:
             print("不存在纹章数据……跳过")
     else:

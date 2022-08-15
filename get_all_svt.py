@@ -72,6 +72,18 @@ async def get_all_svt(crt_file=False):
                         "svt_icon": each.split("/").pop(),
                         "class_icon": all_svt_icons[i_each + 1].split("/").pop()
                     }
+                    if svt["id"] == "240" or svt["id"] == "168":
+                        path = "/images/3/32/BeastⅢ.png"
+                        svt["online"]["class_icon"] = path
+                        svt["local"]["class_icon"] = path.split("/").pop()
+                    if svt["id"] == "149":
+                        path = "/images/5/59/BeastⅡ.png"
+                        svt["online"]["class_icon"] = path
+                        svt["local"]["class_icon"] = path.split("/").pop()
+                    if svt["id"] == "151":
+                        path = "/images/3/36/BeastⅠ.png"
+                        svt["online"]["class_icon"] = path
+                        svt["local"]["class_icon"] = path.split("/").pop()
                 else:
                     svt["online"] = {
                         "svt_icon": each,
