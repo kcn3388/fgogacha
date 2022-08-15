@@ -1,11 +1,8 @@
-import re
 import json
-import os
-from hoshino import aiorequests
+import re
 
-runtime_path = os.path.dirname(__file__)
-news_path = os.path.join(runtime_path, 'data/news.json')
-news_detail_path = os.path.join(runtime_path, 'data/news_detail.json')
+from hoshino import aiorequests
+from .path_and_json import *
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",

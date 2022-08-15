@@ -1,8 +1,8 @@
 import json
-import os
 import re
 
 from hoshino import aiorequests
+from .path_and_json import *
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
@@ -11,8 +11,6 @@ headers = {
 }
 
 runtime_path = os.path.dirname(__file__)
-data_path = os.path.join(runtime_path, 'data')
-all_servant_path = os.path.join(data_path, "all_svt.json")
 
 
 async def get_all_svt(crt_file=False):

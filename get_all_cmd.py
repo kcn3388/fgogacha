@@ -1,18 +1,14 @@
 import json
-import os
 import re
 
 from hoshino import aiorequests
+from .path_and_json import *
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "zh-cn"
 }
-
-runtime_path = os.path.dirname(__file__)
-data_path = os.path.join(runtime_path, 'data')
-all_command_path = os.path.join(data_path, "all_cmd.json")
 
 
 async def get_all_cmd(crt_file=False):

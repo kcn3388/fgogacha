@@ -1,15 +1,12 @@
-from hoshino import aiorequests
-from bs4 import BeautifulSoup
 import json
-import os
+import re
 import traceback
-from .solve_svt import *
 
-runtime_path = os.path.dirname(__file__)
-pools_path = os.path.join(runtime_path, 'data/pools.json')
-old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
-gacha_path = os.path.join(runtime_path, 'data/gacha.json')
-icons_path = os.path.join(runtime_path, 'data/icons.json')
+from bs4 import BeautifulSoup
+
+from hoshino import aiorequests
+from .path_and_json import *
+from .solve_svt import get_svt, get_multi_svt
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
@@ -243,7 +240,6 @@ async def getgachapools(islatest=True, crt_file=None):
 
         print("because of update pool, reset all groups' banner to the default pool")
 
-        banner_path = os.path.join(runtime_path, 'data/banner.json')
         try:
             banners = json.load(open(banner_path, encoding="utf-8"))
         except json.decoder.JSONDecodeError:

@@ -1,38 +1,21 @@
 import json
-import os
 import re
 
-from hoshino import config
-from .download import *
-
-runtime_path = os.path.dirname(__file__)
-basic_path = config.RES_DIR + "img/fgo/"
-icon_path = basic_path + "icons/"
-svt_path = icon_path + "svt_icons/"
-cft_path = icon_path + "cft_icons/"
-skill_path = icon_path + "skill_icons/"
-cmd_path = icon_path + "cmd_icons/"
-card_path = icon_path + "card_icons/"
-class_path = icon_path + "class_icons/"
-
-all_path = [svt_path, cft_path, skill_path, cmd_path, card_path, class_path]
-
-svt_json = os.path.join(runtime_path, "data/all_svt.json")
-cft_json = os.path.join(runtime_path, "data/all_cft.json")
-cmd_json = os.path.join(runtime_path, "data/all_cmd.json")
+from .download import download
+from .path_and_json import *
 
 
 async def download_svt(crt_file=False):
-    download_stat = 0
+    download_stat = 1
     basic_url = "https://fgo.wiki"
-    for each in all_path:
+    for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
     print("开始下载从者相关……")
     if os.path.exists(svt_path):
         try:
-            with open(svt_json, 'r', encoding="utf-8") as f:
+            with open(all_servant_path, 'r', encoding="utf-8") as f:
                 svt = json.load(f)
             for i in svt:
                 for j in i["online"]:
@@ -41,7 +24,6 @@ async def download_svt(crt_file=False):
                         local = svt_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -55,7 +37,6 @@ async def download_svt(crt_file=False):
                         local = card_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -68,7 +49,6 @@ async def download_svt(crt_file=False):
                         local = class_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -94,16 +74,16 @@ async def download_svt(crt_file=False):
 
 
 async def download_cft(crt_file=False):
-    download_stat = 0
+    download_stat = 1
     basic_url = "https://fgo.wiki"
-    for each in all_path:
+    for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
     print("开始下载礼装相关……")
     if os.path.exists(cft_path):
         try:
-            with open(cft_json, 'r', encoding="utf-8") as f:
+            with open(all_craft_path, 'r', encoding="utf-8") as f:
                 cft = json.load(f)
             for i in cft:
                 for j in i["online"]:
@@ -112,7 +92,6 @@ async def download_cft(crt_file=False):
                         local = cft_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -125,7 +104,6 @@ async def download_cft(crt_file=False):
                         local = skill_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -151,16 +129,16 @@ async def download_cft(crt_file=False):
 
 
 async def download_cmd(crt_file=False):
-    download_stat = 0
+    download_stat = 1
     basic_url = "https://fgo.wiki"
-    for each in all_path:
+    for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
     print("开始下载纹章相关……")
     if os.path.exists(cft_path):
         try:
-            with open(cmd_json, 'r', encoding="utf-8") as f:
+            with open(all_command_path, 'r', encoding="utf-8") as f:
                 cmd = json.load(f)
             for i in cmd:
                 for j in i["online"]:
@@ -169,7 +147,6 @@ async def download_cmd(crt_file=False):
                         local = cmd_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
@@ -182,7 +159,6 @@ async def download_cmd(crt_file=False):
                         local = skill_path + i["local"][j]
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
-                            download_stat = 1
                             continue
                         print(f"======开始下载：{local}======")
                         download_stat = await download(
