@@ -61,7 +61,7 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -104,7 +104,7 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -129,7 +129,7 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -154,7 +154,7 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -179,7 +179,7 @@ async def down_all_card_res(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -232,7 +232,7 @@ async def down_all_card_res(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -261,7 +261,7 @@ async def down_all_card_res(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -290,7 +290,7 @@ async def down_all_card_res(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:

@@ -9,6 +9,7 @@ from hoshino import priv, Service
 from hoshino.typing import CQEvent
 from hoshino.util import DailyNumberLimiter
 from .gacha import gacha
+from .getGachaPools import getgachapools
 from .path_and_json import *
 
 jewel_limit = DailyNumberLimiter(3000)
@@ -61,12 +62,48 @@ async def check_jewel(bot, ev):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
 
 
+@sv.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
+async def get_fgo_pool(bot, ev: CQEvent):
+    await bot.send(ev, "开始更新....")
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            basic_config = {
+                "group": ev.group_id,
+                "crt_path": crt_path
+            }
+            configs = {
+                "follow_latest": True,
+                "flush_hour": 0,
+                "flush_minute": 60,
+                "flush_second": 0,
+                "groups": [basic_config]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+        for each in configs["groups"]:
+            if each["group"] == ev.group_id:
+                if not each["crt_path"] == "False":
+                    crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                    break
+    download_stat = await getgachapools(True, crt_file)
+    if not isinstance(download_stat, int):
+        await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
+    if not download_stat:
+        await bot.send(ev, "获取卡池完成")
+    elif download_stat:
+        await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
+
+
 @sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[卡k][池c]([查c][询x])?$")
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！")
+        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
 
     msg = "当前卡池："
     for each in pools:
@@ -123,7 +160,7 @@ async def switch_pool(bot, ev: CQEvent):
     else:
         p_id = p_id[0]
     if not p_id.isdigit():
-        await bot.finish(ev, "食用指南：切换fgo卡池 + 编号", at_sender=True)
+        await bot.finish(ev, "食用指南：[切换fgo卡池 + 编号]", at_sender=True)
 
     pools = json.load(open(pools_path, encoding="utf-8"))
     if not os.path.exists(banner_path):
@@ -134,7 +171,7 @@ async def switch_pool(bot, ev: CQEvent):
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！")
+        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
@@ -143,7 +180,7 @@ async def switch_pool(bot, ev: CQEvent):
     for each in pools:
         if each["id"] == int(p_id):
             if each["type"] == "daily pickup":
-                await bot.finish(ev, "日替卡池请使用指令：切换fgo日替卡池 + 卡池编号 + 日替卡池编号")
+                await bot.finish(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
             banner["banner"] = each
             break
     if banner == {"group": ev.group_id, "banner": []}:
@@ -169,7 +206,7 @@ async def switch_pool(bot, ev: CQEvent):
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if ids == "":
-        await bot.finish(ev, "食用指南：切换fgo日替卡池 + 编号", at_sender=True)
+        await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
 
     pools = json.load(open(pools_path, encoding="utf-8"))
     ids = ids.split(" ")
@@ -179,7 +216,7 @@ async def switch_pool(bot, ev: CQEvent):
         p_id = ids[1]
         s_id = ids[2]
     else:
-        await bot.finish(ev, "食用指南：切换fgo日替卡池 + 卡池编号 + 日替卡池编号", at_sender=True)
+        await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]", at_sender=True)
 
     if not os.path.exists(banner_path):
         sv.logger.info("初始化数据json...")
@@ -189,7 +226,7 @@ async def switch_pool(bot, ev: CQEvent):
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！")
+        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
@@ -431,11 +468,11 @@ async def gacha_100(bot, ev: CQEvent):
                 if int(each[1] == "3"):
                     continue
                 if int(svt) > 99:
-                    img_path.append(svt_path + str(svt) + ".jpg")
+                    img_path.append(svt_path + "Servant" + str(svt) + ".jpg")
                 if 9 < int(svt) < 100:
-                    img_path.append(svt_path + "0" + str(svt) + ".jpg")
+                    img_path.append(svt_path + "Servant" + "0" + str(svt) + ".jpg")
                 if int(svt) < 10:
-                    img_path.append(svt_path + "00" + str(svt) + ".jpg")
+                    img_path.append(svt_path + "Servant" + "00" + str(svt) + ".jpg")
 
     cards = []
     for each in img_path:

@@ -157,11 +157,15 @@ async def get_result(pool_data):
     svt_counter = 0
     gold_counter = 0
     result = []
-    # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
-    salt = 123383388
-    salt += time.time()
-    random.seed(salt)
+    # # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
+    # salt = 123383388
+    # salt += time.time()
+    # random.seed(salt)
     while counter < 11:
+        # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
+        salt = 123383388
+        salt += time.time()
+        random.seed(salt)
         counter += 1
         rate = random.uniform(0, 1)
         # here is svt gacha

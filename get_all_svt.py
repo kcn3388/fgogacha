@@ -40,7 +40,6 @@ async def get_all_svt(crt_file=False):
         if not re.match(rule_png, all_svt_icons[i]):
             all_svt_icons.pop(i)
 
-    banned_id = ["333", "240", "168", "151", "149", "83", "152"]
     for i in range(0, len(data), 8):
         svt = {
             "id": data[i].replace("id=", ""),

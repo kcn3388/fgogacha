@@ -2,6 +2,8 @@ import os
 
 from hoshino import config
 
+banned_id = ["333", "240", "168", "151", "152", "149", "83"]
+
 basic_path = config.RES_DIR + "img/fgo/"
 icon_path = basic_path + "icons/"
 svt_path = icon_path + "svt_icons/"
@@ -42,3 +44,7 @@ crt_path = "ca-certificates.crt"
 all_servant_path = os.path.join(data_path, "all_svt.json")
 all_command_path = os.path.join(data_path, "all_cmd.json")
 all_craft_path = os.path.join(data_path, "all_cft.json")
+
+lib_servant_path = os.path.join(data_path, "lib_svt.json")
+lib_command_path = os.path.join(data_path, "lib_cmd.json")
+lib_craft_path = os.path.join(data_path, "lib_cft.json")

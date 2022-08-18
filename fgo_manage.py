@@ -113,7 +113,7 @@ async def get_fgo_data(bot, ev: CQEvent):
         await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         sv_manage.logger.info("资源路径未初始化...")
-        await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：fgo数据初始化")
+        await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：[fgo数据初始化]")
 
     sv_manage.logger.info("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
@@ -125,7 +125,7 @@ async def get_fgo_data(bot, ev: CQEvent):
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
                 if each["group"] == ev.group_id:
-                    if not crt_file == "False":
+                    if not each["crt_path"] == "False":
                         crt_file = os.path.join(crt_folder_path, each["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
@@ -147,44 +147,6 @@ async def get_fgo_data(bot, ev: CQEvent):
         await bot.send(ev, "没有新的资源~晚点再来看看吧~")
     else:
         await bot.send(ev, "下载完成")
-
-
-@sv_manage.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
-async def get_fgo_pool(bot, ev: CQEvent):
-    global FOLLOW_LATEST_POOL
-    await bot.send(ev, "开始更新....")
-    crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            basic_config = {
-                "group": ev.group_id,
-                "crt_path": crt_path
-            }
-            configs = {
-                "follow_latest": FOLLOW_LATEST_POOL,
-                "flush_hour": flush_hour,
-                "flush_minute": flush_minute,
-                "flush_second": flush_second,
-                "groups": [basic_config]
-            }
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
-
-        FOLLOW_LATEST_POOL = configs["follow_latest"]
-        for each in configs["groups"]:
-            if each["group"] == ev.group_id:
-                if not crt_file == "False":
-                    crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                    break
-    download_stat = await getgachapools(FOLLOW_LATEST_POOL, crt_file)
-    if not isinstance(download_stat, int):
-        await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
-    if not download_stat:
-        await bot.send(ev, "获取卡池完成")
-    elif download_stat:
-        await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
 
 
 @sv_manage.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
@@ -247,7 +209,7 @@ async def enable_crt(bot, ev: CQEvent):
     crt = ev.message.extract_plain_text()
 
     if crt == "":
-        await bot.send(ev, "食用指南：指令 + crt文件路径，留空设置为默认路径")
+        await bot.send(ev, "食用指南：[指令 + crt文件路径]，留空设置为默认路径")
         crt = crt_path
 
     rule = re.compile(r"^(?i)false$")
@@ -383,22 +345,22 @@ async def update_pool():
     # 自动更新卡池
     r = await getgachapools(True, crt_file)
     if not isinstance(r, int):
-        sv_manage.logger.warning(f"获取卡池失败，原因：{str(r)}")
+        sv_manage.logger.error(f"获取卡池失败，原因：{str(r)}")
 
     # 自动更新新闻
     news, same = await get_news(6, crt_file)
     if not isinstance(same, bool) and news == -100:
-        sv_manage.logger.warning(f"获取新闻失败，原因：{str(same)}")
+        sv_manage.logger.error(f"获取新闻失败，原因：{str(same)}")
 
     # 自动下载资源
     bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
     if not isinstance(bg_stat, int):
-        sv_manage.logger.warning(f'下载bg失败，原因：{bg_stat}')
+        sv_manage.logger.error(f'下载bg失败，原因：{bg_stat}')
     if bg_stat:
         sv_manage.logger.info(f'bg已存在，跳过……')
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
-        sv_manage.logger.warning(f'下载icons失败，原因：{icon_stat}')
+        sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
     if icon_stat:
         sv_manage.logger.info(f'icon没有更新，跳过……')
 
