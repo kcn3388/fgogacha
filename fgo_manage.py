@@ -3,10 +3,10 @@ import re
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
-from .download import download
-from .downloadIcons import downloadicons
-from .fgo_news import get_news
-from .getGachaPools import getgachapools
+from .download.download import download
+from .download.downloadIcons import downloadicons
+from .get.getnews import get_news
+from .get.getGachaPools import getgachapools
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 from .path_and_json import *
 
@@ -54,6 +54,8 @@ sv_manage = Service(
 @sv_manage.on_fullmatch(("帮助fgo管理", "帮助FGO管理", "帮助bgo管理", "帮助BGO管理"))
 @sv_manage.on_rex(r"(?i)^[fb]go[管g][理l][帮b][助z]$")
 async def bangzhu(bot, ev):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
     _name = "涩茄子"
     _uin = "2087332430"
     helps = {
@@ -113,7 +115,7 @@ async def get_fgo_data(bot, ev: CQEvent):
         await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         sv_manage.logger.info("资源路径未初始化...")
-        await bot.finish(ev, "资源路径未初始化！请先初始化资源路径\n指令：[fgo数据初始化]")
+        await bot.finish(ev, "资源路径未初始化！你是不是想下到你ass里？请先初始化资源路径\n指令：[fgo数据初始化]")
 
     sv_manage.logger.info("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")

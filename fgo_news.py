@@ -4,7 +4,7 @@ from aiocqhttp import ActionFailed
 
 from hoshino import priv, Service
 from . import CQEvent
-from .getnews import get_news
+from .get.getnews import get_news
 from .path_and_json import *
 
 sv_news_help = '''
@@ -40,7 +40,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_news.on_rex(r"(?i)^([获h][取q])?[fb]go[新x][闻w]([获h][取q])?(\s\d+)?$")
+@sv_news.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[新x][闻w]([获h更g][取q新x])?(\s\d+)?$")
 async def get_offical_news(bot, ev: CQEvent):
     crt_file = False
     if os.path.exists(config_path):
@@ -87,7 +87,7 @@ async def get_local_news(bot, ev: CQEvent):
             await bot.finish(ev, f"本地共有{news_num}条新闻，请用编号查对应新闻~")
         index = int(index) - 1
         # noinspection PyUnboundLocalVariable
-        msg = news[index]["content"]
+        msg = news[index]["content"].strip()
         _name = "涩茄子"
         _uin = "2087332430"
         _news = {
@@ -95,7 +95,7 @@ async def get_local_news(bot, ev: CQEvent):
             "data": {
                 "name": _name,
                 "uin": _uin,
-                "content": msg
+                "content": create_img(msg).strip()
             }
         }
         try:
@@ -113,13 +113,13 @@ async def get_local_news(bot, ev: CQEvent):
         news_all = []
         # noinspection PyUnboundLocalVariable
         for i in range(news_num):
-            msg = news[i]["content"]
+            msg = news[i]["content"].strip()
             _news = {
                 "type": "node",
                 "data": {
                     "name": '涩茄子',
                     "uin": '2087332430',
-                    "content": msg
+                    "content": create_img(msg).strip()
                 }
             }
             news_all.append(_news)
@@ -135,7 +135,7 @@ async def get_local_news(bot, ev: CQEvent):
                         "data": {
                             "name": '涩茄子',
                             "uin": '2087332430',
-                            "content": msg
+                            "content": create_img(msg).strip()
                         }
                     }
                     try:

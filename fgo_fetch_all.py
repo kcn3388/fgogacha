@@ -2,10 +2,10 @@ import json
 
 from hoshino import priv, Service
 from . import CQEvent
-from .download_all_res import download_svt, download_cft, download_cmd
-from .get_all_cft import get_all_cft
-from .get_all_cmd import get_all_cmd
-from .get_all_svt import get_all_svt
+from .download.download_all_res import download_svt, download_cft, download_cmd
+from .get.get_all_cft import get_all_cft
+from .get.get_all_cmd import get_all_cmd
+from .get.get_all_svt import get_all_svt
 from .path_and_json import *
 
 sv_fetch_help = '''

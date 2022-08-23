@@ -1,4 +1,8 @@
+import base64
+import io
 import os
+
+from PIL import Image, ImageFont, ImageDraw
 
 from hoshino import config
 
@@ -33,8 +37,9 @@ old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 news_path = os.path.join(data_path, 'news.json')
 news_detail_path = os.path.join(data_path, 'news_detail.json')
 
-seal_path = os.path.join(runtime_path, '海の翁.jpg')
-frame_path = os.path.join(runtime_path, 'background.png')
+seal_path = os.path.join(runtime_path, 'res/海の翁.jpg')
+frame_path = os.path.join(runtime_path, 'res/background.png')
+font_path = os.path.join(runtime_path, "res/SourceHanSansSC-Regular.otf")
 
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
 
@@ -48,3 +53,22 @@ all_craft_path = os.path.join(data_path, "all_cft.json")
 lib_servant_path = os.path.join(data_path, "lib_svt.json")
 lib_command_path = os.path.join(data_path, "lib_cmd.json")
 lib_craft_path = os.path.join(data_path, "lib_cft.json")
+
+
+def create_img(text):
+    font_size = 30
+    padding = 10
+
+    font = ImageFont.truetype(font_path, font_size)
+
+    wit, hei = font.getsize_multiline(text)
+    img = Image.new("RGB", (wit + padding * 2, hei + padding * 2), "white")
+    draw = ImageDraw.Draw(img)
+    draw.multiline_text((padding / 2, padding / 2), text, font=font, fill="black")
+
+    buffered = io.BytesIO()
+    img.save(buffered, format="JPEG")
+    base64_card = base64.b64encode(buffered.getvalue()).decode()
+    pic = f'base64://{base64_card}'
+    msg = f"[CQ:image,file={pic}]\n"
+    return msg

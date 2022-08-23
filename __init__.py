@@ -1,15 +1,11 @@
-import base64
-import io
 import json
 import random
-
-from PIL import Image
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
 from hoshino.util import DailyNumberLimiter
-from .gacha import gacha
-from .getGachaPools import getgachapools
+from .get.gacha import gacha
+from .get.getGachaPools import getgachapools
 from .path_and_json import *
 
 jewel_limit = DailyNumberLimiter(3000)
@@ -103,7 +99,7 @@ async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.finish(ev, "没有卡池你查个🔨！请先获取卡池！\n指令：[获取fgo卡池]")
 
     msg = "当前卡池："
     for each in pools:
@@ -171,7 +167,7 @@ async def switch_pool(bot, ev: CQEvent):
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
@@ -226,7 +222,7 @@ async def switch_pool(bot, ev: CQEvent):
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
         sv.logger.info("no pool")
-        await bot.finish(ev, "没有卡池！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
@@ -280,7 +276,7 @@ async def gacha_10(bot, ev: CQEvent):
 
     gacha_result, has_pup5, has_pup4 = await gacha(gid)
     if gacha_result == 12:
-        await bot.finish(ev, "没有选择卡池！请先选择卡池！")
+        await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
     if gacha_result == 13:
         await bot.finish(ev, "卡池数据错误！请更新卡池！")
 
@@ -444,7 +440,7 @@ async def gacha_100(bot, ev: CQEvent):
         g100.append(result)
 
     if g100[0] == 12:
-        await bot.finish(ev, "没有选择卡池！请先选择卡池！")
+        await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
     if g100[0] == 13:
         await bot.finish(ev, "卡池数据错误！请更新卡池！")
 
