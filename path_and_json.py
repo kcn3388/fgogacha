@@ -8,14 +8,14 @@ from hoshino import config
 
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
-basic_path = config.RES_DIR + "img/fgo/"
-icon_path = basic_path + "icons/"
-svt_path = icon_path + "svt_icons/"
-cft_path = icon_path + "cft_icons/"
-skill_path = icon_path + "skill_icons/"
-cmd_path = icon_path + "cmd_icons/"
-card_path = icon_path + "card_icons/"
-class_path = icon_path + "class_icons/"
+basic_path = os.path.join(config.RES_DIR , "img", "fgo")
+icon_path = os.path.join(basic_path , "icons")
+svt_path = os.path.join(icon_path , "svt_icons")
+cft_path = os.path.join(icon_path , "cft_icons")
+skill_path = os.path.join(icon_path , "skill_icons")
+cmd_path = os.path.join(icon_path , "cmd_icons")
+card_path = os.path.join(icon_path , "card_icons")
+class_path = os.path.join(icon_path , "class_icons")
 
 res_paths = [basic_path, icon_path, svt_path, cft_path, skill_path, cmd_path, card_path, class_path]
 
@@ -37,9 +37,12 @@ old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 news_path = os.path.join(data_path, 'news.json')
 news_detail_path = os.path.join(data_path, 'news_detail.json')
 
-seal_path = os.path.join(runtime_path, 'res/海の翁.jpg')
-frame_path = os.path.join(runtime_path, 'res/background.png')
-font_path = os.path.join(runtime_path, "res/SourceHanSansSC-Regular.otf")
+seal_path = os.path.join(runtime_path, 'res', '海の翁.jpg')
+frame_path = os.path.join(runtime_path, 'res', 'background.png')
+back_path = os.path.join(runtime_path, 'res', 'back.jpg')
+mask_path = os.path.join(runtime_path, 'res', 'mask.png')
+font_path = os.path.join(runtime_path, 'res', 'SourceHanSansSC-Regular.otf')
+
 
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
 

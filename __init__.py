@@ -296,41 +296,47 @@ async def gacha_10(bot, ev: CQEvent):
                 get_5 += 1
             if int(each[1] == "4"):
                 get_4 += 1
-            if int(svt) > 99:
-                img_path.append(svt_path + "Servant" + str(svt) + ".jpg")
-            if 9 < int(svt) < 100:
-                img_path.append(svt_path + "Servant" + "0" + str(svt) + ".jpg")
-            if int(svt) < 10:
-                img_path.append(svt_path + "Servant" + "00" + str(svt) + ".jpg")
+            img_path.append(os.path.join(svt_path , f"Servant{str(svt).zfill(3)}.jpg"))
+
         if each[0] == "cft":
             cft = int(random.choice(each[2]))
-            if int(cft) > 99:
-                img_path.append(cft_path + "礼装" + str(cft) + ".jpg")
-            if 9 < int(cft) < 100:
-                img_path.append(cft_path + "礼装" + "0" + str(cft) + ".jpg")
-            if int(cft) < 10:
-                img_path.append(cft_path + "礼装" + "00" + str(cft) + ".jpg")
+            img_path.append(os.path.join(cft_path , f"礼装{str(cft).zfill(3)}.jpg"))
 
-    cards = []
-    for each in img_path:
-        cards.append(Image.open(each).resize((66, 72)))
-    rows = 3
-    cols = 4
-    target = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
-    r_counter = 0
-    c_counter = 0
-    for each in cards:
-        target.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
-        c_counter += 1
-        if c_counter >= cols:
-            r_counter += 1
-            if r_counter >= rows:
-                break
-            else:
-                c_counter = 0
+    
+    height=194
+    width=178
+    dis=23
+    floor=48
+    st1w=92
+    st1h=200
+    st2=192
+
+    boxlist=[]
+
+    box1 = (st1w, st1h)
+    for i in range(6):
+        boxlist.append(box1)
+        lst = list(box1)
+        lst[0] += width+dis
+        box1 = tuple(lst)
+
+    box2 = (st2, st1h+height+floor)
+    for i in range(5):
+        boxlist.append(box2)
+        lst = list(box2)
+        lst[0] += width+dis
+        box2 = tuple(lst)
+
+    base_img = Image.open(back_path).convert("RGBA")
+    masker=Image.open(mask_path).resize((width, height))
+
+    for i, picpath in enumerate(img_path):
+        tmp_img = Image.open(picpath).resize((width, height))
+        tmp_img=tmp_img.convert('RGBA')
+        base_img.paste(tmp_img, boxlist[i], mask=masker)
 
     bio = io.BytesIO()
-    target.save(bio, format='PNG')
+    base_img.save(bio, format='PNG')
     base64_str = base64.b64encode(bio.getvalue()).decode()
     pic_b64 = f'base64://{base64_str}'
     cqcode = f'[CQ:image,file={pic_b64}]\n'
@@ -463,12 +469,8 @@ async def gacha_100(bot, ev: CQEvent):
                     get_4 += 1
                 if int(each[1] == "3"):
                     continue
-                if int(svt) > 99:
-                    img_path.append(svt_path + "Servant" + str(svt) + ".jpg")
-                if 9 < int(svt) < 100:
-                    img_path.append(svt_path + "Servant" + "0" + str(svt) + ".jpg")
-                if int(svt) < 10:
-                    img_path.append(svt_path + "Servant" + "00" + str(svt) + ".jpg")
+                img_path.append(os.path.join(svt_path , f"Servant{str(svt).zfill(3)}.jpg"))
+
 
     cards = []
     for each in img_path:
