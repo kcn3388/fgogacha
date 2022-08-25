@@ -31,15 +31,22 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 ### 2022
 #### ※建议更新后清除全部配置文件并重新生成，每次更新会尽可能兼容之前的配置文件，但是出现问题请先排查配置文件的问题
+- 🚀 **v2.2.0 (2022-08-25)**
+  - **※本次更新后需要手动执行一次更新卡池**
+  - 增加更多从者内容
+  - 增加十连抽卡背景图，感谢[@araneus](https://github.com/assassingyk)
+    - 在[实现仿游戏画面截图十连抽卡 #2](https://github.com/kcn3388/fgogacha/pull/2)基础上，增加国服背景
+  - 修正抽卡结果，现在不会出现无保底的情况了
+  - 现在卡池会显示国服还是日服
+
+<details>
+<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
+
 - 🚀 **v2.1.0 (2022-08-19)**
   - 增加更多从者内容
   - 修改大部分文本（如新闻，从者资料）为通过文本生成图片，以规避风控
   - 修改函数文件路径，整理目录方便修改
   - 重构搜索，修复多关键词搜索不准的问题
-
-<details>
-<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
-
 - 🚀 **v2.0.0 (2022-08-15)**
   - 新功能：fgo图书馆
     - 爬取从者、礼装以及纹章的详细数据

@@ -98,12 +98,12 @@ async def get_fgo_pool(bot, ev: CQEvent):
 async def check_pool(bot, ev: CQEvent):
     pools = json.load(open(pools_path, encoding="utf-8"))
     if len(pools) == 0:
-        sv.logger.info("no pool")
+        sv.logger.info("No pools exist")
         await bot.finish(ev, "没有卡池你查个🔨！请先获取卡池！\n指令：[获取fgo卡池]")
 
     msg = "当前卡池："
     for each in pools:
-        s = f"\n{each['id']}：{each['banner']}"
+        s = f"\n{each['id']}：{each['banner']}({each['server']})"
         msg += s
         if "sub_pool" in each:
             for sub_pools in each["sub_pool"]:
@@ -114,20 +114,20 @@ async def check_pool(bot, ev: CQEvent):
         banners = json.load(open(banner_path, encoding="utf-8"))
         banner = {}
         exists = False
-        for each in banners:
-            if each["group"] == ev.group_id:
-                banner = each
+        for each_banner in banners:
+            if each_banner["group"] == ev.group_id:
+                banner = each_banner
                 exists = True
                 break
 
         if not exists:
-            sv.logger.info("no banner")
+            sv.logger.info(f"no banner in group {ev.group_id}")
         else:
             b_name = banner["banner"]["banner"]
             title = banner["banner"]["title"]
             if "sub_title" in banner["banner"]:
                 b_name = banner["banner"]["sub_title"]
-            group = f"\n\n本群{ev.group_id}卡池：\n{b_name}\n从属活动：\n{title}"
+            group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}"
             msg += group
 
     if len(msg) > 200:
@@ -166,7 +166,7 @@ async def switch_pool(bot, ev: CQEvent):
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
-        sv.logger.info("no pool")
+        sv.logger.info("No pools exist")
         await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
@@ -195,7 +195,7 @@ async def switch_pool(bot, ev: CQEvent):
 
     title = banner["banner"]["title"]
     b_name = banner["banner"]["banner"]
-    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
+    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}")
 
 
 @sv.on_rex(r"(?i)^([切qs][换hw])?[fb]go[日rd][替tp][卡k][池c]([切qs][换hw])?(\s\d+\s\d+)?$")
@@ -221,7 +221,7 @@ async def switch_pool(bot, ev: CQEvent):
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
     if len(pools) == 0:
-        sv.logger.info("no pool")
+        sv.logger.info("No pools exist")
         await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
@@ -238,6 +238,7 @@ async def switch_pool(bot, ev: CQEvent):
                         "href": each["href"],
                         "banner": each["banner"],
                         "sub_title": sub_pool["sub_title"],
+                        "server": each["server"],
                         "type": each["type"],
                         "s_id": sub_pool["id"]
                     }
@@ -262,7 +263,7 @@ async def switch_pool(bot, ev: CQEvent):
     b_name = banner["banner"]["banner"]
     if "sub_title" in banner["banner"]:
         b_name = banner["banner"]["sub_title"]
-    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}\n从属活动：\n{title}")
+    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}")
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
@@ -274,7 +275,7 @@ async def gacha_10(bot, ev: CQEvent):
     await check_jewel(bot, ev)
     jewel_limit.increase(ev.user_id, 30)
 
-    gacha_result, has_pup5, has_pup4 = await gacha(gid)
+    gacha_result, has_pup5, has_pup4, server = await gacha(gid)
     if gacha_result == 12:
         await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
     if gacha_result == 13:
@@ -296,45 +297,73 @@ async def gacha_10(bot, ev: CQEvent):
                 get_5 += 1
             if int(each[1] == "4"):
                 get_4 += 1
-            if int(svt) > 99:
-                img_path.append(svt_path + "Servant" + str(svt) + ".jpg")
-            if 9 < int(svt) < 100:
-                img_path.append(svt_path + "Servant" + "0" + str(svt) + ".jpg")
-            if int(svt) < 10:
-                img_path.append(svt_path + "Servant" + "00" + str(svt) + ".jpg")
+            img_path.append(os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg"))
         if each[0] == "cft":
             cft = int(random.choice(each[2]))
-            if int(cft) > 99:
-                img_path.append(cft_path + "礼装" + str(cft) + ".jpg")
-            if 9 < int(cft) < 100:
-                img_path.append(cft_path + "礼装" + "0" + str(cft) + ".jpg")
-            if int(cft) < 10:
-                img_path.append(cft_path + "礼装" + "00" + str(cft) + ".jpg")
+            img_path.append(os.path.join(cft_path, f"礼装{str(cft).zfill(3)}.jpg"))
 
-    cards = []
-    for each in img_path:
-        cards.append(Image.open(each).resize((66, 72)))
-    rows = 3
-    cols = 4
-    target = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
-    r_counter = 0
-    c_counter = 0
-    for each in cards:
-        target.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
-        c_counter += 1
-        if c_counter >= cols:
-            r_counter += 1
-            if r_counter >= rows:
-                break
-            else:
-                c_counter = 0
+    # 文字图标版，更快
+    # cards = []
+    # for each in img_path:
+    #     cards.append(Image.open(each).resize((66, 72)))
+    # rows = 3
+    # cols = 4
+    # base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
+    # r_counter = 0
+    # c_counter = 0
+    # for each in cards:
+    #     base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
+    #     c_counter += 1
+    #     if c_counter >= cols:
+    #         r_counter += 1
+    #         if r_counter >= rows:
+    #             break
+    #         else:
+    #             c_counter = 0
+
+    # 图片版，较慢
+    height = 194
+    width = 178
+    dis = 23
+    floor = 48
+    st1w = 92
+    st1h = 200
+    st2 = 192
+
+    boxlist = []
+
+    box1 = (st1w, st1h)
+    for i in range(6):
+        boxlist.append(box1)
+        lst = list(box1)
+        lst[0] += width + dis
+        box1 = tuple(lst)
+
+    box2 = (st2, st1h + height + floor)
+    for i in range(5):
+        boxlist.append(box2)
+        lst = list(box2)
+        lst[0] += width + dis
+        box2 = tuple(lst)
+
+    if server == "国服":
+        base_img = Image.open(back_cn_path).convert("RGBA")
+    else:
+        base_img = Image.open(back_path).convert("RGBA")
+    masker = Image.open(mask_path).resize((width, height))
+
+    for i, picpath in enumerate(img_path):
+        tmp_img = Image.open(picpath).resize((width, height))
+        tmp_img = tmp_img.convert('RGBA')
+        base_img.paste(tmp_img, boxlist[i], mask=masker)
 
     bio = io.BytesIO()
-    target.save(bio, format='PNG')
+    base_img.save(bio, format='PNG')
     base64_str = base64.b64encode(bio.getvalue()).decode()
     pic_b64 = f'base64://{base64_str}'
     cqcode = f'[CQ:image,file={pic_b64}]\n'
     msg = "\n您本次的抽卡结果：\n" + cqcode
+
     stars = ""
     if not get_pup5 == 0:
         stars += f"UP5☆×{get_pup5};\t"
@@ -436,7 +465,7 @@ async def gacha_100(bot, ev: CQEvent):
     has_pup4 = False
     while g_counter < 11:
         g_counter += 1
-        result, has_pup5, has_pup4 = await gacha(gid)
+        result, has_pup5, has_pup4, _ = await gacha(gid)
         g100.append(result)
 
     if g100[0] == 12:
@@ -463,12 +492,7 @@ async def gacha_100(bot, ev: CQEvent):
                     get_4 += 1
                 if int(each[1] == "3"):
                     continue
-                if int(svt) > 99:
-                    img_path.append(svt_path + "Servant" + str(svt) + ".jpg")
-                if 9 < int(svt) < 100:
-                    img_path.append(svt_path + "Servant" + "0" + str(svt) + ".jpg")
-                if int(svt) < 10:
-                    img_path.append(svt_path + "Servant" + "00" + str(svt) + ".jpg")
+                img_path.append(os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg"))
 
     cards = []
     for each in img_path:

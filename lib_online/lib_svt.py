@@ -102,6 +102,8 @@ async def lib_svt(svt_data, crt_file=False):
 
     get_skills(svt, base, raw_html)
 
+    get_voice(svt, soup)
+
     return svt
 
 
@@ -111,12 +113,12 @@ def get_detail(svts, svt, svt_data):
     s2 = []
     info1 = svts.find_all("th")
     info2 = svts.find_all("td")
-    for each in info1:
-        arg = each.text.strip()
+    for each_info1 in info1:
+        arg = each_info1.text.strip()
         if not arg == '' and not arg.startswith("卡面为游戏资源") and not arg == "指令卡":
             s1.append(arg)
-    for each in info2:
-        arg = each.text.strip()
+    for each_info2 in info2:
+        arg = each_info2.text.strip()
         if not arg == '':
             s2.append(arg)
 
@@ -127,34 +129,34 @@ def get_detail(svts, svt, svt_data):
     s2.pop(0)
     s2.pop(0)
     result = {}
-    for each in s1:
-        if each == "ATK" or each == "职阶补正后" or each == "HP" or each == "能力":
-            result[each] = []
+    for each_stat in s1:
+        if each_stat == "ATK" or each_stat == "职阶补正后" or each_stat == "HP" or each_stat == "能力":
+            result[each_stat] = []
             continue
-        if each == "基础" or each == "满级" or each == "90级" \
-                or each == "100级" or each == "120级":
-            result["能力"].append(each)
+        if each_stat == "基础" or each_stat == "满级" or each_stat == "90级" \
+                or each_stat == "100级" or each_stat == "120级":
+            result["能力"].append(each_stat)
             continue
         else:
-            result[each] = each
+            result[each_stat] = each_stat
 
     counter = 0
     try:
-        for each in result:
+        for each_data in result:
             if svt_data["id"] == "351":
-                if each == "特性":
-                    result[each] = ""
+                if each_data == "特性":
+                    result[each_data] = ""
                     continue
-            if each == "ATK" or each == "职阶补正后" or each == "HP":
-                result[each] = s2[counter: counter + 5]
+            if each_data == "ATK" or each_data == "职阶补正后" or each_data == "HP":
+                result[each_data] = s2[counter: counter + 5]
                 counter += 5
-            elif each == "能力":
+            elif each_data == "能力":
                 continue
-            elif each.startswith("Hit信息"):
-                result[each] = ""
+            elif each_data.startswith("Hit信息"):
+                result[each_data] = ""
                 continue
-            elif each == "NP获得率":
-                result[each] = {
+            elif each_data == "NP获得率":
+                result[each_data] = {
                     "Quick": s2[counter],
                     "Arts": s2[counter + 1],
                     "Buster": s2[counter + 2],
@@ -163,7 +165,7 @@ def get_detail(svts, svt, svt_data):
                 }
                 counter += 5
             else:
-                result[each] = s2[counter]
+                result[each_data] = s2[counter]
                 counter += 1
     except IndexError:
         print(svt_data["id"])
@@ -175,10 +177,10 @@ def get_detail(svts, svt, svt_data):
 def get_nick_name(svt, soup):
     nick = soup.select("meta")
     nick_name = None
-    for each in nick:
-        if each.has_attr("name"):
-            if each.attrs["name"] == "keywords":
-                nick_name = each.attrs["content"]
+    for each_nick in nick:
+        if each_nick.has_attr("name"):
+            if each_nick.attrs["name"] == "keywords":
+                nick_name = each_nick.attrs["content"]
 
     if nick_name is not None:
         if nick_name == "{{{昵称}}}":
@@ -195,14 +197,14 @@ def get_card_url(svt, raw_html):
         all_img = re.finditer(cards, raw_html)
         if svt["id"] in banned_id:
             raise AttributeError
-        for each in all_img:
-            text = each.group(0)
+        for each_img in all_img:
+            text = each_img.group(0)
             text = text.split(" ")
             rule = re.compile(r"/images/.+\.(jpg|png)")
-            for each_img in text:
-                if re.match(rule, each_img):
-                    if each_img not in cards_url:
-                        cards_url.append(each_img)
+            for each_text in text:
+                if re.match(rule, each_text):
+                    if each_text not in cards_url:
+                        cards_url.append(each_text)
     except AttributeError:
         if svt["id"] in banned_id and not svt["id"] == "83":
             rule_card = re.compile(r"<th.+rowspan=\"22\".+,(\s+)?/images/.+\.(png|jpg)")
@@ -223,15 +225,15 @@ def get_card_url(svt, raw_html):
             rule = re.compile(r"<div\sclass=\"tabbertab\".+\n.+,(\s+)?/images/.+\.(png|jpg)")
             all_img = re.finditer(rule, raw_html)
             try:
-                for each in all_img:
-                    text = each.group(0)
+                for each_img in all_img:
+                    text = each_img.group(0)
                     img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split(" ")[-1]
                     if img_url not in cards_url:
                         cards_url.append(img_url)
             except AttributeError:
                 try:
-                    for each in all_img:
-                        text = each.group(0)
+                    for each_img in all_img:
+                        text = each_img.group(0)
                         img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split(" ")[-1]
                         if img_url not in cards_url:
                             cards_url.append(img_url)
@@ -245,26 +247,26 @@ def get_card_url(svt, raw_html):
             try:
                 cards = re.compile(r"<div class=\"graphpicker-graph-\d\".+,(\s)?/images/.+\.(jpg|png)")
                 all_img = re.finditer(cards, raw_html)
-                for each in all_img:
-                    text = each.group(0)
+                for each_img in all_img:
+                    text = each_img.group(0)
                     text = text.split(" ")
                     rule = re.compile(r"/images/.+\.(jpg|png)")
-                    for each_img in text:
-                        if re.match(rule, each_img):
-                            if each_img not in cards_url:
-                                cards_url.append(each_img)
+                    for each_text in text:
+                        if re.match(rule, each_text):
+                            if each_text not in cards_url:
+                                cards_url.append(each_text)
             except AttributeError:
                 try:
                     cards = re.compile(r"<div class=\"graphpicker-graph-\d\".+,(\s)?/images/.+\.(jpg|png)")
                     all_img = re.finditer(cards, raw_html)
-                    for each in all_img:
-                        text = each.group(0)
+                    for each_img in all_img:
+                        text = each_img.group(0)
                         text = text.split(" ")
                         rule = re.compile(r"/images/.+\.(jpg|png)")
-                        for each_img in text:
-                            if re.match(rule, each_img):
-                                if each_img not in cards_url:
-                                    cards_url.append(each_img)
+                        for each_text in text:
+                            if re.match(rule, each_text):
+                                if each_text not in cards_url:
+                                    cards_url.append(each_text)
                 except Exception as e:
                     if "error" in svt:
                         svt["error"].append(f"get card img error: {e}")
@@ -279,9 +281,9 @@ def get_card_url(svt, raw_html):
             names = re.search(rule_names, raw_html).group(0)
             names = names.replace("var arrayTitle =new Array(", "").replace(");", "").replace("\"", "")
             names = names.split(",")
-            for each in names:
-                if not each == "":
-                    cards_name.append(each)
+            for each_name in names:
+                if not each_name == "":
+                    cards_name.append(each_name)
         except AttributeError:
             pass
 
@@ -375,21 +377,21 @@ def get_info(svt, soup):
                 pass
 
     # noinspection PyUnboundLocalVariable
-    for each in svt_info:
+    for each_info in svt_info:
         try:
-            all_p = each.findAll("p")
+            all_p = each_info.findAll("p")
             for data in all_p:
                 if not data.text == "":
                     detail_info.append(data.text.strip())
         except AttributeError:
             try:
-                all_p = each.findAll("p")
+                all_p = each_info.findAll("p")
                 for data in all_p:
                     if not data.text == "":
                         detail_info.append(data.text.strip())
             except AttributeError:
                 try:
-                    all_p = each.findAll("p")
+                    all_p = each_info.findAll("p")
                     for data in all_p:
                         if not data.text == "":
                             detail_info.append(data.text.strip())
@@ -459,28 +461,28 @@ def get_ultimate(svt, base):
         u2 = []
         ultimate1 = uls.find_all("th")
         ultimate2 = uls.find_all("td")
-        for each in ultimate1:
-            if each.find("p"):
-                for all_p in each.findAll("p"):
+        for each_ulti1 in ultimate1:
+            if each_ulti1.find("p"):
+                for all_p in each_ulti1.findAll("p"):
                     arg = all_p.text.strip()
                     u1.append(arg)
             else:
-                arg = each.text.strip()
+                arg = each_ulti1.text.strip()
                 u1.append(arg)
 
-        for each in ultimate2:
-            if each.find("big"):
-                arg = each.find("big").text.strip()
+        for each_ulti2 in ultimate2:
+            if each_ulti2.find("big"):
+                arg = each_ulti2.find("big").text.strip()
                 u2.append(arg)
-                arg2 = each.find(class_="npname-border").text.strip()
+                arg2 = each_ulti2.find(class_="npname-border").text.strip()
                 u2.append(arg2)
-            elif each.find("small"):
-                arg = each.find("small").text.strip()
+            elif each_ulti2.find("small"):
+                arg = each_ulti2.find("small").text.strip()
                 u2.append(arg)
-                arg2 = each.text.strip().replace(arg, "")
+                arg2 = each_ulti2.text.strip().replace(arg, "")
                 u2.append(arg2)
             else:
-                arg = each.text.strip()
+                arg = each_ulti2.text.strip()
                 u2.append(arg)
 
         u2 = u2[:4]
@@ -526,43 +528,43 @@ def get_skills(svt, base, raw_html):
 
     skill_flag = 0
     counter_skill = 1
-    for each in skill_list:
-        skill_type = each[0].findPrevious("span").text
-        skill_icon = each[0].find("img", alt=True)["data-srcset"].split(", ")[-1].split(" 2x")[0]
+    for each_skill_list in skill_list:
+        skill_type = each_skill_list[0].findPrevious("span").text
+        skill_icon = each_skill_list[0].find("img", alt=True)["data-srcset"].split(", ")[-1].split(" 2x")[0]
         if skill_type == "追加技能" or skill_flag == 2:
             skill_flag = 2
-            skills[f"追加技能{counter_skill}"] = [each[1], skill_icon]
+            skills[f"追加技能{counter_skill}"] = [each_skill_list[1], skill_icon]
             counter_skill += 1
         if skill_type == "职阶技能" or skill_flag == 1:
             skill_flag = 1
-            skills["职阶技能"] = [each[1]]
+            skills["职阶技能"] = [each_skill_list[1]]
         try:
             if skill_type == "持有技能" or skill_flag == 0:
-                title = each[0].findParent("div")["title"]
+                title = each_skill_list[0].findParent("div")["title"]
                 if title == "强化后" or title == "强化后":
-                    skills[f'{each[0].findPrevious("b").text}({title})'] = [each[1], skill_icon]
+                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [each_skill_list[1], skill_icon]
                 else:
-                    skills[f'{each[0].findPrevious("b").text}({title})'] = [each[1], skill_icon]
+                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [each_skill_list[1], skill_icon]
         except KeyError:
             if skill_type == "持有技能" or skill_flag == 0:
-                skills[each[0].findPrevious("b").text] = [each[1], skill_icon]
+                skills[each_skill_list[0].findPrevious("b").text] = [each_skill_list[1], skill_icon]
         except AttributeError:
-            title = each[0].findParent("div")["title"]
-            skills[f'特殊技能({title})'] = [each[1], skill_icon]
+            title = each_skill_list[0].findParent("div")["title"]
+            skills[f'特殊技能({title})'] = [each_skill_list[1], skill_icon]
 
-    for each in skills:
-        data = skills[each][0].strip()
+    for each_skill in skills:
+        data = skills[each_skill][0].strip()
         data = re.sub(r"\n+", "\n", data.strip())
-        if each == "职阶技能":
+        if each_skill == "职阶技能":
             data = data.split("\n")
         else:
             data = re.sub(r"(∅|\d+%)", "", data.strip()).split("\n")
         for each_text in data[::-1]:
             if each_text.isdigit() or each_text == "":
                 data.remove(each_text)
-        if not each == "职阶技能":
-            data.append(skills[each][1])
-        skills[each] = data
+        if not each_skill == "职阶技能":
+            data.append(skills[each_skill][1])
+        skills[each_skill] = data
 
     if "职阶技能" in skills:
         for i in range(0, len(skills["职阶技能"]) - 1, 2):
@@ -572,38 +574,77 @@ def get_skills(svt, base, raw_html):
     rule_skill_icon = re.compile(r"职阶技能.+\.(png|jpg)")
     class_skill_icon = re.finditer(rule_skill_icon, raw_html)
     icons = []
-    for each in class_skill_icon:
-        tmp = each.group(0).split(", ")[1]
+    for each_skill_icon in class_skill_icon:
+        tmp = each_skill_icon.group(0).split(", ")[1]
         icons.append(tmp)
 
     temp = skills.copy()
     counter_class_skill = 0
-    for each in temp:
-        if each.startswith("职阶技能"):
-            tmp = temp[each]
-            skills[each] = {
+    for each_temp in temp:
+        if each_temp.startswith("职阶技能"):
+            tmp = temp[each_temp]
+            skills[each_temp] = {
                 "中文": tmp[0],
                 "效果": tmp[1],
                 "图标": icons[counter_class_skill]
             }
             counter_class_skill += 1
-        elif each.startswith("追加技能"):
-            tmp = temp[each]
-            skills[each] = {
+        elif each_temp.startswith("追加技能"):
+            tmp = temp[each_temp]
+            skills[each_temp] = {
                 "中文": tmp[0],
                 "原文": tmp[1],
                 "效果": tmp[2],
                 "图标": tmp[3]
             }
         else:
-            tmp = temp[each]
-            skills[each] = {
+            tmp = temp[each_temp]
+            skills[each_temp] = {
                 "中文": tmp[0],
                 "原文": tmp[2],
                 "充能时间": tmp[1],
                 "图标": tmp[-1]
             }
             for i in range(3, len(tmp) - 1):
-                skills[each][f'效果{i - 2}'] = tmp[i]
+                skills[each_temp][f'效果{i - 2}'] = tmp[i]
 
     svt["技能"] = skills
+
+
+def get_voice(svt, soup):
+    voices = soup.findAll(class_="wikitable mw-collapsible mw-collapsed nomobile")
+
+    svt_voice = {}
+    voice_type = ""
+    for each_soup in voices:
+        for each_type in each_soup.find("tbody").findAll("tr"):
+            voice_title = each_type.find("th").text.strip()
+            soup_voice = each_type.findAll("td")
+            if not soup_voice:
+                voice_type = voice_title
+                svt_voice[voice_type] = {}
+                continue
+            voice_text = soup_voice[0].text.strip()
+            try:
+                voice_file = f'https:{soup_voice[1].findAll("a")[1]["href"]}'
+            except IndexError:
+                voice_file = ""
+            svt_voice[voice_type][voice_title] = {
+                "文本": voice_text,
+                "文件": voice_file
+            }
+
+    for each_type in svt_voice:
+        for each_voice in svt_voice[each_type]:
+            # noinspection PyUnresolvedReferences
+            text = svt_voice[each_type][each_voice]["文本"]
+            text = text.replace("。", "。\n").strip()
+            text = text.replace("(持有", "\n(持有")
+            text = text.replace("\n\n(持有", "\n(持有")
+            text = text.replace("(通关", "\n(通关")
+            text = text.replace("\n\n(通关", "\n(通关")
+            text = text.replace("(牵绊", "\n(牵绊")
+            text = text.replace("\n\n(牵绊", "\n(牵绊")
+            svt_voice[each_type][each_voice]["文本"] = text
+
+    svt["语音"] = svt_voice

@@ -51,10 +51,7 @@ async def get_all_cft(crt_file=False):
             "event": data[i + 8].replace("event=", "")
         }
         cid = cft["id"]
-        if int(cid) < 10:
-            cid = "00" + cid
-        if 10 <= int(cid) < 100:
-            cid = "0" + cid
+        cid = cid.zfill(3)
         rule_cmd = re.compile(rf"/images/.+礼装{cid}\.(png|jpg)")
         for each in all_cft_icons:
             if re.match(rule_cmd, each):

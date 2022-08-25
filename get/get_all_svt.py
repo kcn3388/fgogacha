@@ -52,10 +52,7 @@ async def get_all_svt(crt_file=False):
             "tag": data[i + 7].replace("tag=", "")
         }
         cid = svt["id"]
-        if int(cid) < 10:
-            cid = "00" + cid
-        if 10 <= int(cid) < 100:
-            cid = "0" + cid
+        cid = cid.zfill(3)
         rule_cmd = re.compile(rf"/images/.+Servant{cid}\.(png|jpg)")
         for each in all_svt_icons:
             if re.match(rule_cmd, each):

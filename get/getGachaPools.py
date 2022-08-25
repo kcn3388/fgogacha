@@ -40,6 +40,11 @@ async def getgachapools(islatest=True, crt_file=None):
             title = each.get("title")
             href = each.get("href")
             if title.endswith("模拟器") and re.search("福袋", title) is None:
+                server = ""
+                if "国服" in each.findPrevious("span").text or "国服" in title:
+                    server = "国服"
+                if "日服" in each.findPrevious("span").text or "日服" in title:
+                    server = "日服"
                 title = title.replace("/卡池详情/模拟器", "")
                 title = title.replace("/模拟器", "")
                 title = title.replace("模拟器", "")
@@ -48,6 +53,7 @@ async def getgachapools(islatest=True, crt_file=None):
                     "title": title,
                     "href": 'https://fgo.wiki' + href,
                     "banner": "剧情卡池",
+                    "server": server,
                     "type": "normal"
                 }
                 if islatest:
@@ -155,6 +161,7 @@ async def getgachapools(islatest=True, crt_file=None):
                     "title": i["title"],
                     "href": i["href"],
                     "banner": i["banner"],
+                    "server": i["server"],
                     "type": i["type"],
                     "sub_pool": []
                 }
@@ -220,6 +227,11 @@ async def getgachapools(islatest=True, crt_file=None):
 
         with open(gacha_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(gacha_data, indent=2, ensure_ascii=False))
+
+        for each in icons:
+            l1 = icons[each]
+            l2 = sorted(set(l1), key=l1.index)
+            icons[each] = l2
 
         with open(icons_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(icons, indent=2, ensure_ascii=False))

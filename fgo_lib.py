@@ -81,10 +81,10 @@ async def update_lib(bot, ev: CQEvent):
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+            for each_group in configs["groups"]:
+                if each_group["group"] == ev.group_id:
+                    if not each_group["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -122,11 +122,11 @@ async def update_lib(bot, ev: CQEvent):
         servants = []
         errors = []
         # data = await lib_svt(svt[23], crt_file)
-        for each in svt:
-            data = await lib_svt(each, crt_file)
+        for each_svt in svt:
+            data = await lib_svt(each_svt, crt_file)
             if "error" in data:
-                sv_lib.logger.error(f"更新从者{each['id']}出错：{data['error']}")
-                errors.append(each["id"])
+                sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
+                errors.append(each_svt["id"])
             servants.append(data)
 
         if os.path.exists(lib_servant_path):
@@ -161,11 +161,11 @@ async def update_lib(bot, ev: CQEvent):
         crafts = []
         errors = []
         # data = await lib_cft(cft[0], crt_file)
-        for each in cft:
-            data = await lib_cft(each, crt_file)
+        for each_cft in cft:
+            data = await lib_cft(each_cft, crt_file)
             if "error" in data:
-                sv_lib.logger.error(f"更新礼装{each['id']}出错：{data['error']}")
-                errors.append(each["id"])
+                sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
+                errors.append(each_cft["id"])
             crafts.append(data)
 
         if os.path.exists(lib_craft_path):
@@ -200,11 +200,11 @@ async def update_lib(bot, ev: CQEvent):
         commands = []
         errors = []
         # data = await lib_cmd(cft[0], crt_file)
-        for each in cmd:
-            data = await lib_cmd(each, crt_file)
+        for each_cmd in cmd:
+            data = await lib_cmd(each_cmd, crt_file)
             if "error" in data:
-                sv_lib.logger.error(f"更新礼装{each['id']}出错：{data['error']}")
-                errors.append(each["id"])
+                sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
+                errors.append(each_cmd["id"])
             commands.append(data)
 
         if os.path.exists(lib_command_path):
@@ -234,14 +234,28 @@ async def update_lib(bot, ev: CQEvent):
                 await bot.send(ev, e_msg)
 
 
-@sv_lib.on_rex(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$")
+@sv_lib.on_rex(r"(?i)^([修x])?([补b])?[fb]go"
+               r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
+               r"([修x])?([补b])?(\s.+)?$")
 async def fix_lib(bot, ev: CQEvent):
-    msg = ev.message.extract_plain_text().split(" ")
-    if not len(msg) == 3:
-        await bot.finish(ev, "食用指南：[修补fgo图书馆 + 类型 + id]")
+    is_3_args = False
+    if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
+        is_3_args = True
 
-    if not msg[2].isdigit():
-        await bot.finish(ev, "说了要id，宁这是填了个🔨")
+    msg = ev.message.extract_plain_text().split(" ")
+
+    if is_3_args:
+        if not len(msg) == 3:
+            await bot.finish(ev, "食用指南：[修补fgo图书馆 + 类型 + id]")
+
+        if not msg[2].isdigit():
+            await bot.finish(ev, "说了要id，宁这是填了个🔨")
+    else:
+        if not len(msg) == 2:
+            await bot.finish(ev, "食用指南：[修补fgo(类型) + id]")
+
+        if not msg[1].isdigit():
+            await bot.finish(ev, "说了要id，宁这是填了个🔨")
 
     try:
         with open(lib_servant_path, 'r', encoding="utf-8") as f:
@@ -259,26 +273,33 @@ async def fix_lib(bot, ev: CQEvent):
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+            for each_group in configs["groups"]:
+                if each_group["group"] == ev.group_id:
+                    if not each_group["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
 
     rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
+    is_svt = False
+    if re.search(rule_svt, msg[1]):
+        is_svt = True
+        msg = msg[2:]
+    if re.search(rule_svt, msg[0]):
+        is_svt = True
+        msg = msg[1:]
 
     fixed = False
-    if re.match(rule_svt, msg[1]):
-        for each in svt:
-            if each["id"] == msg[2]:
-                data = await lib_svt(each, crt_file)
+    if is_svt:
+        for each_svt in svt:
+            if each_svt["id"] == msg[0]:
+                data = await lib_svt(each_svt, crt_file)
                 if "error" in data:
-                    sv_lib.logger.error(f"更新从者{each['id']}出错：{data['error']}")
+                    sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
                 else:
                     fixed = True
-                svt[svt.index(each)] = data
+                svt[svt.index(each_svt)] = data
                 break
 
         with open(lib_servant_path, "w", encoding="utf-8") as f:
@@ -289,17 +310,24 @@ async def fix_lib(bot, ev: CQEvent):
             await bot.finish(ev, "从者数据错误，请再试一次~")
 
     rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
+    is_cft = False
+    if re.search(rule_cft, msg[1]):
+        is_cft = True
+        msg = msg[2:]
+    if re.search(rule_cft, msg[0]):
+        is_cft = True
+        msg = msg[1:]
 
     fixed = False
-    if re.match(rule_cft, msg[1]):
-        for each in cft:
-            if each["id"] == msg[2]:
-                data = await lib_cft(each, crt_file)
+    if is_cft:
+        for each_cft in cft:
+            if each_cft["id"] == msg[0]:
+                data = await lib_cft(each_cft, crt_file)
                 if "error" in data:
-                    sv_lib.logger.error(f"更新礼装{each['id']}出错：{data['error']}")
+                    sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
                 else:
                     fixed = True
-                cft[cft.index(each)] = data
+                cft[cft.index(each_cft)] = data
                 break
 
         with open(lib_craft_path, "w", encoding="utf-8") as f:
@@ -310,17 +338,24 @@ async def fix_lib(bot, ev: CQEvent):
             await bot.finish(ev, "礼装数据错误，请再试一次~")
 
     rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    is_cmd = False
+    if re.search(rule_cmd, msg[1]):
+        is_cmd = True
+        msg = msg[2:]
+    if re.search(rule_cmd, msg[0]):
+        is_cmd = True
+        msg = msg[1:]
 
     fixed = False
-    if re.match(rule_cmd, msg[1]):
-        for each in cmd:
-            if each["id"] == msg[2]:
-                data = await lib_cmd(each, crt_file)
+    if is_cmd:
+        for each_cmd in cmd:
+            if each_cmd["id"] == msg[0]:
+                data = await lib_cmd(each_cmd, crt_file)
                 if "error" in data:
-                    sv_lib.logger.error(f"更新纹章{each['id']}出错：{data['error']}")
+                    sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
                 else:
                     fixed = True
-                cmd[cmd.index(each)] = data
+                cmd[cmd.index(each_cmd)] = data
                 break
 
         with open(lib_craft_path, "w", encoding="utf-8") as f:
@@ -347,13 +382,9 @@ async def find_svt(bot, ev: CQEvent):
 
     del (msg[0])
     svt_data = []
-    is_detail = False
-    remove_card = False
-    remove_data = False
-    remove_info = False
-    remove_fool = False
-    remove_ultimate = False
-    remove_skill = False
+    is_detail, remove_card, remove_data, remove_info, \
+        remove_fool, remove_ultimate, remove_skill, remove_voice = get_keys(msg)
+
     banned_keys = [
         "Hit信息括号内为每hit伤害百分比",
         "Quick",
@@ -366,64 +397,6 @@ async def find_svt(bot, ev: CQEvent):
         "被即死率",
         "暴击星分配权重"
     ]
-    rule = re.compile(r"(?i)(详细|detail)")
-    if re.match(rule, msg[-1]):
-        is_detail = True
-        msg.pop()
-    rule1 = re.compile(r"(?i)(卡面|card)")
-    if re.match(rule1, msg[-1]):
-        is_detail = True
-        remove_data = True
-        remove_info = True
-        remove_fool = True
-        remove_ultimate = True
-        remove_skill = True
-        msg.pop()
-    rule2 = re.compile(r"(?i)(数据|data)")
-    if re.match(rule2, msg[-1]):
-        is_detail = True
-        remove_card = True
-        remove_info = True
-        remove_fool = True
-        remove_ultimate = True
-        remove_skill = True
-        msg.pop()
-    rule3 = re.compile(r"(?i)(资料|info)")
-    if re.match(rule3, msg[-1]):
-        is_detail = True
-        remove_data = True
-        remove_card = True
-        remove_fool = True
-        remove_ultimate = True
-        remove_skill = True
-        msg.pop()
-    rule4 = re.compile(r"(?i)(愚人节|fool)")
-    if re.match(rule4, msg[-1]):
-        is_detail = True
-        remove_data = True
-        remove_card = True
-        remove_info = True
-        remove_ultimate = True
-        remove_skill = True
-        msg.pop()
-    rule5 = re.compile(r"(?i)(宝具|bj|ultimate)")
-    if re.match(rule5, msg[-1]):
-        is_detail = True
-        remove_data = True
-        remove_card = True
-        remove_info = True
-        remove_fool = True
-        remove_skill = True
-        msg.pop()
-    rule6 = re.compile(r"(?i)(技能|skill)")
-    if re.match(rule6, msg[-1]):
-        is_detail = True
-        remove_data = True
-        remove_card = True
-        remove_info = True
-        remove_fool = True
-        remove_ultimate = True
-        msg.pop()
 
     for i in svt:
         trans = {}
@@ -499,18 +472,18 @@ async def find_svt(bot, ev: CQEvent):
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+            for each_group in configs["groups"]:
+                if each_group["group"] == ev.group_id:
+                    if not each_group["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
 
     if len(svt_data) == 0:
         await bot.send(ev, "无结果……尝试在线搜索")
-        for each in msg:
-            url = "https://fgo.wiki/w/" + each
+        for each_msg in msg:
+            url = "https://fgo.wiki/w/" + each_msg
             name, stat = await lib_svt_online(url, crt_file)
             if stat == -100:
                 await bot.finish(ev, f"出错了！\n{name}")
@@ -528,8 +501,8 @@ async def find_svt(bot, ev: CQEvent):
     if len(svt_data) > 5:
         too_much = "描述太模糊，数据太多了qwq，只显示名字，有需要请直接搜索名字~\n"
         counter = 0
-        for each in svt_data:
-            too_much += f"{counter}：{each['name_link']}\t"
+        for each_svt_data in svt_data:
+            too_much += f"{counter}：{each_svt_data['name_link']}\t"
             counter += 1
 
         await bot.finish(ev, too_much)
@@ -552,15 +525,15 @@ async def find_svt(bot, ev: CQEvent):
                         msg_send += f"{counter}：{each['name_link']}\n"
                     counter += 1
 
-                # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-                class_ = class_path + each["class_icon"]
-                if os.path.exists(class_):
-                    with open(class_, "rb") as f:
-                        class_img = f.read()
-                    bio_card = io.BytesIO(class_img)
-                    base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                    pic_card = f'base64://{base64_card}'
-                    msg_send += f"[CQ:image,file={pic_card}]\n"
+                # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
+                # class_ = class_path + each["class_icon"]
+                # if os.path.exists(class_):
+                #     with open(class_, "rb") as f:
+                #         class_img = f.read()
+                #     bio_card = io.BytesIO(class_img)
+                #     base64_card = base64.b64encode(bio_card.getvalue()).decode()
+                #     pic_card = f'base64://{base64_card}'
+                #     msg_send += f"[CQ:image,file={pic_card}]\n"
 
                 if os.path.exists(img_path):
                     with open(img_path, "rb") as f:
@@ -701,6 +674,23 @@ async def find_svt(bot, ev: CQEvent):
                         }
                         details.append(send_skill)
 
+                if not remove_voice:
+                    for each_type in each["语音"]:
+                        msg_voice = f"{each_type}：\n"
+                        for each_voice in each["语音"][each_type]:
+                            msg_voice += f'\t{each_voice}：{each["语音"][each_type][each_voice]["文本"]}\n\n'
+
+                        msg_voice = create_img(msg_voice).strip()
+                        send_voice = {
+                            "type": "node",
+                            "data": {
+                                "name": _name,
+                                "uin": _uin,
+                                "content": msg_voice
+                            }
+                        }
+                        details.append(send_voice)
+
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
@@ -725,15 +715,15 @@ async def find_svt(bot, ev: CQEvent):
                 msg_send = f"{counter}：{each['name_link']}\n"
             counter += 1
 
-            # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-            class_ = class_path + each["class_icon"]
-            if os.path.exists(class_):
-                with open(class_, "rb") as f:
-                    class_img = f.read()
-                bio_card = io.BytesIO(class_img)
-                base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                pic_card = f'base64://{base64_card}'
-                msg_send += f"[CQ:image,file={pic_card}]\n"
+            # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
+            # class_ = class_path + each["class_icon"]
+            # if os.path.exists(class_):
+            #     with open(class_, "rb") as f:
+            #         class_img = f.read()
+            #     bio_card = io.BytesIO(class_img)
+            #     base64_card = base64.b64encode(bio_card.getvalue()).decode()
+            #     pic_card = f'base64://{base64_card}'
+            #     msg_send += f"[CQ:image,file={pic_card}]\n"
 
             img_path = svt_path + each["svt_icon"]
             if os.path.exists(img_path):
@@ -809,6 +799,8 @@ async def find_cft(bot, ev: CQEvent):
             elif isinstance(i[j], dict):
                 for k in i[j]:
                     if isinstance(i[j][k], list) or isinstance(i[j][k], dict):
+                        continue
+                    if not k == "画师" or not k == "持有技能":
                         continue
                     trans[f"{k}"] = i[j][k]
 
@@ -1039,6 +1031,8 @@ async def find_cmd(bot, ev: CQEvent):
                 for k in i[j]:
                     if isinstance(i[j][k], list) or isinstance(i[j][k], dict):
                         continue
+                    if not k == "画师" or not k == "持有技能":
+                        continue
                     trans[f"{k}"] = i[j][k]
 
         counter = 1
@@ -1225,3 +1219,91 @@ async def find_cmd(bot, ev: CQEvent):
         except aiocqhttp.exceptions.ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
+
+
+def get_keys(msg):
+    is_detail = False
+    remove_card = False
+    remove_data = False
+    remove_info = False
+    remove_fool = False
+    remove_ultimate = False
+    remove_skill = False
+    remove_voice = False
+    rule = re.compile(r"(?i)(详细|detail)")
+    if re.match(rule, msg[-1]):
+        is_detail = True
+        msg.pop()
+    rule1 = re.compile(r"(?i)(卡面|card)")
+    if re.match(rule1, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_info = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_skill = True
+        remove_voice = True
+        msg.pop()
+    rule2 = re.compile(r"(?i)(数据|data)")
+    if re.match(rule2, msg[-1]):
+        is_detail = True
+        remove_card = True
+        remove_info = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_skill = True
+        remove_voice = True
+        msg.pop()
+    rule3 = re.compile(r"(?i)(资料|info)")
+    if re.match(rule3, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_skill = True
+        remove_voice = True
+        msg.pop()
+    rule4 = re.compile(r"(?i)(愚人节|fool)")
+    if re.match(rule4, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_info = True
+        remove_ultimate = True
+        remove_skill = True
+        remove_voice = True
+        msg.pop()
+    rule5 = re.compile(r"(?i)(宝具|bj|ultimate)")
+    if re.match(rule5, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_info = True
+        remove_fool = True
+        remove_skill = True
+        remove_voice = True
+        msg.pop()
+    rule6 = re.compile(r"(?i)(技能|skill)")
+    if re.match(rule6, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_info = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_voice = True
+        msg.pop()
+    rule7 = re.compile(r"(?i)(语音|voice)")
+    if re.match(rule7, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_info = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_skill = True
+        msg.pop()
+
+    return is_detail, remove_card, remove_data, remove_info, \
+        remove_fool, remove_ultimate, remove_skill, remove_voice

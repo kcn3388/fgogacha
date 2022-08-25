@@ -52,10 +52,7 @@ async def get_all_cmd(crt_file=False):
             "method_link_text": data[i + 9].replace("method_link_text=", "")
         }
         cid = cmd["id"]
-        if int(cid) < 10:
-            cid = "00" + cid
-        if 10 <= int(cid) < 100:
-            cid = "0" + cid
+        cid = cid.zfill(3)
         rule_cmd = re.compile(rf"/images/.+纹章{cid}\.(png|jpg)")
         for each in all_cmd_icons:
             if re.match(rule_cmd, each):

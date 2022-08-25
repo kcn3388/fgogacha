@@ -18,6 +18,8 @@ async def gacha(gid):
         print("no banner")
         return 12, 0, 0
 
+    server = banner["banner"]["server"]
+
     gacha_data = json.load(open(gacha_path, encoding="utf-8"))
     data = {}
     for each in gacha_data:
@@ -77,7 +79,7 @@ async def gacha(gid):
         f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
     result, has_pup5, has_pup4 = await get_result(pool_data["data"])
-    return result, has_pup5, has_pup4
+    return result, has_pup5, has_pup4, server
 
 
 async def get_result(pool_data):
@@ -158,14 +160,14 @@ async def get_result(pool_data):
     gold_counter = 0
     result = []
     # # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
-    # salt = 123383388
-    # salt += time.time()
-    # random.seed(salt)
+    salt = 123383388
+    salt += time.time()
+    random.seed(salt)
     while counter < 11:
         # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
-        salt = 123383388
-        salt += time.time()
-        random.seed(salt)
+        # salt = 123383388
+        # salt += time.time()
+        # random.seed(salt)
         counter += 1
         rate = random.uniform(0, 1)
         # here is svt gacha
@@ -174,44 +176,49 @@ async def get_result(pool_data):
         if not rate_pup_svt_5 == 0 and not svt_pup_5 == []:
             if rate <= rate_pup_svt_5:
                 result.append(["svt", "up5", svt_pup_5])
+                svt_counter += 1
+                gold_counter += 1
             if rate_pup_svt_5 < rate <= rate_svt_5:
                 result.append(["svt", "5", svt_5])
-            svt_counter += 1
-            gold_counter += 1
+                svt_counter += 1
+                gold_counter += 1
         # if is not pickup 5
         if rate_pup_svt_5 == 0 or svt_pup_5 == []:
             if rate <= rate_svt_5:
                 result.append(["svt", "5", svt_5])
-            svt_counter += 1
-            gold_counter += 1
+                svt_counter += 1
+                gold_counter += 1
 
         # if is not pickup 4
         if not rate_pup_svt_4 == 0 and not svt_pup_4 == []:
             if rate_svt_5 < rate <= rate_pup_svt_4:
                 result.append(["svt", "up4", svt_pup_4])
+                svt_counter += 1
+                gold_counter += 1
             if rate_pup_svt_4 < rate <= rate_svt_4:
                 result.append(["svt", "4", svt_4])
-            svt_counter += 1
-            gold_counter += 1
+                svt_counter += 1
+                gold_counter += 1
         # if is not pickup 4
         if rate_pup_svt_4 == 0 or svt_pup_4 == []:
             if rate_svt_5 < rate <= rate_svt_4:
                 result.append(["svt", "4", svt_4])
-            svt_counter += 1
-            gold_counter += 1
+                svt_counter += 1
+                gold_counter += 1
 
         # if is pickup 3
         if not rate_pup_svt_3 == 0 and not svt_pup_3 == []:
             if rate_svt_4 < rate <= rate_pup_svt_3:
                 result.append(["svt", "up3", svt_pup_3])
+                svt_counter += 1
             if rate_pup_svt_3 < rate <= rate_svt_3:
                 result.append(["svt", "3", svt_3])
-            svt_counter += 1
+                svt_counter += 1
         # if is not pickup 3
         if rate_pup_svt_3 == 0 or svt_pup_3 == []:
             if rate_svt_4 < rate <= rate_svt_3:
                 result.append(["svt", "3", svt_3])
-            svt_counter += 1
+                svt_counter += 1
 
         # if no svt in previous 10 roll, and has gold in previous 10 roll
         if counter == 12 and svt_counter == 0 and rate > rate_svt_3 and not gold_counter == 0:
@@ -248,27 +255,29 @@ async def get_result(pool_data):
         if not rate_pup_ce_5 == 0 and not ce_pup_5 == []:
             if rate_svt_3 < rate <= rate_pup_ce_5:
                 result.append(["cft", "up5", ce_pup_5])
+                gold_counter += 1
             if rate_pup_ce_5 < rate <= rate_ce_5:
                 result.append(["cft", "5", ce_5])
-            gold_counter += 1
+                gold_counter += 1
         # if is not pickup 5 ce
         if rate_pup_ce_5 == 0 or ce_pup_5 == []:
             if rate_svt_3 < rate <= rate_ce_5:
                 result.append(["cft", "5", ce_5])
-            gold_counter += 1
+                gold_counter += 1
 
         # if is pickup 4 ce
         if not rate_pup_ce_4 == 0 and not ce_pup_4 == []:
             if rate_ce_5 < rate <= rate_pup_ce_4:
                 result.append(["cft", "up4", ce_pup_4])
+                gold_counter += 1
             if rate_pup_ce_4 < rate <= rate_ce_4:
                 result.append(["cft", "4", ce_4])
-            gold_counter += 1
+                gold_counter += 1
         # if is not pickup 4 ce
         if rate_pup_ce_4 == 0 or ce_pup_4 == []:
             if rate_ce_5 < rate <= rate_ce_4:
                 result.append(["cft", "4", ce_4])
-            gold_counter += 1
+                gold_counter += 1
 
         # if is pickup 3 ce
         if not rate_pup_ce_3 == 0 and not ce_pup_3 == []:
