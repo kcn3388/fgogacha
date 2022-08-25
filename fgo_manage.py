@@ -3,7 +3,6 @@ import re
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
-from .download.download import download
 from .download.downloadIcons import downloadicons
 from .get.getnews import get_news
 from .get.getGachaPools import getgachapools
@@ -124,7 +123,6 @@ async def get_fgo_data(bot, ev: CQEvent):
 
     sv_manage.logger.info("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
-    sv_manage.logger.info("开始下载bg")
 
     crt_file = False
     if os.path.exists(config_path):
@@ -138,11 +136,6 @@ async def get_fgo_data(bot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             pass
 
-    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, False, crt_file)
-    if not isinstance(bg_stat, int):
-        await bot.send(ev, f'下载bg失败，原因：\n{bg_stat}')
-    if bg_stat:
-        sv_manage.logger.info(f'bg已存在，跳过……')
     sv_manage.logger.info("开始下载icon")
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
@@ -150,7 +143,7 @@ async def get_fgo_data(bot, ev: CQEvent):
     if icon_stat:
         sv_manage.logger.info(f'icon没有更新，跳过……')
 
-    if bg_stat and icon_stat:
+    if icon_stat:
         await bot.send(ev, "没有新的资源~晚点再来看看吧~")
     else:
         await bot.send(ev, "下载完成")
@@ -477,11 +470,6 @@ async def update_pool():
         sv_manage.logger.error(f"获取新闻失败，原因：{str(same)}")
 
     # 自动下载资源
-    bg_stat = await download(mooncellBackgroundUrl, mooncellBackgroundPath, True, crt_file)
-    if not isinstance(bg_stat, int):
-        sv_manage.logger.error(f'下载bg失败，原因：{bg_stat}')
-    if bg_stat:
-        sv_manage.logger.info(f'bg已存在，跳过……')
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')

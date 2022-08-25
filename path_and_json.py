@@ -21,9 +21,6 @@ res_paths = [basic_path, icon_path, svt_path, cft_path, skill_path, cmd_path, ca
 
 runtime_path = os.path.dirname(__file__)
 
-mooncellBackgroundUrl = 'https://fgo.wiki/images/bg/bg-mc-icon.png'
-mooncellBackgroundPath = basic_path + 'bg-mc-icon.png'
-
 data_path = os.path.join(runtime_path, 'data')
 banner_path = os.path.join(data_path, 'banner.json')
 config_path = os.path.join(data_path, 'config.json')
