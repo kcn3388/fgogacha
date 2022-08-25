@@ -242,7 +242,7 @@ async def fix_lib(bot, ev: CQEvent):
     if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
         is_3_args = True
 
-    msg = ev.message.extract_plain_text().split(" ")
+    msg = ev.message.extract_plain_text().split()
 
     if is_3_args:
         if not len(msg) == 3:
@@ -368,7 +368,7 @@ async def fix_lib(bot, ev: CQEvent):
 
 @sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([从c][者z]|svt|servant)([查c][询x])?(\s.+)?$")
 async def find_svt(bot, ev: CQEvent):
-    msg = ev.message.extract_plain_text().split(" ")
+    msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo从者 + 从者名字]")
 
@@ -758,7 +758,7 @@ async def find_svt(bot, ev: CQEvent):
 
 @sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([礼l][装z]|cft|craft)([查c][询x])?(\s.+)?$")
 async def find_cft(bot, ev: CQEvent):
-    msg = ev.message.extract_plain_text().split(" ")
+    msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo礼装 + 礼装名字]")
 
@@ -992,7 +992,7 @@ async def find_cft(bot, ev: CQEvent):
 
 @sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([纹w][章z]|cmd|command)([查c][询x])?(\s.+)?$")
 async def find_cmd(bot, ev: CQEvent):
-    msg = ev.message.extract_plain_text().split(" ")
+    msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo纹章 + 纹章名字]")
 

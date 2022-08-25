@@ -221,7 +221,7 @@ async def get_result(pool_data):
                 svt_counter += 1
 
         # if no svt in previous 10 roll, and has gold in previous 10 roll
-        if counter == 12 and svt_counter == 0 and rate > rate_svt_3 and not gold_counter == 0:
+        if counter == 11 and svt_counter == 0 and rate > rate_svt_3 and not gold_counter == 0:
             servants = svt_5 + svt_4 + svt_3
             # if exists pickup 5
             if not svt_pup_5 == []:
@@ -238,7 +238,7 @@ async def get_result(pool_data):
             result.append(["svt", "3 or 4 or 5", servants])
 
         # if no svt in previous 10 roll, and no gold in previous 10 roll
-        if counter == 12 and svt_counter == 0 and rate > rate_svt_3 and gold_counter == 0:
+        if counter == 11 and svt_counter == 0 and rate > rate_svt_3 and gold_counter == 0:
             servants = svt_5 + svt_4
             # if exists pickup 5
             if not svt_pup_5 == []:
@@ -291,7 +291,7 @@ async def get_result(pool_data):
                 result.append(["cft", "3", ce_3])
 
         # if no gold in previous 10 roll, and have svt in previous 10 roll
-        if counter == 12 and gold_counter == 0 and not svt_counter == 0 and rate > rate_ce_4:
+        if counter == 11 and gold_counter == 0 and not svt_counter == 0 and rate > rate_ce_4:
             crafts = ce_5 + ce_4
             # if exists pickup 5
             if not ce_pup_5 == []:

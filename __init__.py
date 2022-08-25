@@ -68,7 +68,8 @@ async def get_fgo_pool(bot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             basic_config = {
                 "group": ev.group_id,
-                "crt_path": crt_path
+                "crt_path": crt_path,
+                "style": "图片"
             }
             configs = {
                 "follow_latest": True,
@@ -150,7 +151,7 @@ async def check_pool(bot, ev: CQEvent):
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$|^[fb]go[卡k][池c][切qs][换hw](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_id = ev.message.extract_plain_text()
-    p_id = p_id.split(" ")
+    p_id = p_id.split()
     if len(p_id) > 1:
         p_id = p_id[1]
     else:
@@ -205,7 +206,7 @@ async def switch_pool(bot, ev: CQEvent):
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
 
     pools = json.load(open(pools_path, encoding="utf-8"))
-    ids = ids.split(" ")
+    ids = ids.split()
     p_id = ""
     s_id = ""
     if len(ids) > 2:
@@ -302,60 +303,73 @@ async def gacha_10(bot, ev: CQEvent):
             cft = int(random.choice(each[2]))
             img_path.append(os.path.join(cft_path, f"礼装{str(cft).zfill(3)}.jpg"))
 
+    style = "图片"
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each_config in configs["groups"]:
+                if each_config["group"] == ev.group_id:
+                    style = each_config["style"]
+                    break
+        except json.decoder.JSONDecodeError:
+            pass
+
     # 文字图标版，更快
-    # cards = []
-    # for each in img_path:
-    #     cards.append(Image.open(each).resize((66, 72)))
-    # rows = 3
-    # cols = 4
-    # base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
-    # r_counter = 0
-    # c_counter = 0
-    # for each in cards:
-    #     base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
-    #     c_counter += 1
-    #     if c_counter >= cols:
-    #         r_counter += 1
-    #         if r_counter >= rows:
-    #             break
-    #         else:
-    #             c_counter = 0
+    if not style == "图片":
+        cards = []
+        for each in img_path:
+            cards.append(Image.open(each).resize((66, 72)))
+        rows = 3
+        cols = 4
+        base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
+        r_counter = 0
+        c_counter = 0
+        for each in cards:
+            base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
+            c_counter += 1
+            if c_counter >= cols:
+                r_counter += 1
+                if r_counter >= rows:
+                    break
+                else:
+                    c_counter = 0
 
-    # 图片版，较慢
-    height = 194
-    width = 178
-    dis = 23
-    floor = 48
-    st1w = 92
-    st1h = 200
-    st2 = 192
-
-    boxlist = []
-
-    box1 = (st1w, st1h)
-    for i in range(6):
-        boxlist.append(box1)
-        lst = list(box1)
-        lst[0] += width + dis
-        box1 = tuple(lst)
-
-    box2 = (st2, st1h + height + floor)
-    for i in range(5):
-        boxlist.append(box2)
-        lst = list(box2)
-        lst[0] += width + dis
-        box2 = tuple(lst)
-
-    if server == "国服":
-        base_img = Image.open(back_cn_path).convert("RGBA")
     else:
-        base_img = Image.open(back_path).convert("RGBA")
-    masker = Image.open(mask_path).resize((width, height))
+        # 图片版，较慢
+        height = 194
+        width = 178
+        dis = 23
+        floor = 48
+        st1w = 92
+        st1h = 200
+        st2 = 192
 
-    for i, picpath in enumerate(img_path):
-        tmp_img = Image.open(picpath).resize((width, height))
-        tmp_img = tmp_img.convert('RGBA')
-        base_img.paste(tmp_img, boxlist[i], mask=masker)
+        boxlist = []
+
+        box1 = (st1w, st1h)
+        for i in range(6):
+            boxlist.append(box1)
+            lst = list(box1)
+            lst[0] += width + dis
+            box1 = tuple(lst)
+
+        box2 = (st2, st1h + height + floor)
+        for i in range(5):
+            boxlist.append(box2)
+            lst = list(box2)
+            lst[0] += width + dis
+            box2 = tuple(lst)
+
+        if server == "国服":
+            base_img = Image.open(back_cn_path).convert("RGBA")
+        else:
+            base_img = Image.open(back_path).convert("RGBA")
+        masker = Image.open(mask_path).resize((width, height))
+
+        for i, picpath in enumerate(img_path):
+            tmp_img = Image.open(picpath).resize((width, height))
+            tmp_img = tmp_img.convert('RGBA')
+            base_img.paste(tmp_img, boxlist[i], mask=masker)
 
     bio = io.BytesIO()
     base_img.save(bio, format='PNG')
@@ -448,7 +462,7 @@ async def gacha_10(bot, ev: CQEvent):
         cqcode = f'\n[CQ:image,file={pic_b64}]'
         msg += cqcode
 
-    await bot.send(ev, msg, at_sender=True)
+    await bot.send(ev, msg.strip(), at_sender=True)
 
 
 @sv.on_rex(r'(?i)^[fb]go(百|100|b)[连l]$')
@@ -597,7 +611,7 @@ async def gacha_100(bot, ev: CQEvent):
         cqcode = f'\n[CQ:image,file={pic_b64}]'
         msg += cqcode
 
-    await bot.send(ev, msg, at_sender=True)
+    await bot.send(ev, msg.strip(), at_sender=True)
 
 
 @sv.on_prefix('氪圣晶石')

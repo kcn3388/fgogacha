@@ -36,6 +36,10 @@ sv_manage_help = '''
 [跟随最新/剧情卡池] 设置卡池数据更新后跟随最新国服卡池还是国服剧情卡池
 [fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
 [fgo_check_crt] 检查本群crt文件配置状态
+[重载配置文件] 为本群新建默认配置或还原至默认配置，同时修补其他群的配置
+[切换十连样式 + 样式] 切换十连抽卡样式，可选样式：
+- 文字：旧版简约图标
+- 图片：仿真实抽卡
 [设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
 - 例如：``设置fgo时间 1小时60分钟60秒``
 '''.strip()
@@ -93,7 +97,8 @@ async def init(bot, ev: CQEvent):
             if each == config_path:
                 basic_config = {
                     "group": ev.group_id,
-                    "crt_path": crt_path
+                    "crt_path": crt_path,
+                    "style": "图片"
                 }
                 configs = {
                     "follow_latest": FOLLOW_LATEST_POOL,
@@ -162,7 +167,8 @@ async def follow_latest(bot, ev: CQEvent):
         open(config_path, 'w')
         basic_config = {
             "group": ev.group_id,
-            "crt_path": crt_path
+            "crt_path": crt_path,
+            "style": "图片"
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
@@ -177,7 +183,8 @@ async def follow_latest(bot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             basic_config = {
                 "group": ev.group_id,
-                "crt_path": crt_path
+                "crt_path": crt_path,
+                "style": "图片"
             }
             configs = {
                 "follow_latest": FOLLOW_LATEST_POOL,
@@ -204,15 +211,19 @@ async def follow_latest(bot, ev: CQEvent):
         await bot.send(ev, "切换成功，当前跟随剧情卡池")
 
 
-@sv_manage.on_prefix("fgo_enable_crt")
+@sv_manage.on_rex(r"^(?i)fgo_enable_crt(\s.+)?$")
 async def enable_crt(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
-    crt = ev.message.extract_plain_text()
+    crt = ev.message.extract_plain_text().split()
+    crt.pop(0)
 
-    if crt == "":
+    if not crt:
         await bot.send(ev, "食用指南：[指令 + crt文件路径]，留空设置为默认路径")
         crt = crt_path
+
+    if isinstance(crt, list):
+        crt = crt[0]
 
     rule = re.compile(r"^(?i)false$")
     match = re.match(rule, crt)
@@ -224,7 +235,8 @@ async def enable_crt(bot, ev: CQEvent):
         open(config_path, 'w')
         basic_config = {
             "group": ev.group_id,
-            "crt_path": crt_path
+            "crt_path": crt_path,
+            "style": "图片"
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
@@ -239,7 +251,8 @@ async def enable_crt(bot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             basic_config = {
                 "group": ev.group_id,
-                "crt_path": crt_path
+                "crt_path": crt_path,
+                "style": "图片"
             }
             configs = {
                 "follow_latest": FOLLOW_LATEST_POOL,
@@ -253,7 +266,8 @@ async def enable_crt(bot, ev: CQEvent):
 
     crt_config = {
         "group": ev.group_id,
-        "crt_path": crt
+        "crt_path": crt,
+        "style": "图片"
     }
 
     exists = False
@@ -275,7 +289,7 @@ async def enable_crt(bot, ev: CQEvent):
         await bot.finish(ev, f"已禁用crt文件")
 
 
-@sv_manage.on_fullmatch("fgo_check_crt")
+@sv_manage.on_rex("(?i)^fgo_check_crt$")
 async def enable_crt(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
@@ -288,7 +302,8 @@ async def enable_crt(bot, ev: CQEvent):
     except json.decoder.JSONDecodeError:
         basic_config = {
             "group": ev.group_id,
-            "crt_path": crt_path
+            "crt_path": crt_path,
+            "style": "图片"
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,
@@ -315,6 +330,113 @@ async def enable_crt(bot, ev: CQEvent):
             await bot.finish(ev, "本群已禁用crt文件")
         else:
             await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
+
+
+@sv_manage.on_rex(r"(?i)^([切qs][换hw])?[十s][连l][样y][式s]([切qs][换hw])?\s(text|img|文字|图片)$")
+async def switch_10roll_style(bot, ev: CQEvent):
+    style = ev.message.extract_plain_text().split()
+
+    if not os.path.exists(config_path):
+        await bot.finish(ev, "未配置crt文件")
+
+    if re.match(r"(?i)text", style[1]):
+        style = "文字"
+
+    if re.match(r"(?i)img", style[1]):
+        style = "图片"
+
+    try:
+        configs = json.load(open(config_path, encoding="utf-8"))
+    except json.decoder.JSONDecodeError:
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path,
+            "style": "图片"
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
+            "groups": [basic_config]
+        }
+
+    get_group = False
+    for each in configs["groups"]:
+        if each["group"] == ev.group_id:
+            each["style"] = style
+            get_group = True
+            break
+
+    if not get_group:
+        group_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path,
+            "style": style
+        }
+        configs["groups"].append(group_config)
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    await bot.send(ev, f"已修改十连样式，当前样式：{style}")
+
+
+@sv_manage.on_rex(r"(?i)^([重c][载z])?([配p][置z][文w][件j]|config)([重c][载z])?$")
+async def reload_config(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            basic_config = {
+                "group": ev.group_id,
+                "crt_path": crt_path,
+                "style": "图片"
+            }
+            configs = {
+                "follow_latest": FOLLOW_LATEST_POOL,
+                "flush_hour": flush_hour,
+                "flush_minute": flush_minute,
+                "flush_second": flush_second,
+                "groups": [basic_config]
+            }
+    else:
+        basic_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path,
+            "style": "图片"
+        }
+        configs = {
+            "follow_latest": FOLLOW_LATEST_POOL,
+            "flush_hour": flush_hour,
+            "flush_minute": flush_minute,
+            "flush_second": flush_second,
+            "groups": [basic_config]
+        }
+
+    get_group = False
+    for each in configs["groups"]:
+        if each["group"] == ev.group_id:
+            get_group = True
+        if "crt_path" not in each:
+            each["crt_path"] = crt_path
+        if "style" not in each:
+            each["style"] = "图片"
+
+    if not get_group:
+        group_config = {
+            "group": ev.group_id,
+            "crt_path": crt_path,
+            "style": "图片"
+        }
+        configs["groups"].append(group_config)
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    await bot.send(ev, "已重载配置文件")
 
 
 @sv_manage.scheduled_job('interval', hours=flush_hour, minutes=flush_minute, seconds=flush_second)
@@ -377,13 +499,14 @@ async def set_update_time(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     msg = ev.message.extract_plain_text()
-    times = msg.split(" ")
+    times = msg.split()
     try:
         configs = json.load(open(config_path, encoding="utf-8"))
     except json.decoder.JSONDecodeError:
         basic_config = {
             "group": ev.group_id,
-            "crt_path": crt_path
+            "crt_path": crt_path,
+            "style": "图片"
         }
         configs = {
             "follow_latest": FOLLOW_LATEST_POOL,

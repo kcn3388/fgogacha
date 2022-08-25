@@ -16,7 +16,7 @@ async def lib_svt_online(url, crt_file=False):
     soup = BeautifulSoup(await response.content, 'html.parser')
     is_get = soup.find(class_="SvtCardNameCN")
     if is_get:
-        name = soup.find("title").text.split(" ")[0]
+        name = soup.find("title").text.split()[0]
         return name, 1
     else:
         return "在线也没找到", 0
@@ -199,7 +199,7 @@ def get_card_url(svt, raw_html):
             raise AttributeError
         for each_img in all_img:
             text = each_img.group(0)
-            text = text.split(" ")
+            text = text.split()
             rule = re.compile(r"/images/.+\.(jpg|png)")
             for each_text in text:
                 if re.match(rule, each_text):
@@ -209,11 +209,11 @@ def get_card_url(svt, raw_html):
         if svt["id"] in banned_id and not svt["id"] == "83":
             rule_card = re.compile(r"<th.+rowspan=\"22\".+,(\s+)?/images/.+\.(png|jpg)")
             try:
-                card_url = re.search(rule_card, raw_html).group(0).split(" ")[-1]
+                card_url = re.search(rule_card, raw_html).group(0).split()[-1]
                 cards_url.append(card_url)
             except AttributeError:
                 try:
-                    card_url = re.search(rule_card, raw_html).group(0).split(" ")[-1]
+                    card_url = re.search(rule_card, raw_html).group(0).split()[-1]
                     cards_url.append(card_url)
                 except Exception as e:
                     if "error" in svt:
@@ -227,14 +227,14 @@ def get_card_url(svt, raw_html):
             try:
                 for each_img in all_img:
                     text = each_img.group(0)
-                    img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split(" ")[-1]
+                    img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split()[-1]
                     if img_url not in cards_url:
                         cards_url.append(img_url)
             except AttributeError:
                 try:
                     for each_img in all_img:
                         text = each_img.group(0)
-                        img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split(" ")[-1]
+                        img_url = re.search(r", /images/.+\.(jpg|png)", text).group(0).split()[-1]
                         if img_url not in cards_url:
                             cards_url.append(img_url)
                 except Exception as e:
@@ -249,7 +249,7 @@ def get_card_url(svt, raw_html):
                 all_img = re.finditer(cards, raw_html)
                 for each_img in all_img:
                     text = each_img.group(0)
-                    text = text.split(" ")
+                    text = text.split()
                     rule = re.compile(r"/images/.+\.(jpg|png)")
                     for each_text in text:
                         if re.match(rule, each_text):
@@ -261,7 +261,7 @@ def get_card_url(svt, raw_html):
                     all_img = re.finditer(cards, raw_html)
                     for each_img in all_img:
                         text = each_img.group(0)
-                        text = text.split(" ")
+                        text = text.split()
                         rule = re.compile(r"/images/.+\.(jpg|png)")
                         for each_text in text:
                             if re.match(rule, each_text):

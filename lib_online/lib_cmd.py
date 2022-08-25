@@ -20,7 +20,7 @@ async def lib_cmd_online(url, crt_file=False):
         is_get = False
 
     if is_get:
-        name = soup.find("title").text.split(" ")[0]
+        name = soup.find("title").text.split()[0]
         return name, 1
     else:
         return "在线也没找到", 0
@@ -134,13 +134,13 @@ async def lib_cmd(cmd_data, crt_file=False):
     rule_card = re.compile(r"卡面为游戏资源原始图片.+,(\s+)?/images/.+\.(png|jpg)")
     raw_html = await response.text
     try:
-        card_url = re.search(rule_card, raw_html).group(0).split(" ")[-1]
+        card_url = re.search(rule_card, raw_html).group(0).split()[-1]
     except AttributeError:
         try:
-            card_url = re.search(rule_card, raw_html).group(0).split(" ")[-1]
+            card_url = re.search(rule_card, raw_html).group(0).split()[-1]
         except AttributeError:
             try:
-                card_url = re.search(rule_card, raw_html).group(0).split(" ")[-1]
+                card_url = re.search(rule_card, raw_html).group(0).split()[-1]
             except Exception as e:
                 if "error" in cmd:
                     cmd["error"].append(f"get card img error: {e}")

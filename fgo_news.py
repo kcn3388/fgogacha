@@ -53,7 +53,7 @@ async def get_offical_news(bot, ev: CQEvent):
                         break
         except json.decoder.JSONDecodeError:
             pass
-    num = ev.message.extract_plain_text().split(" ")
+    num = ev.message.extract_plain_text().split()
     if len(num) > 1:
         num = int(num[1])
     else:
@@ -71,7 +71,7 @@ async def get_offical_news(bot, ev: CQEvent):
 async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
-    index = ev.message.extract_plain_text().split(" ")
+    index = ev.message.extract_plain_text().split()
     if len(index) > 1:
         index = index[1]
     else:
