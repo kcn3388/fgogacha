@@ -21,7 +21,7 @@ async def download_svt(crt_file=False):
                 for j in i["online"]:
                     # 如果是从者
                     if j == "svt_icon":
-                        local = svt_path + i["local"][j]
+                        local = os.path.join(svt_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -34,7 +34,7 @@ async def download_svt(crt_file=False):
                     # 如果是指令卡
                     rule = re.compile(r"(ultimate|card\d)_icon")
                     if re.match(rule, j):
-                        local = card_path + i["local"][j]
+                        local = os.path.join(card_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -44,9 +44,9 @@ async def download_svt(crt_file=False):
                         )
                         if not isinstance(download_stat, int):
                             print("download icons error, reason: " + str(download_stat))
-                    # 如果是职介
+                    # 如果是职阶
                     if j == "class_icon":
-                        local = class_path + i["local"][j]
+                        local = os.path.join(class_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -89,7 +89,7 @@ async def download_cft(crt_file=False):
                 for j in i["online"]:
                     # 如果是礼装
                     if j == "cft_icon":
-                        local = cft_path + i["local"][j]
+                        local = os.path.join(cft_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -101,7 +101,7 @@ async def download_cft(crt_file=False):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
-                        local = skill_path + i["local"][j]
+                        local = os.path.join(skill_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -144,7 +144,7 @@ async def download_cmd(crt_file=False):
                 for j in i["online"]:
                     # 如果是纹章
                     if j == "cmd_icon":
-                        local = cmd_path + i["local"][j]
+                        local = os.path.join(cmd_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue
@@ -156,7 +156,7 @@ async def download_cmd(crt_file=False):
                             print("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
-                        local = skill_path + i["local"][j]
+                        local = os.path.join(skill_path, i["local"][j])
                         online = basic_url + i["online"][j]
                         if os.path.exists(local):
                             continue

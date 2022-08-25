@@ -8,14 +8,14 @@ from hoshino import config
 
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
-basic_path = os.path.join(config.RES_DIR , "img", "fgo")
-icon_path = os.path.join(basic_path , "icons")
-svt_path = os.path.join(icon_path , "svt_icons")
-cft_path = os.path.join(icon_path , "cft_icons")
-skill_path = os.path.join(icon_path , "skill_icons")
-cmd_path = os.path.join(icon_path , "cmd_icons")
-card_path = os.path.join(icon_path , "card_icons")
-class_path = os.path.join(icon_path , "class_icons")
+basic_path = os.path.join(config.RES_DIR, "img", "fgo")
+icon_path = os.path.join(basic_path, "icons")
+svt_path = os.path.join(icon_path, "svt_icons")
+cft_path = os.path.join(icon_path, "cft_icons")
+skill_path = os.path.join(icon_path, "skill_icons")
+cmd_path = os.path.join(icon_path, "cmd_icons")
+card_path = os.path.join(icon_path, "card_icons")
+class_path = os.path.join(icon_path, "class_icons")
 
 res_paths = [basic_path, icon_path, svt_path, cft_path, skill_path, cmd_path, card_path, class_path]
 

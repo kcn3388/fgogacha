@@ -513,7 +513,7 @@ async def find_svt(bot, ev: CQEvent):
         counter = 1
         details = []
         for each in svt_data:
-            img_path = svt_path + each["svt_icon"]
+            img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
                 if len(svt_data) < 2:
                     msg_send = f"你找的可能是：{each['name_link']}\n"
@@ -526,7 +526,7 @@ async def find_svt(bot, ev: CQEvent):
                     counter += 1
 
                 # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-                # class_ = class_path + each["class_icon"]
+                # class_ = os.path.join(class_path, each["class_icon"])
                 # if os.path.exists(class_):
                 #     with open(class_, "rb") as f:
                 #         class_img = f.read()
@@ -716,7 +716,7 @@ async def find_svt(bot, ev: CQEvent):
             counter += 1
 
             # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-            # class_ = class_path + each["class_icon"]
+            # class_ = os.path.join(class_path, each["class_icon"])
             # if os.path.exists(class_):
             #     with open(class_, "rb") as f:
             #         class_img = f.read()
@@ -725,7 +725,7 @@ async def find_svt(bot, ev: CQEvent):
             #     pic_card = f'base64://{base64_card}'
             #     msg_send += f"[CQ:image,file={pic_card}]\n"
 
-            img_path = svt_path + each["svt_icon"]
+            img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     img = f.read()
@@ -882,7 +882,7 @@ async def find_cft(bot, ev: CQEvent):
         counter = 1
         details = []
         for each in cft_data:
-            img_path = cft_path + each["cft_icon"]
+            img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     img = f.read()
@@ -916,7 +916,7 @@ async def find_cft(bot, ev: CQEvent):
                         continue
                     if data == "持有技能":
                         msg_data += f"{data}："
-                        skill = skill_path + each["skill_icon"]
+                        skill = os.path.join(skill_path, each["skill_icon"])
                         with open(skill, "rb") as f:
                             skill_img = f.read()
                         bio_card = io.BytesIO(skill_img)
@@ -972,7 +972,7 @@ async def find_cft(bot, ev: CQEvent):
         for each in cft_data:
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
-            img_path = cft_path + each["cft_icon"]
+            img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     img = f.read()
@@ -1113,7 +1113,7 @@ async def find_cmd(bot, ev: CQEvent):
         counter = 1
         details = []
         for each in cmd_data:
-            img_path = cmd_path + each["cmd_icon"]
+            img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     img = f.read()
@@ -1147,7 +1147,7 @@ async def find_cmd(bot, ev: CQEvent):
                         continue
                     if data == "持有技能":
                         msg_data += f"{data}："
-                        skill = skill_path + each["skill_icon"]
+                        skill = os.path.join(skill_path, each["skill_icon"])
                         with open(skill, "rb") as f:
                             skill_img = f.read()
                         bio_card = io.BytesIO(skill_img)
@@ -1203,7 +1203,7 @@ async def find_cmd(bot, ev: CQEvent):
         for each in cmd_data:
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
-            img_path = cmd_path + each["cmd_icon"]
+            img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     img = f.read()
@@ -1211,7 +1211,7 @@ async def find_cmd(bot, ev: CQEvent):
                 base64_str = base64.b64encode(bio.getvalue()).decode()
                 pic_b64 = f'base64://{base64_str}'
                 msg_send += f"[CQ:image,file={pic_b64}]\n"
-                msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n礼装类型：{each['type']}\n\n"
+                msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n纹章类型：{each['type']}\n\n"
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
