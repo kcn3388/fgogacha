@@ -429,31 +429,41 @@ def get_info(svt, soup):
 
 
 def get_ultimate(svt, base):
-    ul_soup = [base[0]]
-    open_info = None
-    open_info2 = None
-    multiple = False
-    rule_multiple = re.compile(r"(灵基再临.+后|第.+阶段|初始|限定|助战|通常)")
-    # t2 = t1.findParent(title=rule_multiple).findPrevious("span").text
+    ul_soup = []
+    open_info = []
+    rule_multiple = re.compile(r"(灵基再临.+后|第.+阶段|初始|限定|助战|通常|第\d部|强化后|强化前)")
     try:
-        if base[0].findPrevious(title="强化后") or base[1].findParent(title=rule_multiple):
-            try:
-                p_span_text = base[1].findParent(title=rule_multiple).findPrevious("span").text
-            except AttributeError:
-                p_span_text = ""
-            if "技能" not in p_span_text:
-                ul_soup.append(base[1])
-                if not base[1].findParent(title=rule_multiple):
-                    open_info = base[0].findPrevious("p").text.strip().replace("开放时间", "\n开放时间")
-                if base[1].findParent(title=rule_multiple):
-                    multiple = True
-                    open_info = base[0].findParent(title=rule_multiple)["title"]
-                    open_info2 = base[1].findParent(title=rule_multiple)["title"]
+        for each_base in base:
+            if each_base.findParent(title=rule_multiple):
+                try:
+                    p_span_text = each_base.findParent(title=rule_multiple).findPrevious("span").text
+                except AttributeError:
+                    p_span_text = ""
+                if "技能" not in p_span_text:
+                    try:
+                        if "技能" in each_base.findParent(title=rule_multiple).findPrevious("b").text:
+                            continue
+                    except AttributeError:
+                        pass
+                    open_time = each_base.findPrevious("p").text.strip().replace("开放时间", "\n开放时间")
+                    if not each_base.findParent(title=rule_multiple):
+                        if open_time not in open_info:
+                            open_info.append(open_time)
+                            ul_soup.append(each_base)
+                    else:
+                        open_request = each_base.findParent(title=rule_multiple)["title"].strip()
+                        if open_request not in open_info:
+                            open_info.append(f"{open_request}\n{open_time}".strip())
+                            ul_soup.append(each_base)
     except IndexError:
         pass
     except Exception as e:
         svt["error"] = [f"get ultimate error: {e}"]
         pass
+
+    if not ul_soup:
+        ul_soup.append(base[0])
+        open_info.append("")
 
     ultimates = []
     for uls in ul_soup:
@@ -505,12 +515,8 @@ def get_ultimate(svt, base):
         color = ul_soup[i].find(class_="floatnone").find("img", alt=True)["alt"]
         ultimates[i]["卡色"] = color.split(".")[0]
 
-    if open_info is not None and not multiple:
-        ultimates[0]["开放条件"] = open_info
-
-    if open_info is not None and open_info2 is not None and multiple:
-        ultimates[0]["开放条件"] = open_info
-        ultimates[1]["开放条件"] = open_info2
+    for i in range(len(ultimates)):
+        ultimates[i]["开放条件"] = open_info[i]
 
     svt["宝具信息"] = ultimates
 
@@ -558,7 +564,7 @@ def get_skills(svt, base, raw_html):
         if each_skill == "职阶技能":
             data = data.split("\n")
         else:
-            data = re.sub(r"(∅|\d+%)", "", data.strip()).split("\n")
+            data = re.sub(r"(∅|(\d+\.)?\d+%)", "", data.strip()).split("\n")
         for each_text in data[::-1]:
             if each_text.isdigit() or each_text == "":
                 data.remove(each_text)
