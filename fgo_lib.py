@@ -419,9 +419,12 @@ async def find_svt(bot, ev: CQEvent):
                 if j == "技能":
                     for skills in i[j]:
                         for each in i[j][skills]:
+                            skill_info = i[j][skills][each]
                             if each == "图标":
                                 continue
-                            trans[f"{skills}{each}"] = i[j][skills][each]
+                            if isinstance(i[j][skills][each], list):
+                                skill_info = i[j][skills][each][0]
+                            trans[f"{skills}{each}"] = skill_info
                 if j == "svt_detail" or j == "cards_url":
                     continue
                 for k in i[j]:
