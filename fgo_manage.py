@@ -59,16 +59,7 @@ sv_manage = Service(
 async def bangzhu(bot, ev):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
-    _name = "涩茄子"
-    _uin = "2087332430"
-    helps = {
-        "type": "node",
-        "data": {
-            "name": _name,
-            "uin": _uin,
-            "content": sv_manage_help
-        }
-    }
+    helps = gen_node(sv_manage_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 

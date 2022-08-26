@@ -38,16 +38,7 @@ sv_fetch = Service(
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))
 @sv_fetch.on_rex(r"(?i)^[fb]go[数s][据j][获h][取q][帮b][助z]$")
 async def bangzhu(bot, ev):
-    _name = "涩茄子"
-    _uin = "2087332430"
-    helps = {
-        "type": "node",
-        "data": {
-            "name": _name,
-            "uin": _uin,
-            "content": sv_fetch_help
-        }
-    }
+    helps = gen_node(sv_fetch_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 

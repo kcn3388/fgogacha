@@ -2,8 +2,6 @@ import json
 import os.path
 import re
 
-import aiocqhttp
-
 from hoshino import Service, priv
 from hoshino.typing import CQEvent
 from .lib_online.lib_online import get_card
@@ -50,16 +48,7 @@ sv_lib = Service(
 @sv_lib.on_fullmatch(("帮助fgo图书馆", "帮助FGO图书馆", "帮助bgo图书馆", "帮助BGO图书馆"))
 @sv_lib.on_rex(r"(?i)^[fb]go[图tl][书si][馆gb][帮b][助z]$")
 async def bangzhu(bot, ev):
-    _name = "涩茄子"
-    _uin = "2087332430"
-    helps = {
-        "type": "node",
-        "data": {
-            "name": _name,
-            "uin": _uin,
-            "content": sv_lib_help
-        }
-    }
+    helps = gen_node(sv_lib_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
@@ -508,15 +497,13 @@ async def find_svt(bot, ev: CQEvent):
         await bot.finish(ev, too_much)
 
     if is_detail:
-        _name = "涩茄子"
-        _uin = "2087332430"
         counter = 1
         details = []
         for each in svt_data:
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
                 if len(svt_data) < 2:
-                    msg_send = f"你找的可能是：{each['name_link']}\n"
+                    msg_send = f"你找的可能是：\n{each['name_link']}\n"
                 else:
                     if counter == 1:
                         msg_send = f"{counter}：{each['name_link']}\n"
@@ -528,32 +515,19 @@ async def find_svt(bot, ev: CQEvent):
                 # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
                 # class_ = os.path.join(class_path, each["class_icon"])
                 # if os.path.exists(class_):
-                #     with open(class_, "rb") as f:
-                #         class_img = f.read()
-                #     bio_card = io.BytesIO(class_img)
-                #     base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                #     pic_card = f'base64://{base64_card}'
-                #     msg_send += f"[CQ:image,file={pic_card}]\n"
+                #     class_img = Image.open(class_)
+                #     pic_card = util.pic2b64(class_img)
+                #     msg_send += f"{MessageSegment.image(pic_card)}\n"
 
                 if os.path.exists(img_path):
-                    with open(img_path, "rb") as f:
-                        img = f.read()
-                    bio = io.BytesIO(img)
-                    base64_str = base64.b64encode(bio.getvalue()).decode()
-                    pic_b64 = f'base64://{base64_str}'
-                    msg_send += f"[CQ:image,file={pic_b64}]\n"
+                    img = Image.open(img_path)
+                    pic_b64 = util.pic2b64(img)
+                    msg_send += f"{MessageSegment.image(pic_b64)}\n"
 
                 msg_send += f"中文名：{each['name_cn']}\n原名：{each['name_jp']}\n稀有度：{each['rare']}\n" \
                             f"获取方法：{each['method']}\n职阶：{each['detail']['职阶']}\n"
 
-                send = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": msg_send.strip()
-                    }
-                }
+                send = gen_node(msg_send.strip())
                 details.append(send)
 
                 if not remove_card:
@@ -563,20 +537,12 @@ async def find_svt(bot, ev: CQEvent):
                         if isinstance(card, int) and card == 100:
                             continue
                         else:
-                            bio_card = io.BytesIO(card)
-                            base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                            pic_card = f'base64://{base64_card}'
+                            bio_card = Image.open(io.BytesIO(card))
+                            pic_card = util.pic2b64(bio_card)
                             msg_card += f"{cards}\n"
-                            msg_card += f"[CQ:image,file={pic_card}]\n"
+                            msg_card += f"{MessageSegment.image(pic_card)}\n"
 
-                    send_card = {
-                        "type": "node",
-                        "data": {
-                            "name": _name,
-                            "uin": _uin,
-                            "content": msg_card.strip()
-                        }
-                    }
+                    send_card = gen_node(msg_card.strip())
                     details.append(send_card)
 
                 if not remove_data:
@@ -588,27 +554,13 @@ async def find_svt(bot, ev: CQEvent):
                                 msg_data += f"{data}：{np}\n"
                             else:
                                 msg_data += f"{data}：{each['detail'][data]}\n"
-                    send_data = {
-                        "type": "node",
-                        "data": {
-                            "name": _name,
-                            "uin": _uin,
-                            "content": create_img(msg_data).strip()
-                        }
-                    }
+                    send_data = gen_node(create_img(msg_data).strip())
                     details.append(send_data)
 
                 if not remove_info:
                     for data in each["svt_detail"]:
                         msg_info = f"{data}：\n{each['svt_detail'][data]['资料']}\n"
-                        send_info = {
-                            "type": "node",
-                            "data": {
-                                "name": _name,
-                                "uin": _uin,
-                                "content": create_img(msg_info).strip()
-                            }
-                        }
+                        send_info = gen_node(create_img(msg_info).strip())
                         details.append(send_info)
 
                 if not remove_fool:
@@ -616,14 +568,7 @@ async def find_svt(bot, ev: CQEvent):
                         msg_fool = f"愚人节：\n{each['fool']['资料']}\n"
                         jp = each['fool']['原文'].replace('。', '。\n')
                         msg_fool += f"原文：\n{jp}\n"
-                        send_fool = {
-                            "type": "node",
-                            "data": {
-                                "name": _name,
-                                "uin": _uin,
-                                "content": create_img(msg_fool).strip()
-                            }
-                        }
+                        send_fool = gen_node(create_img(msg_fool).strip())
                         details.append(send_fool)
 
                 if not remove_ultimate:
@@ -635,14 +580,7 @@ async def find_svt(bot, ev: CQEvent):
                             msg_ultimate += "宝具：\n"
                         for data in each["宝具信息"][index]:
                             msg_ultimate += f"\t{data}：{each['宝具信息'][index][data]}\n"
-                    send_ultimate = {
-                        "type": "node",
-                        "data": {
-                            "name": _name,
-                            "uin": _uin,
-                            "content": create_img(msg_ultimate).strip()
-                        }
-                    }
+                    send_ultimate = gen_node(create_img(msg_ultimate).strip())
                     details.append(send_ultimate)
 
                 if not remove_skill:
@@ -655,23 +593,15 @@ async def find_svt(bot, ev: CQEvent):
                             if data == "图标":
                                 icon = await get_card(each["技能"][skills][data], crt_file)
                                 if not isinstance(icon, int) and not icon == 100:
-                                    bio_card = io.BytesIO(icon)
-                                    base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                                    pic_card = f'base64://{base64_card}'
-                                    msg_skill_icon += f"[CQ:image,file={pic_card}]\n"
+                                    bio_card = Image.open(io.BytesIO(icon))
+                                    pic_card = util.pic2b64(bio_card)
+                                    msg_skill_icon += f"{MessageSegment.image(pic_card)}\n"
                                 continue
 
                             msg_skill += f'\t{data}：{each["技能"][skills][data]}\n'
 
                         msg_skill = msg_skill_icon + create_img(msg_skill).strip()
-                        send_skill = {
-                            "type": "node",
-                            "data": {
-                                "name": _name,
-                                "uin": _uin,
-                                "content": msg_skill
-                            }
-                        }
+                        send_skill = gen_node(msg_skill)
                         details.append(send_skill)
 
                 if not remove_voice:
@@ -681,34 +611,25 @@ async def find_svt(bot, ev: CQEvent):
                             msg_voice += f'\t{each_voice}：{each["语音"][each_type][each_voice]["文本"]}\n\n'
 
                         msg_voice = create_img(msg_voice).strip()
-                        send_voice = {
-                            "type": "node",
-                            "data": {
-                                "name": _name,
-                                "uin": _uin,
-                                "content": msg_voice
-                            }
-                        }
+                        send_voice = gen_node(msg_voice)
                         details.append(send_voice)
 
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=details)
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定从者，或单独指定内容")
 
     else:
         msg_send = "你找的可能是：\n"
         counter = 1
-        _name = "涩茄子"
-        _uin = "2087332430"
         details = []
         for each in svt_data:
             if counter == 1:
                 if len(svt_data) == 1:
-                    msg_send = f"你找的可能是：{each['name_link']}\n"
+                    msg_send = f"你找的可能是：\n{each['name_link']}\n"
                 else:
                     msg_send += f"{counter}：{each['name_link']}\n"
             else:
@@ -718,40 +639,27 @@ async def find_svt(bot, ev: CQEvent):
             # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
             # class_ = os.path.join(class_path, each["class_icon"])
             # if os.path.exists(class_):
-            #     with open(class_, "rb") as f:
-            #         class_img = f.read()
-            #     bio_card = io.BytesIO(class_img)
-            #     base64_card = base64.b64encode(bio_card.getvalue()).decode()
-            #     pic_card = f'base64://{base64_card}'
-            #     msg_send += f"[CQ:image,file={pic_card}]\n"
+            #     class_img = Image.open(class_)
+            #     pic_card = util.pic2b64(class_img)
+            #     msg_send += f"{MessageSegment.image(pic_card)}\n"
 
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img = f.read()
-                bio = io.BytesIO(img)
-                base64_str = base64.b64encode(bio.getvalue()).decode()
-                pic_b64 = f'base64://{base64_str}'
-                msg_send += f"[CQ:image,file={pic_b64}]\n"
+                img = Image.open(img_path)
+                pic_b64 = util.pic2b64(img)
+                msg_send += f"{MessageSegment.image(pic_b64)}\n"
 
             msg_send += f"中文名：{each['name_cn']}\n原名：{each['name_jp']}\n稀有度：{each['rare']}\n" \
                         f"获取方法：{each['method']}\n职阶：{each['detail']['职阶']}\n"
 
-            send = {
-                "type": "node",
-                "data": {
-                    "name": _name,
-                    "uin": _uin,
-                    "content": msg_send.strip()
-                }
-            }
+            send = gen_node(msg_send.strip())
             details.append(send)
         try:
             if len(svt_data) > 1:
                 await bot.send_group_forward_msg(group_id=ev['group_id'], messages=details)
             else:
                 await bot.send(ev, msg_send.strip())
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定从者，或单独指定内容")
 
@@ -884,11 +792,8 @@ async def find_cft(bot, ev: CQEvent):
         for each in cft_data:
             img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img = f.read()
-                bio = io.BytesIO(img)
-                base64_str = base64.b64encode(bio.getvalue()).decode()
-                pic_b64 = f'base64://{base64_str}'
+                img = Image.open(img_path)
+                pic_b64 = util.pic2b64(img)
                 if counter < 2:
                     msg_send = "你找的可能是：\n"
                     msg_send += f"{counter}：{each['name_link']}\n"
@@ -896,7 +801,9 @@ async def find_cft(bot, ev: CQEvent):
                 else:
                     msg_send = f"{counter}：{each['name']}\n"
                     counter += 1
-                msg_send += f"[CQ:image,file={pic_b64}]\n"
+                if len(cft_data) == 1:
+                    msg_send = f"你找的可能是：\n{each['name_link']}\n"
+                msg_send += f"{MessageSegment.image(pic_b64)}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n礼装类型：{each['type']}\n\n"
 
                 msg_send += "卡面：\n"
@@ -904,10 +811,9 @@ async def find_cft(bot, ev: CQEvent):
                 if isinstance(card, int) and card == 100:
                     sv_lib.logger.error(f"获取礼装{each['id']}卡面出错")
                 else:
-                    bio_card = io.BytesIO(card)
-                    base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                    pic_card = f'base64://{base64_card}'
-                    msg_send += f"[CQ:image,file={pic_card}]\n"
+                    bio_card = Image.open(io.BytesIO(card))
+                    pic_card = util.pic2b64(bio_card)
+                    msg_send += f"{MessageSegment.image(pic_card)}\n"
 
                 msg_data = ""
                 for data in each["detail"]:
@@ -917,44 +823,23 @@ async def find_cft(bot, ev: CQEvent):
                     if data == "持有技能":
                         msg_data += f"{data}："
                         skill = os.path.join(skill_path, each["skill_icon"])
-                        with open(skill, "rb") as f:
-                            skill_img = f.read()
-                        bio_card = io.BytesIO(skill_img)
-                        base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                        pic_card = f'base64://{base64_card}'
-                        msg_data += f"[CQ:image,file={pic_card}]\n"
-                        msg_data += f"{each['detail'][data]}\n"
+                        skill_img = Image.open(skill)
+                        pic_card = util.pic2b64(skill_img)
+                        msg_data += f"\n{MessageSegment.image(pic_card)}\n"
+                        if isinstance(each['detail'][data], list):
+                            for each_skill in each['detail'][data]:
+                                each_skill = each_skill.replace("\n+", "+").replace("+", "\n")
+                                msg_data += f"{each_skill}\n"
+                        else:
+                            msg_data += f"{each['detail'][data]}\n"
                     else:
                         msg_data += f"{data}：{each['detail'][data]}\n"
 
-                msg_info = f"解说：{each['detail']['解说']}\n\n日文解说：{each['detail']['日文解说']}"
+                msg_info = f"解说：\n{each['detail']['解说']}\n\n日文解说：\n{each['detail']['日文解说']}"
 
-                _name = "涩茄子"
-                _uin = "2087332430"
-                detail1 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": msg_send.strip()
-                    }
-                }
-                detail2 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": msg_data.strip()
-                    }
-                }
-                detail3 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": create_img(msg_info).strip()
-                    }
-                }
+                detail1 = gen_node(msg_send.strip())
+                detail2 = gen_node(msg_data.strip())
+                detail3 = gen_node(create_img(msg_info).strip())
                 details.append(detail1)
                 details.append(detail2)
                 details.append(detail3)
@@ -962,7 +847,7 @@ async def find_cft(bot, ev: CQEvent):
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=details)
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
 
@@ -972,20 +857,19 @@ async def find_cft(bot, ev: CQEvent):
         for each in cft_data:
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
+            if len(cft_data) == 1:
+                msg_send = f"你找的可能是：\n{each['name_link']}\n"
             img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img = f.read()
-                bio = io.BytesIO(img)
-                base64_str = base64.b64encode(bio.getvalue()).decode()
-                pic_b64 = f'base64://{base64_str}'
-                msg_send += f"[CQ:image,file={pic_b64}]\n"
+                img = Image.open(img_path)
+                pic_b64 = util.pic2b64(img)
+                msg_send += f"{MessageSegment.image(pic_b64)}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n礼装类型：{each['type']}\n\n"
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
             await bot.send(ev, msg_send.strip())
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
 
@@ -1115,11 +999,8 @@ async def find_cmd(bot, ev: CQEvent):
         for each in cmd_data:
             img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img = f.read()
-                bio = io.BytesIO(img)
-                base64_str = base64.b64encode(bio.getvalue()).decode()
-                pic_b64 = f'base64://{base64_str}'
+                img = Image.open(img_path)
+                pic_b64 = util.pic2b64(img)
                 if counter < 2:
                     msg_send = "你找的可能是：\n"
                     msg_send += f"{counter}：{each['name_link']}\n"
@@ -1127,7 +1008,9 @@ async def find_cmd(bot, ev: CQEvent):
                 else:
                     msg_send = f"{counter}：{each['name']}\n"
                     counter += 1
-                msg_send += f"[CQ:image,file={pic_b64}]\n"
+                if len(cmd_data) == 1:
+                    msg_send = f"你找的可能是：\n{each['name_link']}\n"
+                msg_send += f"{MessageSegment.image(pic_b64)}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n纹章类型：{each['type']}\n\n"
 
                 msg_send += "卡面：\n"
@@ -1135,10 +1018,9 @@ async def find_cmd(bot, ev: CQEvent):
                 if isinstance(card, int) and card == 100:
                     sv_lib.logger.error(f"获取纹章{each['id']}卡面出错")
                 else:
-                    bio_card = io.BytesIO(card)
-                    base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                    pic_card = f'base64://{base64_card}'
-                    msg_send += f"[CQ:image,file={pic_card}]\n"
+                    bio_card = Image.open(io.BytesIO(card))
+                    pic_card = util.pic2b64(bio_card)
+                    msg_send += f"{MessageSegment.image(pic_card)}\n"
 
                 msg_data = ""
                 for data in each["detail"]:
@@ -1148,44 +1030,18 @@ async def find_cmd(bot, ev: CQEvent):
                     if data == "持有技能":
                         msg_data += f"{data}："
                         skill = os.path.join(skill_path, each["skill_icon"])
-                        with open(skill, "rb") as f:
-                            skill_img = f.read()
-                        bio_card = io.BytesIO(skill_img)
-                        base64_card = base64.b64encode(bio_card.getvalue()).decode()
-                        pic_card = f'base64://{base64_card}'
-                        msg_data += f"[CQ:image,file={pic_card}]\n"
+                        skill_img = Image.open(skill)
+                        pic_card = util.pic2b64(skill_img)
+                        msg_data += f"\n{MessageSegment.image(pic_card)}\n"
                         msg_data += f"{each['detail'][data]}\n"
                     else:
                         msg_data += f"{data}：{each['detail'][data]}\n"
 
-                msg_info = f"解说：{each['detail']['解说']}\n\n日文解说：{each['detail']['日文解说']}"
+                msg_info = f"解说：\n{each['detail']['解说']}\n\n日文解说：\n{each['detail']['日文解说']}"
 
-                _name = "涩茄子"
-                _uin = "2087332430"
-                detail1 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": msg_send.strip()
-                    }
-                }
-                detail2 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": msg_data.strip()
-                    }
-                }
-                detail3 = {
-                    "type": "node",
-                    "data": {
-                        "name": _name,
-                        "uin": _uin,
-                        "content": create_img(msg_info).strip()
-                    }
-                }
+                detail1 = gen_node(msg_send.strip())
+                detail2 = gen_node(msg_data.strip())
+                detail3 = gen_node(create_img(msg_info).strip())
                 details.append(detail1)
                 details.append(detail2)
                 details.append(detail3)
@@ -1193,7 +1049,7 @@ async def find_cmd(bot, ev: CQEvent):
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=details)
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定纹章")
 
@@ -1203,20 +1059,19 @@ async def find_cmd(bot, ev: CQEvent):
         for each in cmd_data:
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
+            if len(cmd_data) == 1:
+                msg_send = f"你找的可能是：\n{each['name_link']}\n"
             img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img = f.read()
-                bio = io.BytesIO(img)
-                base64_str = base64.b64encode(bio.getvalue()).decode()
-                pic_b64 = f'base64://{base64_str}'
-                msg_send += f"[CQ:image,file={pic_b64}]\n"
+                img = Image.open(img_path)
+                pic_b64 = util.pic2b64(img)
+                msg_send += f"{MessageSegment.image(pic_b64)}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n纹章类型：{each['type']}\n\n"
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
             await bot.send(ev, msg_send.strip())
-        except aiocqhttp.exceptions.ActionFailed as e:
+        except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
 

@@ -1,10 +1,12 @@
-import base64
+# noinspection PyUnresolvedReferences
 import io
 import os
 
+# noinspection PyUnresolvedReferences
+from aiocqhttp import ActionFailed, MessageSegment
 from PIL import Image, ImageFont, ImageDraw
 
-from hoshino import config
+from hoshino import config, util
 
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
@@ -66,9 +68,19 @@ def create_img(text):
     draw = ImageDraw.Draw(img)
     draw.multiline_text((padding / 2, padding / 2), text, font=font, fill="black")
 
-    buffered = io.BytesIO()
-    img.save(buffered, format="JPEG")
-    base64_card = base64.b64encode(buffered.getvalue()).decode()
-    pic = f'base64://{base64_card}'
-    msg = f"[CQ:image,file={pic}]\n"
+    pic = util.pic2b64(img)
+    msg = f'{MessageSegment.image(pic)}\n'
     return msg
+
+
+def gen_node(text, _name="涩茄子", _uin="2087332430"):
+    node = {
+        "type": "node",
+        "data": {
+            "name": _name,
+            "uin": _uin,
+            "content": text
+        }
+    }
+
+    return node

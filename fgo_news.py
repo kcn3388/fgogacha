@@ -1,7 +1,5 @@
 import json
 
-from aiocqhttp import ActionFailed
-
 from hoshino import priv, Service
 from . import CQEvent
 from .get.getnews import get_news
@@ -27,16 +25,7 @@ sv_news = Service(
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))
 @sv_news.on_rex(r"(?i)^[fb]go[新x][闻w][获h][取q][帮b][助z]$")
 async def bangzhu(bot, ev):
-    _name = "涩茄子"
-    _uin = "2087332430"
-    helps = {
-        "type": "node",
-        "data": {
-            "name": _name,
-            "uin": _uin,
-            "content": sv_news_help
-        }
-    }
+    helps = gen_node(sv_news_help.strip())
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
@@ -88,16 +77,7 @@ async def get_local_news(bot, ev: CQEvent):
         index = int(index) - 1
         # noinspection PyUnboundLocalVariable
         msg = news[index]["content"].strip()
-        _name = "涩茄子"
-        _uin = "2087332430"
-        _news = {
-            "type": "node",
-            "data": {
-                "name": _name,
-                "uin": _uin,
-                "content": create_img(msg).strip()
-            }
-        }
+        _news = gen_node(create_img(msg).strip())
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
         except ActionFailed:
@@ -114,14 +94,7 @@ async def get_local_news(bot, ev: CQEvent):
         # noinspection PyUnboundLocalVariable
         for i in range(news_num):
             msg = news[i]["content"].strip()
-            _news = {
-                "type": "node",
-                "data": {
-                    "name": '涩茄子',
-                    "uin": '2087332430',
-                    "content": create_img(msg).strip()
-                }
-            }
+            _news = gen_node(create_img(msg).strip())
             news_all.append(_news)
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=news_all)
@@ -130,14 +103,7 @@ async def get_local_news(bot, ev: CQEvent):
                 await bot.send(ev, f"发送合集失败，尝试拆分发送！\n共有{news_num}条新闻~")
                 for i in range(news_num):
                     msg = news[i]["content"]
-                    _news = {
-                        "type": "node",
-                        "data": {
-                            "name": '涩茄子',
-                            "uin": '2087332430',
-                            "content": create_img(msg).strip()
-                        }
-                    }
+                    _news = gen_node(create_img(msg).strip())
                     try:
                         await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
                     except ActionFailed:

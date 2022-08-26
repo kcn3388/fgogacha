@@ -31,8 +31,14 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 ### 2022
 #### ※建议更新后清除全部配置文件并重新生成，每次更新会尽可能兼容之前的配置文件，但是出现问题请先排查配置文件的问题
+- 🚀 **v2.3.3 (2022-08-25)**
+  - 优化代码
+  - 修复获取从者职阶技能出错
+  - 修复了部分信息获取错误
+
 - 🚀 **v2.3.2 (2022-08-25)**
   - 修复宝具/技能信息获取错误
+
 - 🚀 **v2.3.1 (2022-08-25)**
   - 修复静态文件路径错误
 
@@ -47,6 +53,9 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
       - 文字：旧版简约图标
       - 图片：仿真实抽卡
 
+<details>
+<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
+
 - 🚀 **v2.2.0 (2022-08-25)**
   - **※本次更新后需要手动执行一次更新卡池**
   - 增加更多从者内容
@@ -54,10 +63,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
     - 在[实现仿游戏画面截图十连抽卡 #2](https://github.com/kcn3388/fgogacha/pull/2)基础上，增加国服背景
   - 修正抽卡结果，现在不会出现无保底的情况了
   - 现在卡池会显示国服还是日服
-
-<details>
-<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
-
 - 🚀 **v2.1.0 (2022-08-19)**
   - 增加更多从者内容
   - 修改大部分文本（如新闻，从者资料）为通过文本生成图片，以规避风控

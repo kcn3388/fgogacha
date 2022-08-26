@@ -534,6 +534,7 @@ def get_skills(svt, base, raw_html):
 
     skill_flag = 0
     counter_skill = 1
+    skills["职阶技能"] = []
     for each_skill_list in skill_list:
         skill_type = each_skill_list[0].findPrevious("span").text
         skill_icon = each_skill_list[0].find("img", alt=True)["data-srcset"].split(", ")[-1].split(" 2x")[0]
@@ -543,7 +544,7 @@ def get_skills(svt, base, raw_html):
             counter_skill += 1
         if skill_type == "职阶技能" or skill_flag == 1:
             skill_flag = 1
-            skills["职阶技能"] = [each_skill_list[1]]
+            skills["职阶技能"].append(each_skill_list[1])
         try:
             if skill_type == "持有技能" or skill_flag == 0:
                 title = each_skill_list[0].findParent("div")["title"]
@@ -559,22 +560,30 @@ def get_skills(svt, base, raw_html):
             skills[f'特殊技能({title})'] = [each_skill_list[1], skill_icon]
 
     for each_skill in skills:
-        data = skills[each_skill][0].strip()
-        data = re.sub(r"\n+", "\n", data.strip())
         if each_skill == "职阶技能":
-            data = data.split("\n")
-        else:
-            data = re.sub(r"(∅|(\d+\.)?\d+%)", "", data.strip()).split("\n")
+            continue
+        data = skills[each_skill][0].strip()
+        data = re.sub(r"\n+", "\n", data)
+        data = re.sub(r"(∅|(\d+\.)?\d+%)", "", data).split("\n")
         for each_text in data[::-1]:
             if each_text.isdigit() or each_text == "":
-                data.remove(each_text)
+                if not each_skill == "职阶技能":
+                    data.remove(each_text)
         if not each_skill == "职阶技能":
             data.append(skills[each_skill][1])
         skills[each_skill] = data
 
     if "职阶技能" in skills:
-        for i in range(0, len(skills["职阶技能"]) - 1, 2):
-            skills[f"职阶技能{int(i / 2 + 1)}"] = [skills["职阶技能"][i], skills["职阶技能"][i + 1]]
+        bak_class_skill = skills["职阶技能"]
+        counter = 1
+        for each_bak_skill in bak_class_skill:
+            ncs = each_bak_skill.strip()
+            ncs = re.sub(r"\n+", "\n", ncs).split("\n")
+            for index_ncs in range(0, len(ncs) - 1, 2):
+                skills[f"职阶技能{counter}"] = [
+                    ncs[index_ncs], ncs[index_ncs + 1]
+                ]
+                counter += 1
         skills.pop("职阶技能")
 
     rule_skill_icon = re.compile(r"职阶技能.+\.(png|jpg)")

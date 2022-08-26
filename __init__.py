@@ -38,16 +38,7 @@ sv = Service(
 @sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡", "帮助bgo抽卡", "帮助BGO抽卡"))
 @sv.on_rex(r"(?i)^[fb]go[抽c][卡k][帮b][助z]$")
 async def bangzhu(bot, ev):
-    _name = "涩茄子"
-    _uin = "2087332430"
-    helps = {
-        "type": "node",
-        "data": {
-            "name": _name,
-            "uin": _uin,
-            "content": sv_help
-        }
-    }
+    helps = gen_node(sv_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
@@ -132,16 +123,7 @@ async def check_pool(bot, ev: CQEvent):
             msg += group
 
     if len(msg) > 200:
-        _name = "涩茄子"
-        _uin = "2087332430"
-        _banner = {
-            "type": "node",
-            "data": {
-                "name": _name,
-                "uin": _uin,
-                "content": msg
-            }
-        }
+        _banner = gen_node(msg)
         await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_banner)
     else:
         await bot.send(ev, msg)
@@ -371,11 +353,8 @@ async def gacha_10(bot, ev: CQEvent):
             tmp_img = tmp_img.convert('RGBA')
             base_img.paste(tmp_img, boxlist[i], mask=masker)
 
-    bio = io.BytesIO()
-    base_img.save(bio, format='PNG')
-    base64_str = base64.b64encode(bio.getvalue()).decode()
-    pic_b64 = f'base64://{base64_str}'
-    cqcode = f'[CQ:image,file={pic_b64}]\n'
+    pic_b64 = util.pic2b64(base_img)
+    cqcode = f"{MessageSegment.image(pic_b64)}\n"
     msg = "\n您本次的抽卡结果：\n" + cqcode
 
     stars = ""
@@ -454,12 +433,9 @@ async def gacha_10(bot, ev: CQEvent):
                     msg += "十连卡池毕业~这你还不补宝？\n"
                     is_seal = True
     if is_seal:
-        with open(seal_path, "rb") as f:
-            seal = f.read()
-        bio = io.BytesIO(seal)
-        base64_str = base64.b64encode(bio.getvalue()).decode()
-        pic_b64 = f'base64://{base64_str}'
-        cqcode = f'\n[CQ:image,file={pic_b64}]'
+        img = Image.open(seal_path)
+        pic_b64 = util.pic2b64(img)
+        cqcode = f'\n{MessageSegment.image(pic_b64)}'
         msg += cqcode
 
     await bot.send(ev, msg.strip(), at_sender=True)
@@ -535,11 +511,8 @@ async def gacha_100(bot, ev: CQEvent):
                 else:
                     c_counter = 0
 
-        bio = io.BytesIO()
-        target.save(bio, format='PNG')
-        base64_str = base64.b64encode(bio.getvalue()).decode()
-        pic_b64 = f'base64://{base64_str}'
-        cqcode = f'[CQ:image,file={pic_b64}]\n\n'
+        pic_b64 = util.pic2b64(target)
+        cqcode = f'{MessageSegment.image(pic_b64)}\n\n'
         msg = "\n您本次的抽卡结果：\n\n" + cqcode
     else:
         msg = "\n您本次的抽卡结果：\n\n"
@@ -603,12 +576,9 @@ async def gacha_100(bot, ev: CQEvent):
                     is_seal = True
 
     if is_seal:
-        with open(seal_path, "rb") as f:
-            seal = f.read()
-        bio = io.BytesIO(seal)
-        base64_str = base64.b64encode(bio.getvalue()).decode()
-        pic_b64 = f'base64://{base64_str}'
-        cqcode = f'\n[CQ:image,file={pic_b64}]'
+        img = Image.open(seal_path)
+        pic_b64 = util.pic2b64(img)
+        cqcode = f'\n{MessageSegment.image(pic_b64)}]'
         msg += cqcode
 
     await bot.send(ev, msg.strip(), at_sender=True)
