@@ -540,7 +540,7 @@ def get_skills(svt, base, raw_html):
         skill_icon = each_skill_list[0].find("img", alt=True)["data-srcset"].split(", ")[-1].split(" 2x")[0]
         if skill_type == "追加技能" or skill_flag == 2:
             skill_flag = 2
-            skills[f"追加技能{counter_skill}"] = [each_skill_list[1], skill_icon]
+            skills[f"追加技能{counter_skill}"] = [each_skill_list[1], skill_icon, each_skill_list[0]]
             counter_skill += 1
         if skill_type == "职阶技能" or skill_flag == 1:
             skill_flag = 1
@@ -549,29 +549,48 @@ def get_skills(svt, base, raw_html):
             if skill_type == "持有技能" or skill_flag == 0:
                 title = each_skill_list[0].findParent("div")["title"]
                 if title == "强化后" or title == "强化后":
-                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [each_skill_list[1], skill_icon]
+                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [
+                        each_skill_list[1], skill_icon, each_skill_list[0]
+                    ]
                 else:
-                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [each_skill_list[1], skill_icon]
+                    skills[f'{each_skill_list[0].findPrevious("b").text}({title})'] = [
+                        each_skill_list[1], skill_icon, each_skill_list[0]
+                    ]
         except KeyError:
             if skill_type == "持有技能" or skill_flag == 0:
-                skills[each_skill_list[0].findPrevious("b").text] = [each_skill_list[1], skill_icon]
+                skills[each_skill_list[0].findPrevious("b").text] = [each_skill_list[1], skill_icon, each_skill_list[0]]
         except AttributeError:
             title = each_skill_list[0].findParent("div")["title"]
-            skills[f'特殊技能({title})'] = [each_skill_list[1], skill_icon]
+            skills[f'特殊技能({title})'] = [each_skill_list[1], skill_icon, each_skill_list[0]]
 
     for each_skill in skills:
         if each_skill == "职阶技能":
             continue
         data = skills[each_skill][0].strip()
         data = re.sub(r"\n+", "\n", data)
-        data = re.sub(r"(∅|(\d+\.)?\d+%)", "", data).split("\n")
+        rule_filter = re.compile(
+            r"Ø|∅|\d+%\+\d+%\*\(.+\)|(\d+[.,])?\d+%(\*.+)?|\d\d+[^→]|\d+(\*.|次\n)"
+        )
+        data = re.sub(rule_filter, "", data).split("\n")
+        trs = skills[each_skill][2].findAll("tr")
         for each_text in data[::-1]:
             if each_text.isdigit() or each_text == "":
                 if not each_skill == "职阶技能":
                     data.remove(each_text)
+        bak_data = data.copy()
         if not each_skill == "职阶技能":
-            data.append(skills[each_skill][1])
-        skills[each_skill] = data
+            bak_data.append(skills[each_skill][1])
+            tr_counter = 3
+            for each_effect in data[3:]:
+                value = []
+                value_soup = trs[tr_counter].findAll("td")
+                tr_counter += 2
+                for each_value in value_soup:
+                    value.append(each_value.text.strip())
+                # noinspection PyTypeChecker
+                bak_data[data.index(each_effect)] = [each_effect, value]
+
+        skills[each_skill] = bak_data
 
     if "职阶技能" in skills:
         bak_class_skill = skills["职阶技能"]
@@ -620,8 +639,11 @@ def get_skills(svt, base, raw_html):
                 "充能时间": tmp[1],
                 "图标": tmp[-1]
             }
-            for i in range(3, len(tmp) - 1):
-                skills[each_temp][f'效果{i - 2}'] = tmp[i]
+            if len(tmp) == 1:
+                skills[each_temp]['效果'] = tmp[3]
+            else:
+                for i in range(3, len(tmp) - 1):
+                    skills[each_temp][f'效果{i - 2}'] = tmp[i]
 
     svt["技能"] = skills
 
@@ -653,13 +675,15 @@ def get_voice(svt, soup):
         for each_voice in svt_voice[each_type]:
             # noinspection PyUnresolvedReferences
             text = svt_voice[each_type][each_voice]["文本"]
-            text = text.replace("。", "。\n").strip()
-            text = text.replace("(持有", "\n(持有")
-            text = text.replace("\n\n(持有", "\n(持有")
-            text = text.replace("(通关", "\n(通关")
-            text = text.replace("\n\n(通关", "\n(通关")
-            text = text.replace("(牵绊", "\n(牵绊")
-            text = text.replace("\n\n(牵绊", "\n(牵绊")
+            # text = text.replace("。", "。\n").strip()
+            # text = text.replace("(持有", "\n(持有")
+            # text = text.replace("\n\n(持有", "\n(持有")
+            # text = text.replace("(通关", "\n(通关")
+            # text = text.replace("\n\n(通关", "\n(通关")
+            # text = text.replace("(牵绊", "\n(牵绊")
+            # text = text.replace("\n\n(牵绊", "\n(牵绊")
+            # text = text.replace("(战斗", "\n(战斗")
+            # text = text.replace("\n\n(战斗", "\n(战斗")
             svt_voice[each_type][each_voice]["文本"] = text
 
     svt["语音"] = svt_voice

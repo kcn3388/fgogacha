@@ -223,9 +223,9 @@ async def update_lib(bot, ev: CQEvent):
                 await bot.send(ev, e_msg)
 
 
-@sv_lib.on_rex(r"(?i)^([修x])?([补b])?[fb]go"
+@sv_lib.on_rex(r"(?i)^([修x][补b])?[fb]go"
                r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
-               r"([修x])?([补b])?(\s.+)?$")
+               r"([修x][补b])?(\s.+)?$")
 async def fix_lib(bot, ev: CQEvent):
     is_3_args = False
     if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
@@ -281,6 +281,9 @@ async def fix_lib(bot, ev: CQEvent):
 
     fixed = False
     if is_svt:
+        max_id = svt[0]["id"]
+        if int(msg[0]) > int(max_id):
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
         for each_svt in svt:
             if each_svt["id"] == msg[0]:
                 data = await lib_svt(each_svt, crt_file)
@@ -309,6 +312,9 @@ async def fix_lib(bot, ev: CQEvent):
 
     fixed = False
     if is_cft:
+        max_id = cft[0]["id"]
+        if int(msg[0]) > int(max_id):
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
         for each_cft in cft:
             if each_cft["id"] == msg[0]:
                 data = await lib_cft(each_cft, crt_file)
@@ -337,6 +343,9 @@ async def fix_lib(bot, ev: CQEvent):
 
     fixed = False
     if is_cmd:
+        max_id = cmd[0]["id"]
+        if int(msg[0]) > int(max_id):
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
         for each_cmd in cmd:
             if each_cmd["id"] == msg[0]:
                 data = await lib_cmd(each_cmd, crt_file)
@@ -554,13 +563,13 @@ async def find_svt(bot, ev: CQEvent):
                                 msg_data += f"{data}：{np}\n"
                             else:
                                 msg_data += f"{data}：{each['detail'][data]}\n"
-                    send_data = gen_node(create_img(msg_data).strip())
+                    send_data = gen_node(create_img(msg_data.strip()))
                     details.append(send_data)
 
                 if not remove_info:
                     for data in each["svt_detail"]:
                         msg_info = f"{data}：\n{each['svt_detail'][data]['资料']}\n"
-                        send_info = gen_node(create_img(msg_info).strip())
+                        send_info = gen_node(create_img(msg_info.strip()))
                         details.append(send_info)
 
                 if not remove_fool:
@@ -568,7 +577,7 @@ async def find_svt(bot, ev: CQEvent):
                         msg_fool = f"愚人节：\n{each['fool']['资料']}\n"
                         jp = each['fool']['原文'].replace('。', '。\n')
                         msg_fool += f"原文：\n{jp}\n"
-                        send_fool = gen_node(create_img(msg_fool).strip())
+                        send_fool = gen_node(create_img(msg_fool.strip()))
                         details.append(send_fool)
 
                 if not remove_ultimate:
@@ -579,8 +588,8 @@ async def find_svt(bot, ev: CQEvent):
                         else:
                             msg_ultimate += "宝具：\n"
                         for data in each["宝具信息"][index]:
-                            msg_ultimate += f"\t{data}：{each['宝具信息'][index][data]}\n"
-                    send_ultimate = gen_node(create_img(msg_ultimate).strip())
+                            msg_ultimate += f"\t\t\t\t{data}：{each['宝具信息'][index][data]}\n"
+                    send_ultimate = gen_node(create_img(msg_ultimate.strip()))
                     details.append(send_ultimate)
 
                 if not remove_skill:
@@ -597,10 +606,14 @@ async def find_svt(bot, ev: CQEvent):
                                     pic_card = util.pic2b64(bio_card)
                                     msg_skill_icon += f"{MessageSegment.image(pic_card)}\n"
                                 continue
+                            if isinstance(each["技能"][skills][data], list):
+                                msg_skill += f'\t\t\t\t{data}：\n'
+                                for each_value in each["技能"][skills][data]:
+                                    msg_skill += f'\t\t\t\t\t\t\t\t{each_value}\n'
+                            else:
+                                msg_skill += f'\t\t\t\t{data}：{each["技能"][skills][data]}\n'
 
-                            msg_skill += f'\t{data}：{each["技能"][skills][data]}\n'
-
-                        msg_skill = msg_skill_icon + create_img(msg_skill).strip()
+                        msg_skill = msg_skill_icon + create_img(msg_skill.strip())
                         send_skill = gen_node(msg_skill)
                         details.append(send_skill)
 
@@ -608,9 +621,10 @@ async def find_svt(bot, ev: CQEvent):
                     for each_type in each["语音"]:
                         msg_voice = f"{each_type}：\n"
                         for each_voice in each["语音"][each_type]:
-                            msg_voice += f'\t{each_voice}：{each["语音"][each_type][each_voice]["文本"]}\n\n'
+                            msg_voice += f'\t\t\t\t{each_voice}：' \
+                                         f'\n\t\t\t\t\t\t\t\t{each["语音"][each_type][each_voice]["文本"]}\n'
 
-                        msg_voice = create_img(msg_voice).strip()
+                        msg_voice = create_img(msg_voice.strip())
                         send_voice = gen_node(msg_voice)
                         details.append(send_voice)
 
@@ -839,7 +853,7 @@ async def find_cft(bot, ev: CQEvent):
 
                 detail1 = gen_node(msg_send.strip())
                 detail2 = gen_node(msg_data.strip())
-                detail3 = gen_node(create_img(msg_info).strip())
+                detail3 = gen_node(create_img(msg_info.strip()))
                 details.append(detail1)
                 details.append(detail2)
                 details.append(detail3)
@@ -1041,7 +1055,7 @@ async def find_cmd(bot, ev: CQEvent):
 
                 detail1 = gen_node(msg_send.strip())
                 detail2 = gen_node(msg_data.strip())
-                detail3 = gen_node(create_img(msg_info).strip())
+                detail3 = gen_node(create_img(msg_info.strip()))
                 details.append(detail1)
                 details.append(detail2)
                 details.append(detail3)

@@ -42,13 +42,6 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-async def check_jewel(bot, ev):
-    if not jewel_limit.check(ev.user_id):
-        await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
-    elif not tenjo_limit.check(ev.user_id):
-        await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
-
-
 @sv.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
 async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
@@ -255,7 +248,8 @@ async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
 
     # barrier
-    await check_jewel(bot, ev)
+    if not jewel_limit.check(ev.user_id):
+        await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
     jewel_limit.increase(ev.user_id, 30)
 
     gacha_result, has_pup5, has_pup4, server = await gacha(gid)
@@ -446,7 +440,8 @@ async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
 
     # barrier
-    await check_jewel(bot, ev)
+    if not tenjo_limit.check(ev.user_id):
+        await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
     tenjo_limit.increase(ev.user_id, 1)
 
     g100 = []

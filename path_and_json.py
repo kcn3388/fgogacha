@@ -69,7 +69,7 @@ def create_img(text):
     draw.multiline_text((padding / 2, padding / 2), text, font=font, fill="black")
 
     pic = util.pic2b64(img)
-    msg = f'{MessageSegment.image(pic)}\n'
+    msg = str(MessageSegment.image(pic))
     return msg
 
 
