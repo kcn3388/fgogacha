@@ -16,7 +16,7 @@ async def gacha(gid):
 
     if not exists:
         print("no banner")
-        return 12, 0, 0
+        return 12, 0, 0, 0
 
     server = banner["banner"]["server"]
 
@@ -33,7 +33,7 @@ async def gacha(gid):
                 break
     if len(data) == 0:
         print("data error")
-        return 13
+        return 13, 0, 0, 0
 
     pool_data = {
         "group": gid,
