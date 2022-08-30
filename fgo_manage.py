@@ -25,6 +25,8 @@ try:
     flush_second = configs_schedule["flush_second"]
 except json.decoder.JSONDecodeError:
     pass
+except FileNotFoundError:
+    pass
 except KeyError:
     pass
 

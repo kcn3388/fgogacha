@@ -573,7 +573,7 @@ async def gacha_100(bot, ev: CQEvent):
     if is_seal:
         img = Image.open(seal_path)
         pic_b64 = util.pic2b64(img)
-        cqcode = f'\n{MessageSegment.image(pic_b64)}]'
+        cqcode = f'\n{MessageSegment.image(pic_b64)}'
         msg += cqcode
 
     await bot.send(ev, msg.strip(), at_sender=True)
