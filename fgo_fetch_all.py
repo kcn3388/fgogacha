@@ -43,7 +43,7 @@ async def bangzhu(bot, ev):
 
 
 @sv_fetch.on_fullmatch("获取全部内容")
-async def get_all_mooncell_svt(bot, ev: CQEvent):
+async def get_all_mooncell(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     crt_file = False
@@ -57,6 +57,8 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
                         break
         except json.decoder.JSONDecodeError:
             pass
+
+    sv_fetch.logger.info("开始获取从者")
     all_svt = await get_all_svt(crt_file)
     if not isinstance(all_svt, int):
         await bot.send(ev, f"获取全部从者出错，原因：{all_svt}")
@@ -66,6 +68,7 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
     else:
         await bot.send(ev, "从者列表获取完成~")
 
+    sv_fetch.logger.info("开始获取礼装")
     all_cft = await get_all_cft(crt_file)
     if not isinstance(all_cft, int):
         await bot.send(ev, f"获取全部礼装出错，原因：{all_cft}")
@@ -75,6 +78,7 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
     else:
         await bot.send(ev, "礼装列表获取完成~")
 
+    sv_fetch.logger.info("开始获取纹章")
     all_cmd = await get_all_cmd(crt_file)
     if not isinstance(all_cmd, int):
         await bot.send(ev, f"获取全部纹章出错，原因：{all_cmd}")

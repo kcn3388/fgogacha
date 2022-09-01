@@ -84,5 +84,6 @@ async def solve_content(strs):
     s = re.sub(r'\r', "", s)
     s = re.sub(r'\t', "", s)
     s = re.sub(r'\n\n\n+', "\n", s)
+    s = s.replace("<span>", "")
     s = s.strip()
     return s

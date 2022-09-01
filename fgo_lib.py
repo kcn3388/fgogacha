@@ -12,26 +12,37 @@ from .path_and_json import *
 
 sv_lib_help = '''
 # fgo数据库相关
-[更新fgo图书馆] 获取从者/礼装/纹章的相关详细数据，包括属性、白值等
+``[更新fgo图书馆]`` 获取从者/礼装/纹章的相关详细数据，包括属性、白值等
 - 支持附带类型参数以更新指定内容
-- 类型参数：从者/礼装/纹章
-- **※需要先执行[获取全部内容]**
+- 类型参数：从者/礼装/纹章/最新
+  - 当参数含有最新时，只会获取本地不存在的内容
+  - 支持种类与最新同时存在
+- **※需要先执行``[获取全部内容]``**
 
-[修补fgo图书馆 + 类型 + id] 单独修补某张卡片的详细数据
+``[增添fgo图书馆 + 类型 + id]`` 在本地已存在图书馆的情况下，手动增添新数据，以避免每次数据更新都需要重新爬一次全部内容
+- 类型：从者、礼装、纹章
+
+``[查询最新图书馆 + 类型]`` 获取最近的内容
+
+``[修补fgo图书馆 + 类型 + id]`` 单独修补某张卡片的详细数据
 - 类型为：从者、礼装、纹章
-- **※需要先执行[更新fgo图书馆]**
+- **※需要先执行``[更新fgo图书馆]``**
 
-[fgo从者查询 + 关键词（至少一个）] 通过关键词搜索从者
+``[fgo从者查询 + 关键词（至少一个）]`` 通过关键词搜索从者
 - 若关键词大于两个，只会返回同时符合的
 - 可以附带参数``详细``以获取卡面及游戏数据，附带参数``数据``则不显示卡面只显示游戏数据
+- 当输入参数存在id{卡片id}时，直接返回对应id的卡片
+  - 例子：``查询fgo从者 id312``
 
-[fgo礼装查询 + 关键词（至少一个）] 通过关键词搜索礼装
+``[fgo礼装查询 + 关键词（至少一个）]`` 通过关键词搜索礼装
 - 若关键词大于两个，只会搜索同时符合的
 - 可以附带参数``详细``以获取卡面及游戏数据
+- 查询特定id的礼装同上
 
-[fgo纹章查询 + 关键词（至少一个）] 通过关键词搜索礼装
+``[fgo纹章查询 + 关键词（至少一个）]`` 通过关键词搜索礼装
 - 若关键词大于两个，只会搜索同时符合的
 - 可以附带参数``详细``以获取卡面及游戏数据
+- 查询特定id的纹章同上
 '''.strip()
 
 sv_lib = Service(
@@ -81,11 +92,14 @@ async def update_lib(bot, ev: CQEvent):
     update_svt = False
     update_cft = False
     update_cmd = False
+    latest = False
 
-    rule = re.compile(r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?$")
+    rule = re.compile(
+        r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?(\s[最z][新x]|latest|recent)?$")
     rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
     rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
     rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    rule_latest = re.compile(r"(?i)([最z][新x]|latest|recent)")
 
     msg = ev.message.extract_plain_text()
 
@@ -103,20 +117,52 @@ async def update_lib(bot, ev: CQEvent):
     if re.search(rule_cmd, msg):
         update_cmd = True
 
+    if re.search(rule_latest, msg):
+        latest = True
+
     await bot.send(ev, "开始更新大图书馆~")
 
     if update_svt:
         sv_lib.logger.info("开始更新从者……")
-
-        servants = []
         errors = []
-        # data = await lib_svt(svt[23], crt_file)
-        for each_svt in svt:
-            data = await lib_svt(each_svt, crt_file)
-            if "error" in data:
-                sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
-                errors.append(each_svt["id"])
-            servants.append(data)
+
+        if latest:
+            try:
+                with open(lib_servant_path, 'r', encoding="utf-8") as f:
+                    servants = json.load(f)
+            except json.decoder.JSONDecodeError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆 + 从者]")
+            except FileNotFoundError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆 + 从者]")
+
+            latest_local = int(servants[0]["id"])
+            latest_remote = int(svt[0]["id"])
+            if not latest_local == latest_remote:
+                update_list = []
+                while not latest_local == latest_remote:
+                    latest_local += 1
+                    update_list.append(str(latest_local))
+
+                loc = 0
+                for each_svt in svt:
+                    if each_svt["id"] in update_list:
+                        data = await lib_svt(each_svt, crt_file)
+                        if "error" in data:
+                            sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
+                            errors.append(each_svt["id"])
+                        servants.insert(loc, data)
+                        loc += 1
+
+        else:
+            servants = []
+
+            # data = await lib_svt(svt[23], crt_file)
+            for each_svt in svt:
+                data = await lib_svt(each_svt, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
+                    errors.append(each_svt["id"])
+                servants.append(data)
 
         if os.path.exists(lib_servant_path):
             try:
@@ -146,16 +192,45 @@ async def update_lib(bot, ev: CQEvent):
 
     if update_cft:
         sv_lib.logger.info("开始更新礼装……")
-
-        crafts = []
         errors = []
-        # data = await lib_cft(cft[0], crt_file)
-        for each_cft in cft:
-            data = await lib_cft(each_cft, crt_file)
-            if "error" in data:
-                sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
-                errors.append(each_cft["id"])
-            crafts.append(data)
+
+        if latest:
+            try:
+                with open(lib_craft_path, 'r', encoding="utf-8") as f:
+                    crafts = json.load(f)
+            except json.decoder.JSONDecodeError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+            except FileNotFoundError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+
+            latest_local = int(crafts[0]["id"])
+            latest_remote = int(cft[0]["id"])
+            if not latest_local == latest_remote:
+                update_list = []
+                while not latest_local == latest_remote:
+                    latest_local += 1
+                    update_list.append(str(latest_local))
+
+                loc = 0
+                for each_cft in cft:
+                    if each_cft["id"] in update_list:
+                        data = await lib_cft(each_cft, crt_file)
+                        if "error" in data:
+                            sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
+                            errors.append(each_cft["id"])
+                        crafts.insert(loc, data)
+                        loc += 1
+
+        else:
+            crafts = []
+
+            # data = await lib_cft(cft[0], crt_file)
+            for each_cft in cft:
+                data = await lib_cft(each_cft, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
+                    errors.append(each_cft["id"])
+                crafts.append(data)
 
         if os.path.exists(lib_craft_path):
             try:
@@ -185,16 +260,45 @@ async def update_lib(bot, ev: CQEvent):
 
     if update_cmd:
         sv_lib.logger.info("开始更新纹章……")
-
-        commands = []
         errors = []
-        # data = await lib_cmd(cft[0], crt_file)
-        for each_cmd in cmd:
-            data = await lib_cmd(each_cmd, crt_file)
-            if "error" in data:
-                sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
-                errors.append(each_cmd["id"])
-            commands.append(data)
+
+        if latest:
+            try:
+                with open(lib_command_path, 'r', encoding="utf-8") as f:
+                    commands = json.load(f)
+            except json.decoder.JSONDecodeError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+            except FileNotFoundError:
+                await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+
+            latest_local = int(commands[0]["id"])
+            latest_remote = int(cmd[0]["id"])
+            if not latest_local == latest_remote:
+                update_list = []
+                while not latest_local == latest_remote:
+                    latest_local += 1
+                    update_list.append(str(latest_local))
+
+                loc = 0
+                for each_cmd in cmd:
+                    if each_cmd["id"] in update_list:
+                        data = await lib_cmd(each_cmd, crt_file)
+                        if "error" in data:
+                            sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
+                            errors.append(each_cmd["id"])
+                        commands.insert(loc, data)
+                        loc += 1
+
+        else:
+            commands = []
+
+            # data = await lib_cmd(cft[0], crt_file)
+            for each_cmd in cmd:
+                data = await lib_cmd(each_cmd, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
+                    errors.append(each_cmd["id"])
+                commands.append(data)
 
         if os.path.exists(lib_command_path):
             try:
@@ -221,6 +325,192 @@ async def update_lib(bot, ev: CQEvent):
                 for error in errors:
                     e_msg += f"{error}\t"
                 await bot.send(ev, e_msg)
+
+
+@sv_lib.on_rex(r"(?i)^([查c][询x])?[fb]go[图tl][书si][馆gb]([查c][询x])?(\s)?([最z][新x]|latest|recent)$")
+async def add_lib(bot, ev: CQEvent):
+    try:
+        with open(all_servant_path, 'r', encoding="utf-8") as f:
+            svt = json.load(f)
+        with open(all_craft_path, 'r', encoding="utf-8") as f:
+            cft = json.load(f)
+        with open(all_command_path, 'r', encoding="utf-8") as f:
+            cmd = json.load(f)
+        with open(lib_servant_path, 'r', encoding="utf-8") as f:
+            servants = json.load(f)
+        with open(lib_craft_path, 'r', encoding="utf-8") as f:
+            crafts = json.load(f)
+        with open(lib_command_path, 'r', encoding="utf-8") as f:
+            commands = json.load(f)
+    except json.decoder.JSONDecodeError:
+        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
+    except FileNotFoundError:
+        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
+
+    msg = f"远程：\n从者：{svt[0]['name_cn']}\tid：{svt[0]['id']}\n"
+    msg += f"礼装：{cft[0]['name']}\tid：{cft[0]['id']}\n"
+    msg += f"纹章：{cmd[0]['name']}\tid：{cmd[0]['id']}\n\n"
+    msg += f"本地图书馆：\n从者：{servants[0]['name_cn']}\tid：{servants[0]['id']}\n"
+    msg += f"礼装：{crafts[0]['name']}\tid：{crafts[0]['id']}\n"
+    msg += f"纹章：{commands[0]['name']}\tid：{commands[0]['id']}\n\n"
+
+    await bot.finish(ev, msg.strip())
+
+
+@sv_lib.on_rex(r"(?i)^(增添|add)?[fb]go[图tl][书si][馆gb](增添|add)?(\s.+)?(\s\d+)?$")
+async def add_lib(bot, ev: CQEvent):
+    try:
+        with open(all_servant_path, 'r', encoding="utf-8") as f:
+            svt = json.load(f)
+        with open(all_craft_path, 'r', encoding="utf-8") as f:
+            cft = json.load(f)
+        with open(all_command_path, 'r', encoding="utf-8") as f:
+            cmd = json.load(f)
+    except json.decoder.JSONDecodeError:
+        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
+    except FileNotFoundError:
+        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
+
+    crt_file = False
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            for each_group in configs["groups"]:
+                if each_group["group"] == ev.group_id:
+                    if not each_group["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
+                        break
+        except json.decoder.JSONDecodeError:
+            pass
+
+    update_svt = False
+    update_cft = False
+    update_cmd = False
+
+    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
+    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
+    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+
+    msg = ev.message.extract_plain_text().split()
+    if not len(msg) == 3:
+        await bot.finish("食用指南：增添fgo图书馆 + 类型 + id")
+
+    if re.search(rule_svt, msg[1]):
+        update_svt = True
+
+    if re.search(rule_cft, msg[1]):
+        update_cft = True
+
+    if re.search(rule_cmd, msg[1]):
+        update_cmd = True
+
+    if update_svt:
+        sv_lib.logger.info("开始增添从者……")
+
+        try:
+            with open(lib_servant_path, 'r', encoding="utf-8") as f:
+                servants = json.load(f)
+        except json.decoder.JSONDecodeError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+        except FileNotFoundError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+
+        # data = await lib_svt(svt[23], crt_file)
+        data = None
+        if not int(msg[2]) > int(servants[0]["id"]):
+            await bot.finish(ev, "此从者本地已有数据~更新从者数据请使用[更新fgo图书馆 + 从者 + id]")
+
+        if not int(msg[2]) == int(servants[0]["id"]) + 1:
+            await bot.finish(ev, f"此id前还存在未增添的从者~本地最新id：{servants[0]['id']}")
+
+        for each_svt in svt:
+            if msg[2] == each_svt["id"]:
+                data = await lib_svt(each_svt, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{data['error']}")
+                    await bot.send(ev, f"更新从者{each_svt['id']}出错：{data['error']}")
+                break
+
+        if data is None:
+            await bot.finish(ev, "不存在此id~")
+
+        servants.insert(0, data)
+
+        with open(lib_servant_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(servants, indent=2, ensure_ascii=False))
+        await bot.finish(ev, "已获取从者数据~")
+
+    if update_cft:
+        sv_lib.logger.info("开始更新礼装……")
+
+        try:
+            with open(lib_craft_path, 'r', encoding="utf-8") as f:
+                crafts = json.load(f)
+        except json.decoder.JSONDecodeError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+        except FileNotFoundError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+
+        # data = await lib_cft(cft[0], crt_file)
+        data = None
+        if not int(msg[2]) > int(crafts[0]["id"]):
+            await bot.finish(ev, "此礼装本地已有数据~更新礼装数据请使用[更新fgo图书馆 + 礼装 + id]")
+
+        if not int(msg[2]) == int(crafts[0]["id"]) + 1:
+            await bot.finish(ev, f"此id前还存在未增添的礼装~本地最新id：{crafts[0]['id']}")
+
+        for each_cft in cft:
+            if msg[2] == each_cft["id"]:
+                data = await lib_cft(each_cft, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{data['error']}")
+                    await bot.send(ev, f"更新礼装{each_cft['id']}出错：{data['error']}")
+                break
+
+        if data is None:
+            await bot.finish(ev, "不存在此id~")
+
+        crafts.insert(0, data)
+
+        with open(lib_craft_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(crafts, indent=2, ensure_ascii=False))
+        await bot.finish(ev, "已获取礼装数据~")
+
+    if update_cmd:
+        sv_lib.logger.info("开始更新纹章……")
+
+        try:
+            with open(lib_command_path, 'r', encoding="utf-8") as f:
+                commands = json.load(f)
+        except json.decoder.JSONDecodeError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+        except FileNotFoundError:
+            await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆]")
+
+        # data = await lib_cmd(cft[0], crt_file)
+        data = None
+        if not int(msg[2]) > int(commands[0]["id"]):
+            await bot.finish(ev, "此纹章本地已有数据~更新纹章数据请使用[更新fgo图书馆 + 纹章 + id]")
+
+        if not int(msg[2]) == int(commands[0]["id"]) + 1:
+            await bot.finish(ev, f"此id前还存在未增添的纹章~本地最新id：{commands[0]['id']}")
+
+        for each_cmd in cmd:
+            if msg[2] == each_cmd["id"]:
+                data = await lib_cmd(each_cmd, crt_file)
+                if "error" in data:
+                    sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{data['error']}")
+                    await bot.send(ev, f"更新纹章{each_cmd['id']}出错：{data['error']}")
+                break
+
+        if data is None:
+            await bot.finish(ev, "不存在此id~")
+
+        crafts.insert(0, data)
+
+        with open(lib_command_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(commands, indent=2, ensure_ascii=False))
+        await bot.finish(ev, "已获取纹章数据~")
 
 
 @sv_lib.on_rex(r"(?i)^([修x][补b])?[fb]go"
@@ -283,7 +573,7 @@ async def fix_lib(bot, ev: CQEvent):
     if is_svt:
         max_id = svt[0]["id"]
         if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
         for each_svt in svt:
             if each_svt["id"] == msg[0]:
                 data = await lib_svt(each_svt, crt_file)
@@ -314,7 +604,7 @@ async def fix_lib(bot, ev: CQEvent):
     if is_cft:
         max_id = cft[0]["id"]
         if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
         for each_cft in cft:
             if each_cft["id"] == msg[0]:
                 data = await lib_cft(each_cft, crt_file)
@@ -345,7 +635,7 @@ async def fix_lib(bot, ev: CQEvent):
     if is_cmd:
         max_id = cmd[0]["id"]
         if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[更新fgo图书馆]~")
+            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
         for each_cmd in cmd:
             if each_cmd["id"] == msg[0]:
                 data = await lib_cmd(each_cmd, crt_file)
@@ -380,8 +670,15 @@ async def find_svt(bot, ev: CQEvent):
 
     del (msg[0])
     svt_data = []
-    is_detail, remove_card, remove_data, remove_info, \
-        remove_fool, remove_ultimate, remove_skill, remove_voice = get_keys(msg)
+    is_detail, remove_card, remove_data, remove_info, remove_fool, remove_ultimate, remove_skill, remove_voice \
+        = get_keys(msg)
+
+    is_search_id = False
+    search_id = None
+    for each_arg in msg:
+        if re.match(r"id\d+", each_arg):
+            search_id = each_arg.replace("id", "")
+            is_search_id = True
 
     banned_keys = [
         "Hit信息括号内为每hit伤害百分比",
@@ -397,6 +694,9 @@ async def find_svt(bot, ev: CQEvent):
     ]
 
     for i in svt:
+        if is_search_id and i["id"] == search_id:
+            svt_data.append(i)
+            break
         trans = {}
         tmp = []
         for j in i:
@@ -1177,5 +1477,4 @@ def get_keys(msg):
         remove_skill = True
         msg.pop()
 
-    return is_detail, remove_card, remove_data, remove_info, \
-        remove_fool, remove_ultimate, remove_skill, remove_voice
+    return is_detail, remove_card, remove_data, remove_info, remove_fool, remove_ultimate, remove_skill, remove_voice
