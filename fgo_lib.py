@@ -1006,7 +1006,17 @@ async def find_cft(bot, ev: CQEvent):
     if "羁绊" in msg:
         msg[msg.index("羁绊")] = "牵绊"
 
+    is_search_id = False
+    search_id = None
+    for each_arg in msg:
+        if re.match(r"id\d+", each_arg):
+            search_id = each_arg.replace("id", "")
+            is_search_id = True
+
     for i in cft:
+        if is_search_id and i["id"] == search_id:
+            cft_data.append(i)
+            break
         trans = {}
         tmp = []
         for j in i:
@@ -1213,7 +1223,17 @@ async def find_cmd(bot, ev: CQEvent):
         is_detail = True
         msg.pop()
 
+    is_search_id = False
+    search_id = None
+    for each_arg in msg:
+        if re.match(r"id\d+", each_arg):
+            search_id = each_arg.replace("id", "")
+            is_search_id = True
+
     for i in cmd:
+        if is_search_id and i["id"] == search_id:
+            cmd_data.append(i)
+            break
         trans = {}
         tmp = []
         for j in i:
