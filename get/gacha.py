@@ -79,6 +79,24 @@ async def gacha(gid):
         f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
     result, has_pup5, has_pup4 = await get_result(pool_data["data"])
+    for each_result in result:
+        card = int(random.choice(each_result[2]))
+        each_result[2] = card
+        if each_result[1] == "3 or 4 or 5" or each_result[1] == "4 or 5":
+            for each_card in pool_data["data"]:
+                if isinstance(pool_data["data"][each_card], list) and str(card) in pool_data["data"][each_card]:
+                    if each_card == "svt_5":
+                        each_result[1] = "5"
+                    if each_card == "svt_4":
+                        each_result[1] = "4"
+                    if each_card == "svt_3":
+                        each_result[1] = "3"
+                    if each_card == "svt_pup_5":
+                        each_result[1] = "up5"
+                    if each_card == "svt_pup_4":
+                        each_result[1] = "up4"
+                    if each_card == "svt_pup_3":
+                        each_result[1] = "up3"
     return result, has_pup5, has_pup4, server
 
 
@@ -195,7 +213,7 @@ async def get_result(pool_data):
     svt_counter = 0
     gold_counter = 0
     result = []
-    # # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
+    # 以下是根据时间戳生成随机种子以加强随机性，强烈建议不要放在循环内！除非你想体验千石一宝
     salt = 123383388
     salt += time.time()
     random.seed(salt)
@@ -206,6 +224,12 @@ async def get_result(pool_data):
         # random.seed(salt)
         counter += 1
         rate = random.uniform(0, 1)
+
+        # if counter == 1:
+        #     rate = rate_ce_5
+        # else:
+        #     rate = rate_ce_3
+
         # here is svt gacha
 
         # if is pickup 5
@@ -221,6 +245,7 @@ async def get_result(pool_data):
                     result.append(["svt", "5", svt_5])
                 svt_counter += 1
                 gold_counter += 1
+
         # if is not pickup 5
         if rate_pup_svt_5 == 0 or svt_pup_5 == []:
             if rate <= rate_svt_5:
@@ -241,6 +266,7 @@ async def get_result(pool_data):
                     result.append(["svt", "4", svt_4])
                 svt_counter += 1
                 gold_counter += 1
+
         # if is not pickup 4
         if rate_pup_svt_4 == 0 or svt_pup_4 == []:
             if rate_svt_5 < rate <= rate_svt_4:
@@ -259,6 +285,7 @@ async def get_result(pool_data):
                 else:
                     result.append(["svt", "3", svt_3])
                 svt_counter += 1
+
         # if is not pickup 3
         if rate_pup_svt_3 == 0 or svt_pup_3 == []:
             if rate_svt_4 < rate <= rate_svt_3:
@@ -289,26 +316,35 @@ async def get_result(pool_data):
             if not svt_pup_3 == []:
                 servants += svt_pup_3
 
-            result.append(["svt", "3 or 4 or 5", servants])
+            if len(result) < 11:
+                result.append(["svt", "3 or 4 or 5", servants])
+            else:
+                result[-1] = ["svt", "3 or 4 or 5", servants]
+            break
 
-        # if no svt in previous 10 roll, and no gold in previous 10 roll
-        if counter == 11 and svt_counter == 0 and rate > rate_svt_3 and gold_counter == 0:
-            servants = []
-            if svt_5 is not None:
-                servants += svt_5
+        # if no svt in previous 10 roll or last roll is svt 3, and no gold in previous 10 roll
+        if counter == 11 and gold_counter == 0:
+            if svt_counter == 0 or (result[-1][0] == "svt" and result[-1][1] == "3"):
+                servants = []
+                if svt_5 is not None:
+                    servants += svt_5
 
-            if svt_4 is not None:
-                servants += svt_4
+                if svt_4 is not None:
+                    servants += svt_4
 
-            # if exists pickup 5
-            if not svt_pup_5 == []:
-                servants += svt_pup_5
+                # if exists pickup 5
+                if not svt_pup_5 == []:
+                    servants += svt_pup_5
 
-            # if exists pickup 4
-            if not svt_pup_4 == []:
-                servants += svt_pup_4
+                # if exists pickup 4
+                if not svt_pup_4 == []:
+                    servants += svt_pup_4
 
-            result.append(["svt", "4 or 5", servants])
+                if len(result) < 11:
+                    result.append(["svt", "4 or 5", servants])
+                else:
+                    result[-1] = ["svt", "3 or 4 or 5", servants]
+                break
 
         # now is cft gacha
         # if is pickup 5 ce
@@ -322,6 +358,7 @@ async def get_result(pool_data):
                 else:
                     result.append(["cft", "5", ce_5])
                 gold_counter += 1
+
         # if is not pickup 5 ce
         if rate_pup_ce_5 == 0 or ce_pup_5 == []:
             if rate_svt_3 < rate <= rate_ce_5:
@@ -339,6 +376,7 @@ async def get_result(pool_data):
                 else:
                     result.append(["cft", "4", ce_4])
                 gold_counter += 1
+
         # if is not pickup 4 ce
         if rate_pup_ce_4 == 0 or ce_pup_4 == []:
             if rate_ce_5 < rate <= rate_ce_4:
@@ -354,6 +392,7 @@ async def get_result(pool_data):
                     result.append(["cft", "3", ce_pup_3])
                 else:
                     result.append(["cft", "3", ce_3])
+
         # if is not pickup 3 ce
         if rate_pup_ce_3 == 0 or ce_pup_3 == []:
             if rate_ce_4 < rate <= rate_ce_3:
@@ -376,6 +415,10 @@ async def get_result(pool_data):
             if not ce_pup_4 == []:
                 crafts += ce_pup_4
 
-            result.append(["cft", "4 or 5", crafts])
+            if len(result) < 11:
+                result.append(["cft", "4 or 5", crafts])
+            else:
+                result[-1] = ["cft", "4 or 5", crafts]
+            break
 
     return result, has_pup5, has_pup4

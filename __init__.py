@@ -1,15 +1,15 @@
 import json
-import random
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
-from hoshino.util import DailyNumberLimiter
+from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
 from .get.getGachaPools import getgachapools
 from .path_and_json import *
 
 jewel_limit = DailyNumberLimiter(3000)
 tenjo_limit = DailyNumberLimiter(10)
+lmt = FreqLimiter(15)  # 冷却时间15秒
 
 JEWEL_EXCEED_NOTICE = f"您今天已经抽过{jewel_limit.max}石头了，欢迎明早5点后再来！"
 TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，欢迎明早5点后再来！"
@@ -246,11 +246,15 @@ async def switch_pool(bot, ev: CQEvent):
 @sv.on_rex(r'(?i)^[fb]go(十|10|s)[连l]$')
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
-
     # barrier
     if not jewel_limit.check(ev.user_id):
         await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
     jewel_limit.increase(ev.user_id, 30)
+
+    if not lmt.check(ev.user_id):
+        await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
+        return
+    lmt.start_cd(ev.user_id)
 
     gacha_result, has_pup5, has_pup4, server = await gacha(gid)
     if gacha_result == 12:
@@ -265,18 +269,18 @@ async def gacha_10(bot, ev: CQEvent):
     get_4 = 0
     for each in gacha_result:
         if each[0] == "svt":
-            svt = int(random.choice(each[2]))
-            if int(each[1] == "up5"):
+            svt = int(each[2])
+            if each[1] == "up5":
                 get_pup5 += 1
-            if int(each[1] == "up4"):
+            if each[1] == "up4":
                 get_pup4 += 1
-            if int(each[1] == "5"):
+            if each[1] == "5":
                 get_5 += 1
-            if int(each[1] == "4"):
+            if each[1] == "4":
                 get_4 += 1
             img_path.append(os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg"))
         if each[0] == "cft":
-            cft = int(random.choice(each[2]))
+            cft = int(each[2])
             img_path.append(os.path.join(cft_path, f"礼装{str(cft).zfill(3)}.jpg"))
 
     style = "图片"
@@ -348,8 +352,7 @@ async def gacha_10(bot, ev: CQEvent):
             base_img.paste(tmp_img, boxlist[i], mask=masker)
 
     pic_b64 = util.pic2b64(base_img)
-    cqcode = f"{MessageSegment.image(pic_b64)}\n"
-    msg = "\n您本次的抽卡结果：\n" + cqcode
+    msg = "\n您本次的抽卡结果：\n" + f"{MessageSegment.image(pic_b64)}\n"
 
     stars = ""
     if not get_pup5 == 0:
@@ -397,7 +400,7 @@ async def gacha_10(bot, ev: CQEvent):
         if get_pup4 + get_4 > 1:
             msg += "多黄不亏\n"
         if get_pup4 == 0 and get_4 == 0:
-            msg += "零鸡蛋！酋长咱们回非洲吧\n"
+            msg += "零鸡蛋！酋长，咱们回非洲吧！\n"
         if 0 < get_4 < 2 and not has_pup4:
             msg += "出金就行.jpg\n"
         if get_4 > 1 and not has_pup4:
@@ -429,8 +432,7 @@ async def gacha_10(bot, ev: CQEvent):
     if is_seal:
         img = Image.open(seal_path)
         pic_b64 = util.pic2b64(img)
-        cqcode = f'\n{MessageSegment.image(pic_b64)}'
-        msg += cqcode
+        msg += f'\n{MessageSegment.image(pic_b64)}'
 
     await bot.send(ev, msg.strip(), at_sender=True)
 
@@ -438,11 +440,15 @@ async def gacha_10(bot, ev: CQEvent):
 @sv.on_rex(r'(?i)^[fb]go(百|100|b)[连l]$')
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
-
     # barrier
     if not tenjo_limit.check(ev.user_id):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
     tenjo_limit.increase(ev.user_id, 1)
+
+    if not lmt.check(ev.user_id):
+        await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
+        return
+    lmt.start_cd(ev.user_id)
 
     g100 = []
     g_counter = 0
@@ -466,7 +472,7 @@ async def gacha_100(bot, ev: CQEvent):
     for gacha_result in g100:
         for each in gacha_result:
             if each[0] == "svt":
-                svt = int(random.choice(each[2]))
+                svt = int(each[2])
                 if int(each[1] == "up5"):
                     get_pup5 += 1
                 if int(each[1] == "up4"):
@@ -507,8 +513,7 @@ async def gacha_100(bot, ev: CQEvent):
                     c_counter = 0
 
         pic_b64 = util.pic2b64(target)
-        cqcode = f'{MessageSegment.image(pic_b64)}\n\n'
-        msg = "\n您本次的抽卡结果：\n\n" + cqcode
+        msg = "\n您本次的抽卡结果：\n\n" + f'{MessageSegment.image(pic_b64)}\n\n'
     else:
         msg = "\n您本次的抽卡结果：\n\n"
 
@@ -573,8 +578,7 @@ async def gacha_100(bot, ev: CQEvent):
     if is_seal:
         img = Image.open(seal_path)
         pic_b64 = util.pic2b64(img)
-        cqcode = f'\n{MessageSegment.image(pic_b64)}'
-        msg += cqcode
+        msg += f'\n{MessageSegment.image(pic_b64)}'
 
     await bot.send(ev, msg.strip(), at_sender=True)
 
