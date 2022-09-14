@@ -70,7 +70,10 @@ async def get_all_mooncell(bot, ev: CQEvent):
         msg = "本次更新的从者："
         for each_servant_id in updated_servant_list:
             msg += f"{each_servant_id}\t"
-        await bot.send(ev, msg.strip())
+        try:
+            await bot.send(ev, msg.strip())
+        except ActionFailed:
+            await bot.send(ev, "更新列表太长，请自行查询文件")
 
     sv_fetch.logger.info("开始获取礼装")
     all_cft, updated_cft_list = await get_all_cft(crt_file)
@@ -84,7 +87,10 @@ async def get_all_mooncell(bot, ev: CQEvent):
         msg = "本次更新的礼装："
         for each_cft_id in updated_cft_list:
             msg += f"{each_cft_id}\t"
-        await bot.send(ev, msg.strip())
+        try:
+            await bot.send(ev, msg.strip())
+        except ActionFailed:
+            await bot.send(ev, "更新列表太长，请自行查询文件")
 
     sv_fetch.logger.info("开始获取纹章")
     all_cmd, updated_cmd_list = await get_all_cmd(crt_file)
@@ -98,7 +104,10 @@ async def get_all_mooncell(bot, ev: CQEvent):
         msg = "本次更新的纹章："
         for each_cmd_id in updated_cmd_list:
             msg += f"{each_cmd_id}\t"
-        await bot.send(ev, msg.strip())
+        try:
+            await bot.send(ev, msg.strip())
+        except ActionFailed:
+            await bot.send(ev, "更新列表太长，请自行查询文件")
 
     updates = {
         "svt": [],
@@ -162,7 +171,10 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
         msg = "本次更新的从者："
         for each_servant_id in updated_servant_list:
             msg += f"{each_servant_id}\t"
-        await bot.finish(ev, msg.strip())
+        try:
+            await bot.finish(ev, msg.strip())
+        except ActionFailed:
+            await bot.finish(ev, "更新列表太长，请自行查询文件")
 
 
 @sv_fetch.on_fullmatch("获取全部礼装")
@@ -207,7 +219,10 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
         msg = "本次更新的礼装："
         for each_cft_id in updated_cft_list:
             msg += f"{each_cft_id}\t"
-        await bot.finish(ev, msg.strip())
+        try:
+            await bot.finish(ev, msg.strip())
+        except ActionFailed:
+            await bot.finish(ev, "更新列表太长，请自行查询文件")
 
 
 @sv_fetch.on_fullmatch("获取全部纹章")
@@ -252,7 +267,10 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
         msg = "本次更新的纹章："
         for each_cmd_id in updated_cmd_list:
             msg += f"{each_cmd_id}\t"
-        await bot.finish(ev, msg.strip())
+        try:
+            await bot.finish(ev, msg.strip())
+        except ActionFailed:
+            await bot.finish(ev, "更新列表太长，请自行查询文件")
 
 
 @sv_fetch.on_fullmatch("下载全部卡片资源")

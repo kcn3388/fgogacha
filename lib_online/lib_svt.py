@@ -431,7 +431,7 @@ def get_info(svt, soup):
 def get_ultimate(svt, base):
     ul_soup = []
     open_info = []
-    rule_multiple = re.compile(r"(灵基再临.+后|第.+阶段|初始|限定|助战|通常|第\d部|强化后|强化前)")
+    rule_multiple = re.compile(r"(灵基再临.+后|第.+阶段|初始|限定|助战|通常|第\d部|强化后|强化前|真名解放.+)")
     try:
         for each_base in base:
             if each_base.findParent(title=rule_multiple):
@@ -511,9 +511,16 @@ def get_ultimate(svt, base):
 
         ultimates.append(ultimate)
 
+    error_list = []
     for i in range(len(ul_soup)):
-        color = ul_soup[i].find(class_="floatnone").find("img", alt=True)["alt"]
-        ultimates[i]["卡色"] = color.split(".")[0]
+        try:
+            color = ul_soup[i].find(class_="floatnone").find("img", alt=True)["alt"]
+            ultimates[i]["卡色"] = color.split(".")[0]
+        except AttributeError:
+            error_list.append(i)
+    for each_error in error_list:
+        ultimates.pop(each_error)
+        open_info.pop(each_error)
 
     for i in range(len(ultimates)):
         ultimates[i]["开放条件"] = open_info[i]
