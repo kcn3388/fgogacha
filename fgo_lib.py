@@ -95,7 +95,7 @@ async def update_lib(bot, ev: CQEvent):
     latest = False
 
     rule = re.compile(
-        r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?(\s[最z][新x]|latest|recent)?$")
+        r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?\s?([最z][新x]|latest|recent)?$")
     rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
     rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
     rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
