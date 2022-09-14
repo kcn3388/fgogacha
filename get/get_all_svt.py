@@ -31,7 +31,14 @@ async def get_all_svt(crt_file=False):
         if data[i] == '':
             data.pop(i)
 
+    updated_servants = []
     servants = []
+    old_all_svt = []
+    if os.path.exists(all_servant_path):
+        try:
+            old_all_svt = json.load(open(all_servant_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            old_all_svt = []
 
     rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
     all_svt_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
@@ -99,19 +106,14 @@ async def get_all_svt(crt_file=False):
                         "ultimate_icon": all_svt_icons[i_each + 6].split("/").pop(),
                         "class_icon": all_svt_icons[i_each + 7].split("/").pop()
                     }
+        if svt not in old_all_svt:
+            updated_servants.append(svt["id"])
         servants.append(svt)
 
-    old_all_svt = []
-    if os.path.exists(all_servant_path):
-        try:
-            old_all_svt = json.load(open(all_servant_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            old_all_svt = []
-
     if old_all_svt == servants:
-        return 1
+        return 1, None
 
     with open(all_servant_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(servants, indent=2, ensure_ascii=False))
 
-    return 0
+    return 0, updated_servants

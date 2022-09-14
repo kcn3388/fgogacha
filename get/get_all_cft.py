@@ -29,7 +29,14 @@ async def get_all_cft(crt_file=False):
         if data[i] == '':
             data.pop(i)
 
+    updated_crafts = []
     crafts = []
+    old_all_cft = []
+    if os.path.exists(all_craft_path):
+        try:
+            old_all_cft = json.load(open(all_craft_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            old_all_cft = []
 
     rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
     all_cft_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
@@ -66,19 +73,14 @@ async def get_all_cft(crt_file=False):
                     "skill_icon": all_cft_icons[i_each + 1].split("/").pop()
                 }
 
+        if cft not in old_all_cft:
+            updated_crafts.append(cft["id"])
         crafts.append(cft)
 
-    old_all_cft = []
-    if os.path.exists(all_craft_path):
-        try:
-            old_all_cft = json.load(open(all_craft_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            old_all_cft = []
-
     if old_all_cft == crafts:
-        return 1
+        return 1, None
 
     with open(all_craft_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(crafts, indent=2, ensure_ascii=False))
 
-    return 0
+    return 0, updated_crafts

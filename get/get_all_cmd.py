@@ -29,7 +29,14 @@ async def get_all_cmd(crt_file=False):
         if data[i] == '':
             data.pop(i)
 
+    updated_commands = []
     commands = []
+    old_all_cmd = []
+    if os.path.exists(all_command_path):
+        try:
+            old_all_cmd = json.load(open(all_command_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            old_all_cmd = []
 
     rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
     all_cmd_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
@@ -65,19 +72,14 @@ async def get_all_cmd(crt_file=False):
                     "cmd_icon": each.split("/").pop(),
                     "skill_icon": all_cmd_icons[i_each + 1].split("/").pop()
                 }
+        if cmd not in old_all_cmd:
+            updated_commands.append(cmd["id"])
         commands.append(cmd)
 
-    old_all_cmd = []
-    if os.path.exists(all_command_path):
-        try:
-            old_all_cmd = json.load(open(all_command_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            old_all_cmd = []
-
     if old_all_cmd == commands:
-        return 1
+        return 1, None
 
     with open(all_command_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(commands, indent=2, ensure_ascii=False))
 
-    return 0
+    return 0, updated_commands

@@ -59,7 +59,7 @@ async def get_all_mooncell(bot, ev: CQEvent):
             pass
 
     sv_fetch.logger.info("开始获取从者")
-    all_svt = await get_all_svt(crt_file)
+    all_svt, updated_servant_list = await get_all_svt(crt_file)
     if not isinstance(all_svt, int):
         await bot.send(ev, f"获取全部从者出错，原因：{all_svt}")
 
@@ -67,9 +67,13 @@ async def get_all_mooncell(bot, ev: CQEvent):
         await bot.send(ev, "从者列表已是最新~稍后再来试试吧~")
     else:
         await bot.send(ev, "从者列表获取完成~")
+        msg = "本次更新的从者："
+        for each_servant_id in updated_servant_list:
+            msg += f"{each_servant_id}\t"
+        await bot.send(ev, msg.strip())
 
     sv_fetch.logger.info("开始获取礼装")
-    all_cft = await get_all_cft(crt_file)
+    all_cft, updated_cft_list = await get_all_cft(crt_file)
     if not isinstance(all_cft, int):
         await bot.send(ev, f"获取全部礼装出错，原因：{all_cft}")
 
@@ -77,9 +81,13 @@ async def get_all_mooncell(bot, ev: CQEvent):
         await bot.send(ev, "礼装列表已是最新~稍后再来试试吧~")
     else:
         await bot.send(ev, "礼装列表获取完成~")
+        msg = "本次更新的礼装："
+        for each_cft_id in updated_cft_list:
+            msg += f"{each_cft_id}\t"
+        await bot.send(ev, msg.strip())
 
     sv_fetch.logger.info("开始获取纹章")
-    all_cmd = await get_all_cmd(crt_file)
+    all_cmd, updated_cmd_list = await get_all_cmd(crt_file)
     if not isinstance(all_cmd, int):
         await bot.send(ev, f"获取全部纹章出错，原因：{all_cmd}")
 
@@ -87,6 +95,29 @@ async def get_all_mooncell(bot, ev: CQEvent):
         await bot.send(ev, "纹章列表已是最新~稍后再来试试吧~")
     else:
         await bot.send(ev, "纹章列表获取完成~")
+        msg = "本次更新的纹章："
+        for each_cmd_id in updated_cmd_list:
+            msg += f"{each_cmd_id}\t"
+        await bot.send(ev, msg.strip())
+
+    updates = {
+        "svt": [],
+        "cft": [],
+        "cmd": []
+    }
+    if not os.path.exists(update_data_path):
+        sv_fetch.logger.info("初始化数据json...")
+        open(update_data_path, 'w')
+    else:
+        try:
+            updates = json.load(open(update_data_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pass
+        updates["svt"] = updated_servant_list if updated_servant_list is not None else []
+        updates["cft"] = updated_cft_list if updated_cft_list is not None else []
+        updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
+    with open(update_data_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
 
 @sv_fetch.on_fullmatch("获取全部从者")
@@ -104,14 +135,34 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
                         break
         except json.decoder.JSONDecodeError:
             pass
-    all_svt = await get_all_svt(crt_file)
+    all_svt, updated_servant_list = await get_all_svt(crt_file)
     if not isinstance(all_svt, int):
         await bot.finish(ev, f"获取全部从者出错，原因：{all_svt}")
 
     if all_svt:
         await bot.finish(ev, "从者列表已是最新~稍后再来试试吧~")
     else:
-        await bot.finish(ev, "从者列表获取完成~")
+        await bot.send(ev, "从者列表获取完成~")
+        updates = {
+            "svt": [],
+            "cft": [],
+            "cmd": []
+        }
+        if not os.path.exists(update_data_path):
+            sv_fetch.logger.info("初始化数据json...")
+            open(update_data_path, 'w')
+        else:
+            try:
+                updates = json.load(open(update_data_path, encoding="utf-8"))
+            except json.decoder.JSONDecodeError:
+                pass
+            updates["svt"] = updated_servant_list
+        with open(update_data_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(updates, indent=2, ensure_ascii=False))
+        msg = "本次更新的从者："
+        for each_servant_id in updated_servant_list:
+            msg += f"{each_servant_id}\t"
+        await bot.finish(ev, msg.strip())
 
 
 @sv_fetch.on_fullmatch("获取全部礼装")
@@ -129,14 +180,34 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
                         break
         except json.decoder.JSONDecodeError:
             pass
-    all_cft = await get_all_cft(crt_file)
+    all_cft, updated_cft_list = await get_all_cft(crt_file)
     if not isinstance(all_cft, int):
         await bot.finish(ev, f"获取全部礼装出错，原因：{all_cft}")
 
     if all_cft:
         await bot.finish(ev, "礼装列表已是最新~稍后再来试试吧~")
     else:
-        await bot.finish(ev, "礼装列表获取完成~")
+        await bot.send(ev, "礼装列表获取完成~")
+        updates = {
+            "svt": [],
+            "cft": [],
+            "cmd": []
+        }
+        if not os.path.exists(update_data_path):
+            sv_fetch.logger.info("初始化数据json...")
+            open(update_data_path, 'w')
+        else:
+            try:
+                updates = json.load(open(update_data_path, encoding="utf-8"))
+            except json.decoder.JSONDecodeError:
+                pass
+            updates["cft"] = updated_cft_list
+        with open(update_data_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(updates, indent=2, ensure_ascii=False))
+        msg = "本次更新的礼装："
+        for each_cft_id in updated_cft_list:
+            msg += f"{each_cft_id}\t"
+        await bot.finish(ev, msg.strip())
 
 
 @sv_fetch.on_fullmatch("获取全部纹章")
@@ -154,14 +225,34 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
                         break
         except json.decoder.JSONDecodeError:
             pass
-    all_cmd = await get_all_cmd(crt_file)
+    all_cmd, updated_cmd_list = await get_all_cmd(crt_file)
     if not isinstance(all_cmd, int):
         await bot.finish(ev, f"获取全部纹章出错，原因：{all_cmd}")
 
     if all_cmd:
         await bot.finish(ev, "纹章列表已是最新~稍后再来试试吧~")
     else:
-        await bot.finish(ev, "纹章列表获取完成~")
+        await bot.send(ev, "纹章列表获取完成~")
+        updates = {
+            "svt": [],
+            "cft": [],
+            "cmd": []
+        }
+        if not os.path.exists(update_data_path):
+            sv_fetch.logger.info("初始化数据json...")
+            open(update_data_path, 'w')
+        else:
+            try:
+                updates = json.load(open(update_data_path, encoding="utf-8"))
+            except json.decoder.JSONDecodeError:
+                pass
+            updates["cmd"] = updated_cmd_list
+        with open(update_data_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(updates, indent=2, ensure_ascii=False))
+        msg = "本次更新的纹章："
+        for each_cmd_id in updated_cmd_list:
+            msg += f"{each_cmd_id}\t"
+        await bot.finish(ev, msg.strip())
 
 
 @sv_fetch.on_fullmatch("下载全部卡片资源")

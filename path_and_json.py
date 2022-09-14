@@ -30,6 +30,7 @@ pools_path = os.path.join(data_path, 'pools.json')
 gacha_path = os.path.join(data_path, 'gacha.json')
 icons_path = os.path.join(data_path, 'icons.json')
 banner_data_path = os.path.join(data_path, 'b_data.json')
+update_data_path = os.path.join(data_path, 'update.json')
 
 old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 
