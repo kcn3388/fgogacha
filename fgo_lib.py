@@ -344,7 +344,7 @@ async def update_lib(bot, ev: CQEvent):
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
 
-@sv_lib.on_rex(r"(?i)^([查c][询x])?[fb]go[图tl][书si][馆gb]([查c][询x])?(\s)?([最z][新x]|latest|recent)$")
+@sv_lib.on_rex(r"(?i)^([查c][询x])?[fb]go[图tl][书si][馆gb]([查c][询x])?(\s[\s\S]+)?$")
 async def add_lib(bot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -364,12 +364,23 @@ async def add_lib(bot, ev: CQEvent):
     except FileNotFoundError:
         await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
 
-    msg = f"远程：\n从者：{svt[0]['name_cn']}\tid：{svt[0]['id']}\n"
-    msg += f"礼装：{cft[0]['name']}\tid：{cft[0]['id']}\n"
-    msg += f"纹章：{cmd[0]['name']}\tid：{cmd[0]['id']}\n\n"
-    msg += f"本地图书馆：\n从者：{servants[0]['name_cn']}\tid：{servants[0]['id']}\n"
-    msg += f"礼装：{crafts[0]['name']}\tid：{crafts[0]['id']}\n"
-    msg += f"纹章：{commands[0]['name']}\tid：{commands[0]['id']}\n\n"
+    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
+    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
+    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    args = ev.message.extract_plain_text()
+    msg = ""
+
+    if re.search(rule_svt, args):
+        msg += f"从者：\n远程：{svt[0]['name_cn']}\tid：{svt[0]['id']}\n"
+        msg += f"从者：\n本地：{servants[0]['name_cn']}\tid：{servants[0]['id']}\n"
+
+    if re.search(rule_cft, args):
+        msg += f"礼装：\n远程：{cft[0]['name']}\tid：{cft[0]['id']}\n"
+        msg += f"礼装：\n本地：{crafts[0]['name']}\tid：{crafts[0]['id']}\n"
+
+    if re.search(rule_cmd, args):
+        msg += f"纹章：\n远程：{cmd[0]['name']}\tid：{cmd[0]['id']}\n\n"
+        msg += f"纹章：\n本地：{commands[0]['name']}\tid：{commands[0]['id']}\n\n"
 
     await bot.finish(ev, msg.strip())
 
@@ -840,6 +851,48 @@ async def find_svt(bot, ev: CQEvent):
         for each in svt_data:
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
+                msg_error = ""
+                if "error" in each:
+                    msg_error += f"从者{each['id']}数据存在错误，请使用[修补fgo图书馆 + 从者 + id]修补\n"
+                    error_num = len(each["error"])
+                    for each_error in each["error"]:
+                        if each_error.startswith("aiorequest"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "基础数据错误\n"
+                        if each_error.startswith("first bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "从者数据错误\n"
+                        if each_error.startswith("find power bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "技能/宝具数据错误\n"
+                        if each_error.startswith("get card img error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "卡面数据错误\n"
+                        if each_error.startswith("get star error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "星级数据错误\n"
+                        if each_error.startswith("svt_info_main"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "主描述数据错误\n"
+                        if each_error.startswith("svt_info"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "描述数据错误\n"
+                        if each_error.startswith("svt_detail"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "描述详情数据错误\n"
+
+                    send_error = gen_node(msg_error.strip())
+                    details.append(send_error)
+                    continue
+
                 if len(svt_data) < 2:
                     msg_send = f"你找的可能是：\n{each['name_link']}\n"
                 else:
@@ -969,7 +1022,48 @@ async def find_svt(bot, ev: CQEvent):
         msg_send = "你找的可能是：\n"
         counter = 1
         details = []
+        msg_error = ""
         for each in svt_data:
+            if "error" in each:
+                msg_error += f"从者{each['id']}数据存在错误，请使用[修补fgo图书馆 + 从者 + id]修补\n"
+                error_num = len(each["error"])
+                for each_error in each["error"]:
+                    if each_error.startswith("aiorequest"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "基础数据错误\n"
+                    if each_error.startswith("first bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "从者数据错误\n"
+                    if each_error.startswith("find power bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "技能/宝具数据错误\n"
+                    if each_error.startswith("get card img error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "卡面数据错误\n"
+                    if each_error.startswith("get star error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "星级数据错误\n"
+                    if each_error.startswith("svt_info_main"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "主描述数据错误\n"
+                    if each_error.startswith("svt_info"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "描述数据错误\n"
+                    if each_error.startswith("svt_detail"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "描述详情数据错误\n"
+                send_error = gen_node(msg_error.strip())
+                details.append(send_error)
+                continue
+
             if counter == 1:
                 if len(svt_data) == 1:
                     msg_send = f"你找的可能是：\n{each['name_link']}\n"
@@ -1001,7 +1095,10 @@ async def find_svt(bot, ev: CQEvent):
             if len(svt_data) > 1:
                 await bot.send_group_forward_msg(group_id=ev['group_id'], messages=details)
             else:
-                await bot.send(ev, msg_send.strip())
+                if msg_error:
+                    await bot.send(ev, msg_error.strip())
+                else:
+                    await bot.send(ev, msg_send.strip())
         except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定从者，或单独指定内容")
@@ -1145,6 +1242,36 @@ async def find_cft(bot, ev: CQEvent):
         for each in cft_data:
             img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
+                msg_error = ""
+                if "error" in each:
+                    msg_error += f"礼装{each['id']}数据存在错误，请使用[修补fgo图书馆 + 礼装 + id]修补\n"
+                    error_num = len(each["error"])
+                    for each_error in each["error"]:
+                        if each_error.startswith("aiorequest"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "基础数据错误\n"
+                        if each_error.startswith("first bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "从者数据错误\n"
+                        if each_error.startswith("find power bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "技能/宝具数据错误\n"
+                        if each_error.startswith("get card img error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "卡面数据错误\n"
+                        if each_error.startswith("get star error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "星级数据错误\n"
+
+                    send_error = gen_node(msg_error.strip())
+                    details.append(send_error)
+                    continue
+
                 img = Image.open(img_path)
                 pic_b64 = util.pic2b64(img)
                 if counter < 2:
@@ -1207,7 +1334,35 @@ async def find_cft(bot, ev: CQEvent):
     else:
         msg_send = "你找的可能是：\n"
         counter = 1
+        msg_error = ""
         for each in cft_data:
+            if "error" in each:
+                msg_error += f"礼装{each['id']}数据存在错误，请使用[修补fgo图书馆 + 礼装 + id]修补\n"
+                error_num = len(each["error"])
+                for each_error in each["error"]:
+                    if each_error.startswith("aiorequest"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "基础数据错误\n"
+                    if each_error.startswith("first bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "从者数据错误\n"
+                    if each_error.startswith("find power bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "技能/宝具数据错误\n"
+                    if each_error.startswith("get card img error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "卡面数据错误\n"
+                    if each_error.startswith("get star error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "星级数据错误\n"
+
+                continue
+
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
             if len(cft_data) == 1:
@@ -1221,7 +1376,10 @@ async def find_cft(bot, ev: CQEvent):
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
-            await bot.send(ev, msg_send.strip())
+            if msg_error:
+                await bot.send(ev, msg_error.strip())
+            else:
+                await bot.send(ev, msg_send.strip())
         except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
@@ -1362,6 +1520,36 @@ async def find_cmd(bot, ev: CQEvent):
         for each in cmd_data:
             img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
+                msg_error = ""
+                if "error" in each:
+                    msg_error += f"礼装{each['id']}数据存在错误，请使用[修补fgo图书馆 + 礼装 + id]修补\n"
+                    error_num = len(each["error"])
+                    for each_error in each["error"]:
+                        if each_error.startswith("aiorequest"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "基础数据错误\n"
+                        if each_error.startswith("first bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "从者数据错误\n"
+                        if each_error.startswith("find power bs error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "技能/宝具数据错误\n"
+                        if each_error.startswith("get card img error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "卡面数据错误\n"
+                        if each_error.startswith("get star error"):
+                            if not error_num == 1:
+                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                            msg_error += "星级数据错误\n"
+
+                    send_error = gen_node(msg_error.strip())
+                    details.append(send_error)
+                    continue
+
                 img = Image.open(img_path)
                 pic_b64 = util.pic2b64(img)
                 if counter < 2:
@@ -1419,7 +1607,35 @@ async def find_cmd(bot, ev: CQEvent):
     else:
         msg_send = "你找的可能是：\n"
         counter = 1
+        msg_error = ""
         for each in cmd_data:
+            if "error" in each:
+                msg_error += f"礼装{each['id']}数据存在错误，请使用[修补fgo图书馆 + 礼装 + id]修补\n"
+                error_num = len(each["error"])
+                for each_error in each["error"]:
+                    if each_error.startswith("aiorequest"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "基础数据错误\n"
+                    if each_error.startswith("first bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "从者数据错误\n"
+                    if each_error.startswith("find power bs error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "技能/宝具数据错误\n"
+                    if each_error.startswith("get card img error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "卡面数据错误\n"
+                    if each_error.startswith("get star error"):
+                        if not error_num == 1:
+                            msg_error += f'错误{each["error"].index(each_error) + 1}：'
+                        msg_error += "星级数据错误\n"
+
+                continue
+
             msg_send += f"{counter}：{each['name_link']}\n"
             counter += 1
             if len(cmd_data) == 1:
@@ -1433,7 +1649,10 @@ async def find_cmd(bot, ev: CQEvent):
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
         try:
-            await bot.send(ev, msg_send.strip())
+            if msg_error:
+                await bot.send(ev, msg_error.strip())
+            else:
+                await bot.send(ev, msg_send.strip())
         except ActionFailed as e:
             sv_lib.logger.error(f"转发群消息失败：{e}")
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")

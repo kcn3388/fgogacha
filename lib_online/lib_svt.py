@@ -373,7 +373,10 @@ def get_info(svt, soup):
             try:
                 svt_info = soup.findAll(title=rule_svt_info)
             except Exception as e:
-                svt["error"] = [f"svt_info error: {e}"]
+                if "error" in svt:
+                    svt["error"].append(f"svt_info_main error: {e}")
+                else:
+                    svt["error"] = [f"svt_info_main error: {e}"]
                 pass
 
     # noinspection PyUnboundLocalVariable
@@ -396,34 +399,55 @@ def get_info(svt, soup):
                         if not data.text == "":
                             detail_info.append(data.text.strip())
                 except Exception as e:
-                    svt["error"] = [f"svt_info error: {e}"]
+                    if "error" in svt:
+                        svt["error"].append(f"svt_info error: {e}")
+                    else:
+                        svt["error"] = [f"svt_info error: {e}"]
                     pass
 
     svt_detail = {}
-    if len(detail_info) > 6:
-        for i in range(0, len(detail_info), 2):
-            if i == 0:
-                svt_detail["角色详情"] = {
-                    "资料": re.sub(r"\n\n+", "\n", detail_info[i]),
-                    "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1])
-                }
-            else:
-                svt_detail["个人资料" + str(int(i / 2))] = {
-                    "资料": re.sub(r"\n\n+", "\n", detail_info[i]),
-                    "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1])
-                }
-    else:
-        for i in range(len(detail_info)):
-            if i == 0:
-                svt_detail["角色详情"] = {
-                    "资料": "",
-                    "原文": re.sub(r"\n\n+", "\n", detail_info[i])
-                }
-            else:
-                svt_detail["个人资料" + str(i)] = {
-                    "资料": "",
-                    "原文": re.sub(r"\n\n+", "\n", detail_info[i])
-                }
+    try:
+        if len(detail_info) > 6:
+            for i in range(0, len(detail_info), 2):
+                if i == 0:
+                    svt_detail["角色详情"] = {
+                        "资料": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        ),
+                        "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        )
+                    }
+                else:
+                    svt_detail["个人资料" + str(int(i / 2))] = {
+                        "资料": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        ),
+                        "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        )
+                    }
+        else:
+            for i in range(len(detail_info)):
+                if i == 0:
+                    svt_detail["角色详情"] = {
+                        "资料": "",
+                        "原文": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        )
+                    }
+                else:
+                    svt_detail["个人资料" + str(i)] = {
+                        "资料": "",
+                        "原文": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                        )
+                    }
+    except IndexError as e:
+        if "error" in svt:
+            svt["error"].append(f"svt_detail error: {e}")
+        else:
+            svt["error"] = [f"svt_detail error: {e}"]
 
     svt["svt_detail"] = svt_detail
 
@@ -458,7 +482,10 @@ def get_ultimate(svt, base):
     except IndexError:
         pass
     except Exception as e:
-        svt["error"] = [f"get ultimate error: {e}"]
+        if "error" in svt:
+            svt["error"].append(f"get ultimate error: {e}")
+        else:
+            svt["error"] = [f"get ultimate error: {e}"]
         pass
 
     if not ul_soup:
