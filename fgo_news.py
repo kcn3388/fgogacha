@@ -91,9 +91,18 @@ async def get_local_news(bot, ev: CQEvent):
             else:
                 sv_news.logger.warning("获取新闻截图出错")
                 msg = "截图出错，请自行查看~"
-        _news = (link + msg).strip()
-        await bot.send(ev, msg)
-
+        _news = gen_node((link + msg).strip())
+        try:
+            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
+        except ActionFailed:
+            await bot.send(ev, "转发消息失败……尝试直接发送~")
+            try:
+                await bot.send(ev, msg)
+            except ActionFailed:
+                await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
+                                   f"标题：{news[index]['title']}\n"
+                                   f"电脑版网页：{news[index]['page']}\n"
+                                   f"手机版网页：{news[index]['mobile_page']}")
     if get_all:
         news_all = []
         # noinspection PyUnboundLocalVariable
