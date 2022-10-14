@@ -1,5 +1,5 @@
 import re
-
+import shutil
 from hoshino import priv, Service
 from . import CQEvent
 from .get.getnews import get_news
@@ -9,6 +9,8 @@ sv_news_help = '''
 # 新闻相关：
 [获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
 [查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
+- 可以在末尾附加参数``nopic``不使用截图
+[清除新闻缓存] 移除新闻截图
 '''.strip()
 
 sv_news = Service(
@@ -83,9 +85,11 @@ async def get_local_news(bot, ev: CQEvent):
         link = f"标题：{news[index]['title']}\n电脑版网页：{news[index]['page']}\n手机版网页：{news[index]['mobile_page']}\n\n"
         msg = ""
         if not no_pic:
-            get_pic_stat = getpic(news[index]['page'], os.path.join(news_img_path, f"news_{index + 1}"))
-            if get_pic_stat:
-                news_img = Image.open(os.path.join(news_img_path, f"news_{index + 1}.png"))
+            img_path = os.path.join(news_img_path, f"{news[index]['id']}.png")
+            if not os.path.exists(img_path):
+                getpic(news[index]['page'], img_path)
+            if os.path.exists(img_path):
+                news_img = Image.open(img_path)
                 pic_b64 = util.pic2b64(news_img)
                 msg = f"{MessageSegment.image(pic_b64)}\n"
             else:
@@ -127,3 +131,9 @@ async def get_local_news(bot, ev: CQEvent):
                                            f"手机版网页：{news[i]['mobile_page']}")
             else:
                 await bot.send(ev, f"新闻太多啦！\n共有{news_num}条新闻，请尝试用编号查对应新闻~")
+
+
+@sv_news.on_fullmatch("清除新闻缓存")
+async def delete_news_cache(bot, ev: CQEvent):
+    shutil.rmtree(news_img_path)
+    await bot.finish(ev, "已清理新闻缓存")

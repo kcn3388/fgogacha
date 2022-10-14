@@ -178,7 +178,7 @@ def getpic(url, save_img_name, _type=""):
         if not _type == "":
             scroll_width = 600
         driver.set_window_size(scroll_width, scroll_height)
-        driver.get_screenshot_as_file(picname + ".png")
+        driver.get_screenshot_as_file(picname)
         return True
     except Exception as e:
         print(e)
