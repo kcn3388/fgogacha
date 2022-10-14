@@ -1,4 +1,3 @@
-import json
 import re
 
 from hoshino import aiorequests
@@ -43,7 +42,7 @@ async def get_news(page_size=6, crt_file=None):
         except Exception as e:
             return -100, e
         single_news = json.loads(await single_news.text)["data"]
-        single_news["content"] = await solve_content(single_news["content"])
+        # single_news["content"] = await solve_content(single_news["content"])
         single_news["page"] = single_news_page
         single_news["mobile_page"] = single_news_page_mobile
         all_news.append(single_news)

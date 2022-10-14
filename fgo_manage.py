@@ -1,11 +1,10 @@
-import json
 import re
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
 from .download.downloadIcons import downloadicons
-from .get.getnews import get_news
 from .get.getGachaPools import getgachapools
+from .get.getnews import get_news
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 from .path_and_json import *
 
@@ -118,16 +117,9 @@ async def get_fgo_data(bot, ev: CQEvent):
     await bot.send(ev, "开始下载....")
 
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     sv_manage.logger.info("开始下载icon")
     icon_stat = await downloadicons(crt_file)
@@ -148,36 +140,7 @@ async def follow_latest(bot, ev: CQEvent):
         await bot.finish(ev, '此命令仅群管可用~')
     global FOLLOW_LATEST_POOL
     args = ev.message.extract_plain_text()
-    if not os.path.exists(config_path):
-        sv_manage.logger.info("初始化配置文件json...")
-        open(config_path, 'w')
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
-    else:
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            basic_config = {
-                "group": ev.group_id,
-                "crt_path": crt_path,
-                "style": "图片"
-            }
-            configs = {
-                "follow_latest": FOLLOW_LATEST_POOL,
-                "groups": [basic_config]
-            }
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+    configs = load_config(ev)
 
     rule_latest = re.compile(r"(?i)^[g跟][s随][z最][x新][k卡][c池]$")
     rule_story = re.compile(r"(?i)^[g跟][s随][j剧][q情][k卡][c池]$")
@@ -216,55 +179,21 @@ async def enable_crt(bot, ev: CQEvent):
     if match:
         crt = "False"
 
-    if not os.path.exists(config_path):
-        sv_manage.logger.info("初始化配置文件json...")
-        open(config_path, 'w')
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
-    else:
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            basic_config = {
-                "group": ev.group_id,
-                "crt_path": crt_path,
-                "style": "图片"
-            }
-            configs = {
-                "follow_latest": FOLLOW_LATEST_POOL,
-                "flush_hour": flush_hour,
-                "flush_minute": flush_minute,
-                "flush_second": flush_second,
-                "groups": [basic_config]
-            }
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+    configs = load_config(ev)
+    group_config = load_config(ev, True)
 
     crt_config = {
         "group": ev.group_id,
         "crt_path": crt,
-        "style": "图片"
+        "style": group_config["style"]
     }
 
-    exists = False
-    for each in configs["groups"]:
-        if each["group"] == ev.group_id:
-            each["crt_path"] = crt
-            exists = True
-            break
+    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
 
-    if not exists:
+    if not gc_index:
         configs["groups"].append(crt_config)
+    else:
+        configs["groups"][gc_index[0]] = crt_config
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -283,39 +212,12 @@ async def enable_crt(bot, ev: CQEvent):
     if not os.path.exists(config_path):
         await bot.finish(ev, "未配置crt文件")
 
-    try:
-        configs = json.load(open(config_path, encoding="utf-8"))
-    except json.decoder.JSONDecodeError:
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+    crt_config = load_config(ev, True)
 
-    crt_config = {}
-
-    exists = False
-    for each in configs["groups"]:
-        if each["group"] == ev.group_id:
-            exists = True
-            crt_config = each
-            break
-    if not exists:
-        await bot.finish(ev, "本群未配置crt")
+    if crt_config['crt_path'] == "False":
+        await bot.finish(ev, "本群已禁用crt文件")
     else:
-        if crt_config['crt_path'] == "False":
-            await bot.finish(ev, "本群已禁用crt文件")
-        else:
-            await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
+        await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
 @sv_manage.on_rex(r"(?i)^([切qs][换hw])?[十s][连l][样y][式s]([切qs][换hw])?\s(text|img|文字|图片)$")
@@ -331,36 +233,21 @@ async def switch_10roll_style(bot, ev: CQEvent):
     if re.match(r"(?i)img", style[1]):
         style = "图片"
 
-    try:
-        configs = json.load(open(config_path, encoding="utf-8"))
-    except json.decoder.JSONDecodeError:
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
+    configs = load_config(ev)
+    group_config = load_config(ev, True)
 
-    get_group = False
-    for each in configs["groups"]:
-        if each["group"] == ev.group_id:
-            each["style"] = style
-            get_group = True
-            break
+    style_config = {
+        "group": ev.group_id,
+        "crt_path": group_config["crt_path"],
+        "style": style
+    }
 
-    if not get_group:
-        group_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": style
-        }
-        configs["groups"].append(group_config)
+    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
+
+    if not gc_index:
+        configs["groups"].append(style_config)
+    else:
+        configs["groups"][gc_index[0]] = style_config
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -372,52 +259,21 @@ async def switch_10roll_style(bot, ev: CQEvent):
 async def reload_config(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            basic_config = {
-                "group": ev.group_id,
-                "crt_path": crt_path,
-                "style": "图片"
-            }
-            configs = {
-                "follow_latest": FOLLOW_LATEST_POOL,
-                "flush_hour": flush_hour,
-                "flush_minute": flush_minute,
-                "flush_second": flush_second,
-                "groups": [basic_config]
-            }
+
+    configs = load_config(ev)
+
+    default_config = {
+        "group": ev.group_id,
+        "crt_path": crt_path,
+        "style": "图片"
+    }
+
+    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
+
+    if not gc_index:
+        configs["groups"].append(default_config)
     else:
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
-
-    get_group = False
-    for each in configs["groups"]:
-        if each["group"] == ev.group_id:
-            get_group = True
-        if "crt_path" not in each:
-            each["crt_path"] = crt_path
-        if "style" not in each:
-            each["style"] = "图片"
-
-    if not get_group:
-        group_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs["groups"].append(group_config)
+        configs["groups"][gc_index[0]] = default_config
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -481,21 +337,9 @@ async def set_update_time(bot, ev: CQEvent):
         await bot.finish(ev, '此命令仅群管可用~')
     msg = ev.message.extract_plain_text()
     times = msg.split()
-    try:
-        configs = json.load(open(config_path, encoding="utf-8"))
-    except json.decoder.JSONDecodeError:
-        basic_config = {
-            "group": ev.group_id,
-            "crt_path": crt_path,
-            "style": "图片"
-        }
-        configs = {
-            "follow_latest": FOLLOW_LATEST_POOL,
-            "flush_hour": flush_hour,
-            "flush_minute": flush_minute,
-            "flush_second": flush_second,
-            "groups": [basic_config]
-        }
+
+    configs = load_config(ev)
+
     rule_c = re.compile("(?i)^([设s][置z])?[fb]go[时s][间j]([设s][置z])?$")
     if re.search(rule_c, times[0]) and len(times) == 1:
         await bot.send(ev, "食用指南：设置fgo时间 + 小时 + 分钟 + 秒（至少存在一个）")

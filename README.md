@@ -31,6 +31,21 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 ### 2022
 #### ※建议更新后清除全部配置文件并重新生成，每次更新会尽可能兼容之前的配置文件，但是出现问题请先排查配置文件的问题
+- 🚀 **v2.5.0 (2022-10-14)**
+  - 优化代码
+  - 重构更新fgo图书馆
+  - 现在获取fgo新闻不再进行文字图片化，并会尝试进行网页截屏
+    - Linux平台需要使用Chrome及Chromedriver，Windows平台需要使用Edge及Edgedriver
+    - 获取当前安装的Chrome版本号后，在[这里](https://chromedriver.chromium.org/downloads)寻找对应大版本号的Chromedriver
+    - 获取当前安装的Edge版本号后，在[这里](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/)寻找对应大版本号的Edgedriver
+    - 获取驱动文件后，Chromedriver重命名为``chromedriver``，Edgedriver重命名为``msedgedriver.exe``，并放置于本插件的``res``文件夹下
+    - 截图失败时，会取消截图，只显示新闻链接
+    - 可以在查询新闻末尾附加参数``nopic``不使用截图
+    - 获取全部新闻不使用截图
+
+<details>
+<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
+
 - 🚀 **v2.4.7 (2022-09-19)**
   - 修复日文新从者因为翻译问题导致的错误
   - 当卡片资料存在错误时，在查询卡片资料时发出警告
@@ -61,10 +76,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
     - 当输入参数存在id{卡片id}时，直接返回对应id的卡片
     - 例子：``查询fgo从者 id312``
   - 更改获取新闻样式
-
-<details>
-<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
-
 - 🚀 **v2.3.6.1 (2022-08-30)**
   - 修复抽卡报错
 - 🚀 **v2.3.6 (2022-08-30)**

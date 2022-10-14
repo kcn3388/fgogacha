@@ -1,4 +1,4 @@
-import json
+import re
 
 from hoshino import priv, Service
 from . import CQEvent
@@ -32,16 +32,10 @@ async def bangzhu(bot, ev):
 @sv_news.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[新x][闻w]([获h更g][取q新x])?(\s\d+)?$")
 async def get_offical_news(bot, ev: CQEvent):
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+
     num = ev.message.extract_plain_text().split()
     if len(num) > 1:
         num = int(num[1])
@@ -60,43 +54,52 @@ async def get_offical_news(bot, ev: CQEvent):
 async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
-    index = ev.message.extract_plain_text().split()
-    if len(index) > 1:
-        index = index[1]
-    else:
-        index = 0
+    args = ev.message.extract_plain_text()
+    no_pic = False
+    get_all = False
+    index = 0
+    if "nopic" in args:
+        no_pic = True
+    if "all" in args:
+        get_all = True
+
+    match = re.search(r"\d+", args)
+    if match:
+        index = int(match.group(0))
     try:
         news = json.load(open(news_detail_path, encoding="utf-8"))
     except json.decoder.JSONDecodeError:
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+
+    if not os.path.exists(news_img_path):
+        sv_news.logger.info("初始化新闻图片目录...")
+        os.mkdir(news_img_path)
     # noinspection PyUnboundLocalVariable
     news_num = len(news)
-    if str(index).isdigit():
-        if not int(index):
+    if not get_all:
+        if not index:
             await bot.finish(ev, f"本地共有{news_num}条新闻，请用编号查对应新闻~")
         index = int(index) - 1
-        # noinspection PyUnboundLocalVariable
-        msg = news[index]["content"].strip()
         link = f"标题：{news[index]['title']}\n电脑版网页：{news[index]['page']}\n手机版网页：{news[index]['mobile_page']}\n\n"
-        _news = gen_node(link + create_img(msg.strip()))
-        try:
-            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
-        except ActionFailed:
-            await bot.send(ev, "转发消息失败……尝试直接发送~")
-            try:
-                await bot.send(ev, msg)
-            except ActionFailed:
-                await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
-                                   f"标题：{news[index]['title']}\n"
-                                   f"电脑版网页：{news[index]['page']}\n"
-                                   f"手机版网页：{news[index]['mobile_page']}")
-    if index == "all":
+        msg = ""
+        if not no_pic:
+            get_pic_stat = getpic(news[index]['page'], os.path.join(news_img_path, f"news_{index + 1}"))
+            if get_pic_stat:
+                news_img = Image.open(os.path.join(news_img_path, f"news_{index + 1}.png"))
+                pic_b64 = util.pic2b64(news_img)
+                msg = f"{MessageSegment.image(pic_b64)}\n"
+            else:
+                sv_news.logger.warning("获取新闻截图出错")
+                msg = "截图出错，请自行查看~"
+        _news = (link + msg).strip()
+        await bot.send(ev, msg)
+
+    if get_all:
         news_all = []
         # noinspection PyUnboundLocalVariable
         for i in range(news_num):
             link = f"标题：{news[i]['title']}\n电脑版网页：{news[i]['page']}\n手机版网页：{news[i]['mobile_page']}\n\n"
-            msg = news[i]["content"].strip()
-            _news = gen_node(link + create_img(msg.strip()))
+            _news = gen_node(link.strip())
             news_all.append(_news)
         try:
             await bot.send_group_forward_msg(group_id=ev['group_id'], messages=news_all)
@@ -105,8 +108,7 @@ async def get_local_news(bot, ev: CQEvent):
                 await bot.send(ev, f"发送合集失败，尝试拆分发送！\n共有{news_num}条新闻~")
                 for i in range(news_num):
                     link = f"标题：{news[i]['title']}\n电脑版网页：{news[i]['page']}\n手机版网页：{news[i]['mobile_page']}\n\n"
-                    msg = news[i]["content"]
-                    _news = gen_node(link + create_img(msg.strip()))
+                    _news = gen_node(link.strip())
                     try:
                         await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
                     except ActionFailed:

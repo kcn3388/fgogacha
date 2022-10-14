@@ -1,4 +1,3 @@
-import json
 import os.path
 import re
 
@@ -80,16 +79,9 @@ async def update_lib(bot, ev: CQEvent):
         await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆] 或 [获取全部内容]")
 
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each_group in configs["groups"]:
-                if each_group["group"] == ev.group_id:
-                    if not each_group["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     update_svt = False
     update_cft = False
@@ -139,23 +131,21 @@ async def update_lib(bot, ev: CQEvent):
 
             svt_latest_local = int(servants[0]["id"])
             svt_latest_remote = int(svt[0]["id"])
+            svt_ids = [servants[i_svt]["id"] for i_svt in range(len(servants))]
             if not svt_latest_local == svt_latest_remote or updates["svt"]:
-                update_svt_list = updates["svt"]
-                svt_loc = 0
-                for each_svt in svt:
-                    if each_svt["id"] in update_svt_list:
-                        svt_data = await lib_svt(each_svt, crt_file)
-                        if "error" in svt_data:
-                            sv_lib.logger.error(f"更新从者{each_svt['id']}出错：{svt_data['error']}")
-                            errors.append(each_svt["id"])
+                update_svt_list = list(reversed(updates["svt"]))
+                for each_update_svt_id in update_svt_list:
+                    ready_svt = [each_svt for each_svt in svt if each_svt.get("id") == each_update_svt_id][0]
+                    svt_data = await lib_svt(ready_svt, crt_file)
+                    if each_update_svt_id in svt_ids:
+                        servants[svt_ids.index(each_update_svt_id)] = svt_data
+                    else:
+                        servants.insert(0, svt_data)
+                    if "error" in svt_data:
+                        sv_lib.logger.error(f"更新从者{each_update_svt_id}出错：{svt_data['error']}")
+                        errors.append(each_update_svt_id["id"])
 
-                        if int(each_svt["id"]) <= svt_latest_local:
-                            for each_servant in servants:
-                                if each_servant["id"] == each_svt["id"]:
-                                    servants[servants.index(servants)] = svt_data
-                        else:
-                            servants.insert(svt_loc, svt_data)
-                            svt_loc += 1
+            updates["svt"] = []
 
         else:
             servants = []
@@ -209,23 +199,21 @@ async def update_lib(bot, ev: CQEvent):
 
             cft_latest_local = int(crafts[0]["id"])
             cft_latest_remote = int(cft[0]["id"])
+            cft_ids = [crafts[i_cft]["id"] for i_cft in range(len(crafts))]
             if not cft_latest_local == cft_latest_remote or updates["cft"]:
-                update_cft_list = updates["cft"]
-                cft_loc = 0
-                for each_cft in cft:
-                    if each_cft["id"] in update_cft_list:
-                        cft_data = await lib_cft(each_cft, crt_file)
-                        if "error" in cft_data:
-                            sv_lib.logger.error(f"更新礼装{each_cft['id']}出错：{cft_data['error']}")
-                            errors.append(each_cft["id"])
+                update_cft_list = list(reversed(updates["cft"]))
+                for each_update_cft_id in update_cft_list:
+                    ready_cft = [each_cft for each_cft in cft if each_cft.get("id") == each_update_cft_id][0]
+                    cft_data = await lib_cft(ready_cft, crt_file)
+                    if each_update_cft_id in cft_ids:
+                        crafts[cft_ids.index(each_update_cft_id)] = cft_data
+                    else:
+                        crafts.insert(0, cft_data)
+                    if "error" in cft_data:
+                        sv_lib.logger.error(f"更新礼装{each_update_cft_id}出错：{cft_data['error']}")
+                        errors.append(each_update_cft_id)
 
-                        if int(each_cft["id"]) <= cft_latest_local:
-                            for each_craft in crafts:
-                                if each_craft["id"] == each_cft["id"]:
-                                    crafts[crafts.index(each_craft)] = cft_data
-                        else:
-                            crafts.insert(cft_loc, cft_data)
-                            cft_loc += 1
+            updates["cft"] = []
 
         else:
             crafts = []
@@ -279,23 +267,21 @@ async def update_lib(bot, ev: CQEvent):
 
             cmd_latest_local = int(commands[0]["id"])
             cmd_latest_remote = int(cmd[0]["id"])
+            cmd_ids = [commands[i_cmd]["id"] for i_cmd in range(len(commands))]
             if not cmd_latest_local == cmd_latest_remote or updates["cmd"]:
-                update_cmd_list = updates["cmd"]
-                cmd_loc = 0
-                for each_cmd in cmd:
-                    if each_cmd["id"] in update_cmd_list:
-                        cmd_data = await lib_cmd(each_cmd, crt_file)
-                        if "error" in cmd_data:
-                            sv_lib.logger.error(f"更新纹章{each_cmd['id']}出错：{cmd_data['error']}")
-                            errors.append(each_cmd["id"])
+                update_cmd_list = list(reversed(updates["cmd"]))
+                for each_update_cmd_id in update_cmd_list:
+                    ready_cmd = [each_cmd for each_cmd in cmd if each_cmd.get("id") == each_update_cmd_id][0]
+                    cmd_data = await lib_cmd(ready_cmd, crt_file)
+                    if each_update_cmd_id in cmd_ids:
+                        commands[cmd_ids.index(each_update_cmd_id)] = cmd_data
+                    else:
+                        commands.insert(0, cmd_data)
+                    if "error" in cmd_data:
+                        sv_lib.logger.error(f"更新纹章{each_update_cmd_id}出错：{cmd_data['error']}")
+                        errors.append(each_update_cmd_id)
 
-                        if int(each_cmd["id"]) <= cmd_latest_local:
-                            for each_command in commands:
-                                if each_command["id"] == each_cmd["id"]:
-                                    commands[commands.index(each_command)] = cmd_data
-                        else:
-                            commands.insert(cmd_loc, cmd_data)
-                            cmd_loc += 1
+            updates["cmd"] = []
 
         else:
             commands = []
@@ -333,12 +319,6 @@ async def update_lib(bot, ev: CQEvent):
                 for error in errors:
                     e_msg += f"{error}\t"
                 await bot.send(ev, e_msg)
-
-    updates = {
-        "svt": [],
-        "cft": [],
-        "cmd": []
-    }
 
     with open(update_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))

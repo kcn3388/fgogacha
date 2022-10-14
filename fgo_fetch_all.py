@@ -1,5 +1,3 @@
-import json
-
 from hoshino import priv, Service
 from . import CQEvent
 from .download.download_all_res import download_svt, download_cft, download_cmd
@@ -46,17 +44,11 @@ async def bangzhu(bot, ev):
 async def get_all_mooncell(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     sv_fetch.logger.info("开始获取从者")
     all_svt, updated_servant_list = await get_all_svt(crt_file)
@@ -133,17 +125,12 @@ async def get_all_mooncell(bot, ev: CQEvent):
 async def get_all_mooncell_svt(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+
     all_svt, updated_servant_list = await get_all_svt(crt_file)
     if not isinstance(all_svt, int):
         await bot.finish(ev, f"获取全部从者出错，原因：{all_svt}")
@@ -181,7 +168,12 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
 async def get_all_mooncell_cft(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
@@ -229,7 +221,12 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
 async def get_all_mooncell_cmd(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
@@ -277,17 +274,11 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
 async def down_all_card_res(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
     # await bot.send(ev, "开始下载从者")
@@ -330,17 +321,11 @@ async def down_all_card_res(bot, ev: CQEvent):
 async def down_all_card_res(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
     # await bot.send(ev, "开始下载从者")
@@ -359,17 +344,11 @@ async def down_all_card_res(bot, ev: CQEvent):
 async def down_all_card_res(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
     # await bot.send(ev, "开始下载礼装")
@@ -388,17 +367,11 @@ async def down_all_card_res(bot, ev: CQEvent):
 async def down_all_card_res(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
+
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
     # await bot.send(ev, "开始下载纹章")

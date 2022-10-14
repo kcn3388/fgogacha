@@ -1,4 +1,5 @@
-import json
+import json.encoder
+import os.path
 
 from hoshino import priv, Service
 from hoshino.typing import CQEvent
@@ -46,30 +47,9 @@ async def bangzhu(bot, ev):
 async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            basic_config = {
-                "group": ev.group_id,
-                "crt_path": crt_path,
-                "style": "图片"
-            }
-            configs = {
-                "follow_latest": True,
-                "flush_hour": 0,
-                "flush_minute": 60,
-                "flush_second": 0,
-                "groups": [basic_config]
-            }
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(configs, indent=2, ensure_ascii=False))
-
-        for each in configs["groups"]:
-            if each["group"] == ev.group_id:
-                if not each["crt_path"] == "False":
-                    crt_file = os.path.join(crt_folder_path, each["crt_path"])
-                    break
+    group_config = load_config(ev, True)
+    if not group_config["crt_path"] == "False":
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
     download_stat = await getgachapools(True, crt_file)
     if not isinstance(download_stat, int):
         await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
@@ -81,8 +61,14 @@ async def get_fgo_pool(bot, ev: CQEvent):
 
 @sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[卡k][池c]([查c][询x])?$")
 async def check_pool(bot, ev: CQEvent):
-    pools = json.load(open(pools_path, encoding="utf-8"))
-    if len(pools) == 0:
+    if os.path.exists(pools_path):
+        try:
+            pools = json.load(open(pools_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pools = []
+    else:
+        pools = []
+    if not pools:
         sv.logger.info("No pools exist")
         await bot.finish(ev, "没有卡池你查个🔨！请先获取卡池！\n指令：[获取fgo卡池]")
 
@@ -97,22 +83,15 @@ async def check_pool(bot, ev: CQEvent):
 
     if os.path.exists(banner_path):
         banners = json.load(open(banner_path, encoding="utf-8"))
-        banner = {}
-        exists = False
-        for each_banner in banners:
-            if each_banner["group"] == ev.group_id:
-                banner = each_banner
-                exists = True
-                break
-
-        if not exists:
+        banner = [each_banner for each_banner in banners if each_banner["group"] == ev.group_id]
+        if not banner:
             sv.logger.info(f"no banner in group {ev.group_id}")
         else:
-            b_name = banner["banner"]["banner"]
-            title = banner["banner"]["title"]
-            if "sub_title" in banner["banner"]:
-                b_name = banner["banner"]["sub_title"]
-            group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}"
+            b_name = banner[0]["banner"]["banner"]
+            title = banner[0]["banner"]["title"]
+            if "sub_title" in banner[0]["banner"]:
+                b_name = banner[0]["banner"]["sub_title"]
+            group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner[0]['banner']['server']})\n从属活动：\n{title}"
             msg += group
 
     if len(msg) > 200:
@@ -125,47 +104,49 @@ async def check_pool(bot, ev: CQEvent):
 # noinspection PyTypeChecker
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$|^[fb]go[卡k][池c][切qs][换hw](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
-    p_id = ev.message.extract_plain_text()
-    p_id = p_id.split()
-    if len(p_id) > 1:
-        p_id = p_id[1]
+    p_ids = ev.message.extract_plain_text().split()
+    if len(p_ids) > 1:
+        p_id = p_ids[1]
     else:
-        p_id = p_id[0]
+        p_id = p_ids[0]
     if not p_id.isdigit():
         await bot.finish(ev, "食用指南：[切换fgo卡池 + 编号]", at_sender=True)
 
-    pools = json.load(open(pools_path, encoding="utf-8"))
+    if os.path.exists(pools_path):
+        try:
+            pools = json.load(open(pools_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pools = []
+    else:
+        pools = []
+    if not pools:
+        sv.logger.info("No pools exist")
+        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+
     if not os.path.exists(banner_path):
         sv.logger.info("初始化数据json...")
         open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
-    if len(pools) == 0:
-        sv.logger.info("No pools exist")
-        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
         "banner": []
     }
-    for each in pools:
-        if each["id"] == int(p_id):
-            if each["type"] == "daily pickup":
-                await bot.finish(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
-            banner["banner"] = each
-            break
-    if banner == {"group": ev.group_id, "banner": []}:
-        await bot.finish(ev, "卡池编号不存在")
 
-    exists = False
-    for i in range(len(banners)):
-        if banners[i]["group"] == ev.group_id:
-            banners[i] = banner
-            exists = True
-            break
-    if not exists:
+    dp_pool = [each for each in pools if each["id"] == int(p_id)]
+    if not dp_pool:
+        await bot.finish(ev, "卡池编号不存在")
+    banner["banner"] = dp_pool[0]
+    if banner["banner"]["type"] == "daily pickup":
+        await bot.finish(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
+
+    gb_index = [i for i in range(len(banners)) if banners[i]["group"] == ev.group_id]
+    if not gb_index:
         banners.append(banner)
+    else:
+        banners[gb_index[0]] = banner
     with open(banner_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(banners, indent=2, ensure_ascii=False))
 
@@ -177,10 +158,9 @@ async def switch_pool(bot, ev: CQEvent):
 @sv.on_rex(r"(?i)^([切qs][换hw])?[fb]go[日rd][替tp][卡k][池c]([切qs][换hw])?(\s\d+\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
-    if ids == "":
+    if not ids:
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
 
-    pools = json.load(open(pools_path, encoding="utf-8"))
     ids = ids.split()
     p_id = ""
     s_id = ""
@@ -190,48 +170,56 @@ async def switch_pool(bot, ev: CQEvent):
     else:
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]", at_sender=True)
 
+    if os.path.exists(pools_path):
+        try:
+            pools = json.load(open(pools_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pools = []
+    else:
+        pools = []
+    if not pools:
+        sv.logger.info("No pools exist")
+        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+
     if not os.path.exists(banner_path):
         sv.logger.info("初始化数据json...")
         open(banner_path, 'w')
         banners = []
     else:
         banners = json.load(open(banner_path, encoding="utf-8"))
-    if len(pools) == 0:
-        sv.logger.info("No pools exist")
-        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
     banner = {
         "group": ev.group_id,
         "banner": []
     }
-    for each in pools:
-        if each["id"] == int(p_id) and each["type"] == "daily pickup":
-            for sub_pool in each["sub_pool"]:
-                if sub_pool["id"] == int(s_id):
-                    sp = {
-                        "id": each["id"],
-                        "title": each["title"],
-                        "href": each["href"],
-                        "banner": each["banner"],
-                        "sub_title": sub_pool["sub_title"],
-                        "server": each["server"],
-                        "type": each["type"],
-                        "s_id": sub_pool["id"]
-                    }
-                    banner["banner"] = sp
-                    break
 
-    if banner == {"group": ev.group_id, "banner": []}:
+    gp = [each for each in pools if each["id"] == int(p_id) and each["type"] == "daily pickup"]
+    if not gp:
+        await bot.finish(ev, "卡池参数错误")
+    gps = [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == int(s_id)]
+    if not gps:
+        await bot.finish(ev, "卡池参数错误")
+
+    sp = {
+        "id": gp[0]["id"],
+        "title": gp[0]["title"],
+        "href": gp[0]["href"],
+        "banner": gp[0]["banner"],
+        "sub_title": gps[0]["sub_title"],
+        "server": gp[0]["server"],
+        "type": gp[0]["type"],
+        "s_id": gps[0]["id"]
+    }
+    banner["banner"] = sp
+
+    if not banner["banner"]:
         await bot.finish(ev, "卡池编号不存在")
 
-    exists = False
-    for i in range(len(banners)):
-        if banners[i]["group"] == ev.group_id:
-            banners[i] = banner
-            exists = True
-            break
-    if not exists:
+    gb_index = [i for i in range(len(banners)) if banners[i]["group"] == ev.group_id]
+    if not gb_index:
         banners.append(banner)
+    else:
+        banners[gb_index[0]] = banner
     with open(banner_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(banners, indent=2, ensure_ascii=False))
 
@@ -283,16 +271,8 @@ async def gacha_10(bot, ev: CQEvent):
             cft = int(each[2])
             img_path.append(os.path.join(cft_path, f"礼装{str(cft).zfill(3)}.jpg"))
 
-    style = "图片"
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each_config in configs["groups"]:
-                if each_config["group"] == ev.group_id:
-                    style = each_config["style"]
-                    break
-        except json.decoder.JSONDecodeError:
-            pass
+    group_config = load_config(ev, True)
+    style = group_config["style"]
 
     # 文字图标版，更快
     if not style == "图片":

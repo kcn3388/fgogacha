@@ -1,10 +1,14 @@
 # noinspection PyUnresolvedReferences
 import io
+import json
 import os
+import platform
+import time
 
+from PIL import Image, ImageFont, ImageDraw
 # noinspection PyUnresolvedReferences
 from aiocqhttp import ActionFailed, MessageSegment
-from PIL import Image, ImageFont, ImageDraw
+from selenium import webdriver
 
 from hoshino import config, util
 
@@ -24,6 +28,7 @@ res_paths = [basic_path, icon_path, svt_path, cft_path, skill_path, cmd_path, ca
 runtime_path = os.path.dirname(__file__)
 
 data_path = os.path.join(runtime_path, 'data')
+news_img_path = os.path.join(runtime_path, 'news')
 banner_path = os.path.join(data_path, 'banner.json')
 config_path = os.path.join(data_path, 'config.json')
 pools_path = os.path.join(data_path, 'pools.json')
@@ -37,12 +42,13 @@ old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
 news_path = os.path.join(data_path, 'news.json')
 news_detail_path = os.path.join(data_path, 'news_detail.json')
 
-seal_path = os.path.join(runtime_path, 'res', '海の翁.jpg')
-frame_path = os.path.join(runtime_path, 'res', 'background.png')
-back_path = os.path.join(runtime_path, 'res', 'back.jpg')
-back_cn_path = os.path.join(runtime_path, 'res', 'back_cn.png')
-mask_path = os.path.join(runtime_path, 'res', 'mask.png')
-font_path = os.path.join(runtime_path, 'res', 'SourceHanSansSC-Regular.otf')
+static_path = os.path.join(runtime_path, 'res')
+seal_path = os.path.join(static_path, '海の翁.jpg')
+frame_path = os.path.join(static_path, 'background.png')
+back_path = os.path.join(static_path, 'back.jpg')
+back_cn_path = os.path.join(static_path, 'back_cn.png')
+mask_path = os.path.join(static_path, 'mask.png')
+font_path = os.path.join(static_path, 'SourceHanSansSC-Regular.otf')
 
 all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
 
@@ -85,3 +91,95 @@ def gen_node(text, _name="涩茄子", _uin="2087332430"):
     }
 
     return node
+
+
+def load_config(ev, get_group=False):
+    if os.path.exists(config_path):
+        try:
+            configs = json.load(open(config_path, encoding="utf-8"))
+            group = [gs for gs in configs["groups"] if gs["group"] == ev.group_id]
+            if not group:
+                basic_config = {
+                    "group": ev.group_id,
+                    "crt_path": crt_path,
+                    "style": "图片"
+                }
+                configs["groups"].append(basic_config)
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+            if get_group:
+                return group[0]
+            else:
+                return configs
+        except json.decoder.JSONDecodeError:
+            pass
+
+    basic_config = {
+        "group": ev.group_id,
+        "crt_path": crt_path,
+        "style": "图片"
+    }
+    configs = {
+        "follow_latest": True,
+        "flush_hour": 0,
+        "flush_minute": 60,
+        "flush_second": 0,
+        "groups": [basic_config]
+    }
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    if get_group:
+        return basic_config
+    else:
+        return configs
+
+
+def getpic(url, save_img_name, _type=""):
+    curr_platform = platform.system().lower()
+    if curr_platform == "windows":
+        options = webdriver.EdgeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        msedgedriver = os.path.join(static_path, "msedgedriver.exe")
+        driver = webdriver.Edge(options=options, executable_path=msedgedriver)
+    elif curr_platform == "linux":
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        chromedriver = os.path.join(static_path, "chromedriver")
+        driver = webdriver.Chrome(options=options, executable_path=chromedriver)
+    else:
+        return False
+
+    driver.maximize_window()
+    js_height = "return document.body.clientHeight"
+    picname = save_img_name
+    link = url
+    try:
+        # print(link)
+        driver.get(link)
+        k = 1
+        height = driver.execute_script(js_height)
+        while True:
+            if k * 500 < height:
+                js_move = "window.scrollTo(0,{})".format(k * 500)
+                # print(js_move)
+                driver.execute_script(js_move)
+                time.sleep(0.2)
+                height = driver.execute_script(js_height)
+                k += 1
+            else:
+                break
+        scroll_width = driver.execute_script('return document.body.parentNode.scrollWidth')
+        scroll_height = driver.execute_script('return document.body.parentNode.scrollHeight')
+        if not _type == "":
+            scroll_width = 600
+        driver.set_window_size(scroll_width, scroll_height)
+        driver.get_screenshot_as_file(picname + ".png")
+        return True
+    except Exception as e:
+        print(e)
+        return False
