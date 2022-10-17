@@ -108,7 +108,8 @@ def load_config(ev, get_group=False):
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps(configs, indent=2, ensure_ascii=False))
             if get_group:
-                return group[0]
+                if group:
+                    return group[0]
             else:
                 return configs
         except json.decoder.JSONDecodeError:
