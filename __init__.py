@@ -248,7 +248,7 @@ async def gacha_10(bot, ev: CQEvent):
     if gacha_result == 12:
         await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
     if gacha_result == 13:
-        await bot.finish(ev, "卡池数据错误！请更新卡池！")
+        await bot.finish(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
 
     img_path = []
     get_pup5 = 0
@@ -442,7 +442,7 @@ async def gacha_100(bot, ev: CQEvent):
     if g100[0] == 12:
         await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
     if g100[0] == 13:
-        await bot.finish(ev, "卡池数据错误！请更新卡池！")
+        await bot.finish(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
 
     img_path = []
     get_pup5 = 0
@@ -517,7 +517,10 @@ async def gacha_100(bot, ev: CQEvent):
         if has_pup5:
             msg += "百连你都能不出up5星，洗洗睡吧\n"
         else:
-            msg += "百连你都能不出5星，什么天选之子\n"
+            if get_5 > 1:
+                msg += "某种意义上，也是歪的离谱（\n"
+            else:
+                msg += "常驻等歪.jpg\n"
         if get_pup4 == 0 and not get_4 == 0 and has_pup4:
             msg += "甚至没有up四星\n"
         if get_pup4 == 0 and get_4 == 0:

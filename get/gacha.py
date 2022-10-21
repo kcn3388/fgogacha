@@ -1,6 +1,7 @@
 import random
 import time
 
+import hoshino
 from ..path_and_json import *
 
 
@@ -77,7 +78,11 @@ async def gacha(gid):
     with open(banner_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
-    result, has_pup5, has_pup4 = await get_result(pool_data["data"])
+    try:
+        result, has_pup5, has_pup4 = await get_result(pool_data["data"])
+    except KeyError as e:
+        hoshino.logger.error(f"{e}")
+        return 13, 0, 0
     for each_result in result:
         card = int(random.choice(each_result[2]))
         each_result[2] = card
