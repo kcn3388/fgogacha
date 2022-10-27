@@ -15,6 +15,30 @@ lmt = FreqLimiter(15)  # 冷却时间15秒
 JEWEL_EXCEED_NOTICE = f"您今天已经抽过{jewel_limit.max}石头了，欢迎明早5点后再来！"
 TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，欢迎明早5点后再来！"
 
+height = 194
+width = 178
+dis = 23
+floor = 48
+st1w = 92
+st1h = 200
+st2 = 192
+
+boxlist = []
+
+box1 = (st1w, st1h)
+for box_i in range(6):
+    boxlist.append(box1)
+    lst = list(box1)
+    lst[0] += width + dis
+    box1 = tuple(lst)
+
+box2 = (st2, st1h + height + floor)
+for box_i in range(5):
+    boxlist.append(box2)
+    lst = list(box2)
+    lst[0] += width + dis
+    box2 = tuple(lst)
+
 sv_help = '''
 # 抽卡模拟相关
 [fgo十连] fgo抽卡
@@ -296,30 +320,6 @@ async def gacha_10(bot, ev: CQEvent):
 
     else:
         # 图片版，较慢
-        height = 194
-        width = 178
-        dis = 23
-        floor = 48
-        st1w = 92
-        st1h = 200
-        st2 = 192
-
-        boxlist = []
-
-        box1 = (st1w, st1h)
-        for i in range(6):
-            boxlist.append(box1)
-            lst = list(box1)
-            lst[0] += width + dis
-            box1 = tuple(lst)
-
-        box2 = (st2, st1h + height + floor)
-        for i in range(5):
-            boxlist.append(box2)
-            lst = list(box2)
-            lst[0] += width + dis
-            box2 = tuple(lst)
-
         if server == "国服":
             base_img = Image.open(back_cn_path).convert("RGBA")
         else:
@@ -434,10 +434,18 @@ async def gacha_100(bot, ev: CQEvent):
     g_counter = 0
     has_pup5 = False
     has_pup4 = False
+    # 如需图片版请取消注释
+    # server = ""
     while g_counter < 11:
         g_counter += 1
-        result, has_pup5, has_pup4, _ = await gacha(gid)
+        result, has_pup5, has_pup4, server = await gacha(gid)
         g100.append(result)
+
+    # 如需图片版请取消注释
+    # group_config = load_config(ev, True)
+    # style = group_config["style"]
+
+    msg = ""
 
     if g100[0] == 12:
         await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
@@ -449,6 +457,8 @@ async def gacha_100(bot, ev: CQEvent):
     get_pup4 = 0
     get_5 = 0
     get_4 = 0
+    # 如需图片版请取消注释
+    # b64s = []
     for gacha_result in g100:
         for each in gacha_result:
             if each[0] == "svt":
@@ -463,6 +473,8 @@ async def gacha_100(bot, ev: CQEvent):
                     get_4 += 1
                 if int(each[1] == "3"):
                     continue
+                # 如需图片版请取消注释，并将之后一行增加一个缩进
+                # if not style == "图片":
                 img_path.append(os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg"))
 
     cards = []
@@ -478,7 +490,9 @@ async def gacha_100(bot, ev: CQEvent):
     else:
         cols = 4
 
-    if not cards == []:
+    # 如需图片版请取消注释，并注释之后一行
+    # if not style == "图片":
+    if cards:
         target = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
         r_counter = 0
         c_counter = 0
@@ -493,9 +507,33 @@ async def gacha_100(bot, ev: CQEvent):
                     c_counter = 0
 
         pic_b64 = util.pic2b64(target)
-        msg = "\n您本次的抽卡结果：\n\n" + f'{MessageSegment.image(pic_b64)}\n\n'
+        msg += f'\n您本次的抽卡结果：\n\n{MessageSegment.image(pic_b64)}\n\n'
+
     else:
-        msg = "\n您本次的抽卡结果：\n\n"
+        # 如需图片版请取消之后一行的注释，并注释下一行
+        msg += f'\n您本次的抽卡结果：\n\n'
+        # for each_result in g100:
+        #     img_path = []
+        #     for each_gacha in each_result:
+        #         if each_gacha[0] == "svt":
+        #             svt = int(each_gacha[2])
+        #             img_path.append(os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg"))
+        #         if each_gacha[0] == "cft":
+        #             cft = int(each_gacha[2])
+        #             img_path.append(os.path.join(cft_path, f"礼装{str(cft).zfill(3)}.jpg"))
+        #     # 图片版，较慢
+        #     if server == "国服":
+        #         base_img = Image.open(back_cn_path).convert("RGBA")
+        #     else:
+        #         base_img = Image.open(back_path).convert("RGBA")
+        #     masker = Image.open(mask_path).resize((width, height))
+        #
+        #     for i, picpath in enumerate(img_path):
+        #         tmp_img = Image.open(picpath).resize((width, height))
+        #         tmp_img = tmp_img.convert('RGBA')
+        #         base_img.paste(tmp_img, boxlist[i], mask=masker)
+        #
+        #     b64s.append(util.pic2b64(base_img))
 
     stars = ""
     is_seal = False
@@ -563,7 +601,16 @@ async def gacha_100(bot, ev: CQEvent):
         pic_b64 = util.pic2b64(img)
         msg += f'\n{MessageSegment.image(pic_b64)}'
 
+    # 如需图片版请取消注释，并将之后一行加一次缩进
+    # if not style == "图片":
     await bot.send(ev, msg.strip(), at_sender=True)
+    # 如需图片版请取消注释
+    # else:
+    #     nodes = [gen_node("您本次的抽卡结果：")]
+    #     for each_b64 in b64s:
+    #         nodes.append(gen_node(f'{MessageSegment.image(each_b64)}'))
+    #     nodes.append(gen_node(msg.replace("您本次的抽卡结果：", "").strip()))
+    #     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=nodes)
 
 
 @sv.on_prefix('氪圣晶石')

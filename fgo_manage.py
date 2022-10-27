@@ -37,7 +37,7 @@ sv_manage_help = '''
 [fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
 [fgo_check_crt] 检查本群crt文件配置状态
 [重载配置文件] 为本群新建默认配置或还原至默认配置，同时修补其他群的配置
-[切换十连样式 + 样式] 切换十连抽卡样式，可选样式：
+[切换抽卡样式 + 样式] 切换抽卡样式，可选样式：
 - 文字：旧版简约图标
 - 图片：仿真实抽卡
 [设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
@@ -220,18 +220,22 @@ async def enable_crt(bot, ev: CQEvent):
         await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
-@sv_manage.on_rex(r"(?i)^([切qs][换hw])?[十s][连l][样y][式s]([切qs][换hw])?\s(text|img|文字|图片)$")
+@sv_manage.on_rex(r"(?i)^([切qs][换hw])?[抽c][卡k][样y][式s]([切qs][换hw])?\s(text|img|文字|图片)$")
 async def switch_10roll_style(bot, ev: CQEvent):
     style = ev.message.extract_plain_text().split()
 
     if not os.path.exists(config_path):
         await bot.finish(ev, "未配置crt文件")
 
-    if re.match(r"(?i)text", style[1]):
+    if re.match(r"(?i)(text|文字)", style[1]):
         style = "文字"
 
-    if re.match(r"(?i)img", style[1]):
+    if re.match(r"(?i)(img|图片)", style[1]):
         style = "图片"
+
+    if not style == "图片":
+        if not style == "文字":
+            await bot.finish(ev, "参数错误")
 
     configs = load_config(ev)
     group_config = load_config(ev, True)
@@ -336,7 +340,7 @@ async def set_update_time(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     msg = ev.message.extract_plain_text()
-    times = msg.split()
+    times = msg.strip()
 
     configs = load_config(ev)
 
