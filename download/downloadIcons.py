@@ -1,5 +1,3 @@
-import re
-
 from .download import download
 from ..path_and_json import *
 
@@ -10,53 +8,76 @@ async def downloadicons(crt_file=False):
         os.mkdir(svt_path)
     if not os.path.exists(cft_path):
         os.mkdir(cft_path)
+    if not os.path.exists(cmd_path):
+        os.mkdir(cmd_path)
+
     try:
-        with open(icons_path, 'r', encoding="utf-8") as f:
-            icons = json.load(f)
+        with open(all_servant_path, 'r', encoding="utf-8") as f:
+            svt = json.load(f)
+        with open(all_craft_path, 'r', encoding="utf-8") as f:
+            cft = json.load(f)
+        with open(all_command_path, 'r', encoding="utf-8") as f:
+            cmd = json.load(f)
     except json.decoder.JSONDecodeError:
-        icons = {
-            "svtIcons": [],
-            "cftIcons": [],
-        }
+        return 1
+
     basic_url = "https://fgo.wiki"
-    rule = re.compile("Servant.+jpg")
-    print("从者路径解析完成")
-    rule2 = re.compile("礼装.+jpg")
-    print("礼装路径解析完成")
     try:
-        for i in icons["svtIcons"]:
-            ret = re.search(rule, i).group(0)
-            local_svt = os.path.join(svt_path, ret)
+        for each_svt in svt:
+            local_svt = os.path.join(svt_path, each_svt["local"]["svt_icon"])
             if os.path.exists(local_svt):
                 continue
-            download_stat = await download(basic_url + i, local_svt, True, crt_file)
+            download_stat = await download(
+                basic_url + each_svt["online"]["svt_icon"], local_svt, True, crt_file
+            )
             if not isinstance(download_stat, int):
                 print("download icons error, reason:" + str(download_stat))
-        for j in icons["cftIcons"]:
-            ret = re.search(rule2, j).group(0)
-            local_cft = os.path.join(cft_path, ret)
+        for each_cft in cft:
+            local_cft = os.path.join(cft_path, each_cft["local"]["cft_icon"])
             if os.path.exists(local_cft):
                 continue
-            download_stat = await download(basic_url + j, local_cft, True, crt_file)
+            download_stat = await download(
+                basic_url + each_cft["online"]["cft_icon"], local_cft, True, crt_file
+            )
+            if not isinstance(download_stat, int):
+                print("download icons error, reason:" + str(download_stat))
+        for each_cmd in cmd:
+            local_cmd = os.path.join(cmd_path, each_cmd["local"]["cmd_icon"])
+            if os.path.exists(local_cmd):
+                continue
+            download_stat = await download(
+                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, crt_file
+            )
             if not isinstance(download_stat, int):
                 print("download icons error, reason:" + str(download_stat))
         print("finish download icons")
         return download_stat
     except OSError:
-        for i in icons["svtIcons"]:
-            ret = re.search(rule, i).group(0)
-            local_svt = os.path.join(svt_path, ret)
+        for each_svt in svt:
+            local_svt = os.path.join(svt_path, each_svt["local"]["svt_icon"])
             if os.path.exists(local_svt):
                 continue
-            download_stat = await download(basic_url + i, local_svt, True, False)
+            download_stat = await download(
+                basic_url + each_svt["online"]["svt_icon"], local_svt, True, crt_file
+            )
             if not isinstance(download_stat, int):
                 print("download icons error, reason:" + str(download_stat))
-        for j in icons["cftIcons"]:
-            ret = re.search(rule2, j).group(0)
-            local_cft = os.path.join(cft_path, ret)
+        for each_cft in cft:
+            local_cft = os.path.join(cft_path, each_cft["local"]["cft_icon"])
             if os.path.exists(local_cft):
                 continue
-            download_stat = await download(basic_url + j, local_cft, True, False)
+            download_stat = await download(
+                basic_url + each_cft["online"]["cft_icon"], local_cft, True, crt_file
+            )
+            if not isinstance(download_stat, int):
+                print("download icons error, reason:" + str(download_stat))
+        for each_cmd in cmd:
+            local_cmd = os.path.join(cmd_path, each_cmd["local"]["cmd_icon"])
+            if os.path.exists(local_cmd):
+                continue
+            download_stat = await download(
+                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, crt_file
+            )
             if not isinstance(download_stat, int):
                 print("download icons error, reason:" + str(download_stat))
         print("finish download icons")

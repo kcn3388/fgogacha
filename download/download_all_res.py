@@ -135,7 +135,7 @@ async def download_cmd(crt_file=False):
             os.mkdir(each)
 
     print("开始下载纹章相关……")
-    if os.path.exists(cft_path):
+    if os.path.exists(cmd_path):
         try:
             with open(all_command_path, 'r', encoding="utf-8") as f:
                 cmd = json.load(f)

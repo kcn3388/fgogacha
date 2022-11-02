@@ -33,7 +33,6 @@ banner_path = os.path.join(data_path, 'banner.json')
 config_path = os.path.join(data_path, 'config.json')
 pools_path = os.path.join(data_path, 'pools.json')
 gacha_path = os.path.join(data_path, 'gacha.json')
-icons_path = os.path.join(data_path, 'icons.json')
 banner_data_path = os.path.join(data_path, 'b_data.json')
 update_data_path = os.path.join(data_path, 'update.json')
 
@@ -50,7 +49,7 @@ back_cn_path = os.path.join(static_path, 'back_cn.png')
 mask_path = os.path.join(static_path, 'mask.png')
 font_path = os.path.join(static_path, 'SourceHanSansSC-Regular.otf')
 
-all_json = [banner_path, config_path, pools_path, gacha_path, icons_path, banner_data_path]
+all_json = [banner_path, config_path, pools_path, gacha_path, banner_data_path]
 
 crt_folder_path = os.path.join(runtime_path, "crt")
 crt_path = "ca-certificates.crt"

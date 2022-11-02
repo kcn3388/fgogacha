@@ -65,11 +65,7 @@ async def getgachapools(islatest=True, crt_file=None):
                 id_counter += 1
         # pools = await drop_dup_pool(pools)
 
-        print("Downloading pools for gacha.json and icons.json")
-        icons = {
-            "svtIcons": [],
-            "cftIcons": [],
-        }
+        print("Downloading pools for gacha.json")
         # counter = 0
         is_daily = False
         for i in pools:
@@ -141,16 +137,6 @@ async def getgachapools(islatest=True, crt_file=None):
                     }
                     g["crafts"].append(crafts)
                 gacha_data.append(g)
-                svt_icon_list = re.search(r"svt_icons\s?=\s?(\[.*?])", data)[1]
-                svt_icon_list = data_preprocessing(svt_icon_list)
-                svt_icon_list = svt_icon_list.split("\t")
-                cft_icon_list = re.search(r"cft_icons\s?=\s?(\[.*?])", data)[1]
-                cft_icon_list = data_preprocessing(cft_icon_list)
-                cft_icon_list = cft_icon_list.split("\t")
-                for j in svt_icon_list:
-                    icons["svtIcons"].append(j)
-                for j in cft_icon_list:
-                    icons["cftIcons"].append(j)
 
             if is_daily:
                 print("go to solve daily pickup")
@@ -209,31 +195,12 @@ async def getgachapools(islatest=True, crt_file=None):
                         }
                         g["crafts"].append(crafts)
                     gacha_data.append(g)
-                    if len(icons["svtIcons"]) + len(icons["cftIcons"]) == 0:
-                        svticonlist = re.search(r"svt_icons\s?=\s?(\[.*?])", data)[1]
-                        svticonlist = data_preprocessing(svticonlist)
-                        svticonlist = svticonlist.split("\t")
-                        for k in svticonlist:
-                            icons["svtIcons"].append(k)
-                        cfticonlist = re.search(r"cft_icons\s?=\s?(\[.*?])", data)[1]
-                        cfticonlist = data_preprocessing(cfticonlist)
-                        cfticonlist = cfticonlist.split("\t")
-                        for k in cfticonlist:
-                            icons["cftIcons"].append(k)
 
                 is_daily = False
                 pools[pools.index(i)] = daily
 
         with open(gacha_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(gacha_data, indent=2, ensure_ascii=False))
-
-        for each in icons:
-            l1 = icons[each]
-            l2 = sorted(set(l1), key=l1.index)
-            icons[each] = l2
-
-        with open(icons_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(icons, indent=2, ensure_ascii=False))
 
         try:
             old_pools = json.load(open(pools_path, encoding="utf-8"))
