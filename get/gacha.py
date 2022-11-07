@@ -1,5 +1,4 @@
 import random
-import time
 
 import hoshino
 from ..path_and_json import *
@@ -16,7 +15,7 @@ async def gacha(gid):
 
     if not exists:
         print("no banner")
-        return 12, 0, 0, 0
+        return 12, 0, 0
 
     server = banner["banner"]["server"]
 
@@ -33,7 +32,7 @@ async def gacha(gid):
                 break
     if len(data) == 0:
         print("data error")
-        return 13, 0, 0, 0
+        return 13, 0, 0
 
     pool_data = {
         "group": gid,
@@ -79,7 +78,7 @@ async def gacha(gid):
         f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
     try:
-        result, has_pup5, has_pup4 = await get_result(pool_data["data"])
+        result = await get_result(pool_data["data"])
     except KeyError as e:
         hoshino.logger.error(f"{e}")
         return 13, 0, 0
@@ -101,14 +100,12 @@ async def gacha(gid):
                         each_result[1] = "up4"
                     if each_card == "svt_pup_3":
                         each_result[1] = "up3"
-    return result, has_pup5, has_pup4, server
+    return result, server, data
 
 
 async def get_result(pool_data):
     # here is svt rate
     # if is pickup 5
-    has_pup5 = False
-    has_pup4 = False
     if "svt_pup_5" in pool_data:
         rate_pup_svt_5 = pool_data["svt_pup_5_rate"]
         if "svt_5_rate" in pool_data:
@@ -116,7 +113,6 @@ async def get_result(pool_data):
         else:
             rate_svt_5 = rate_pup_svt_5
         svt_pup_5 = pool_data["svt_pup_5"]
-        has_pup5 = True
     else:
         rate_pup_svt_5 = 0
         rate_svt_5 = pool_data["svt_5_rate"]
@@ -134,7 +130,6 @@ async def get_result(pool_data):
         else:
             rate_svt_4 = rate_pup_svt_4
         svt_pup_4 = pool_data["svt_pup_4"]
-        has_pup4 = True
     else:
         rate_pup_svt_4 = 0
         rate_svt_4 = rate_svt_5 + pool_data["svt_4_rate"]
@@ -425,4 +420,4 @@ async def get_result(pool_data):
                 result[-1] = ["cft", "4 or 5", crafts]
             break
 
-    return result, has_pup5, has_pup4
+    return result
