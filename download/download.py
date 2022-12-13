@@ -1,6 +1,7 @@
 import os.path
 
 from hoshino import aiorequests
+from typing import Union
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
@@ -9,7 +10,7 @@ headers = {
 }
 
 
-async def download(url, path, mute=False, crt_path=False):
+async def download(url, path, mute=False, crt_path=False) -> Union[int, Exception]:
     if not mute:
         print("start download img resources")
     try:

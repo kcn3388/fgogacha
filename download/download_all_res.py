@@ -1,10 +1,11 @@
 import re
 
+from typing import Union
 from .download import download
 from ..path_and_json import *
 
 
-async def download_svt(crt_file=False):
+async def download_svt(crt_file=False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
@@ -72,7 +73,7 @@ async def download_svt(crt_file=False):
         return download_stat
 
 
-async def download_cft(crt_file=False):
+async def download_cft(crt_file=False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
@@ -127,7 +128,7 @@ async def download_cft(crt_file=False):
         return download_stat
 
 
-async def download_cmd(crt_file=False):
+async def download_cmd(crt_file=False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:

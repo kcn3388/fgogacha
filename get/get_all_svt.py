@@ -1,6 +1,7 @@
 import re
 
 from hoshino import aiorequests
+from typing import Union, Tuple, List
 from ..path_and_json import *
 
 headers = {
@@ -12,7 +13,7 @@ headers = {
 runtime_path = os.path.dirname(__file__)
 
 
-async def get_all_svt(crt_file=False):
+async def get_all_svt(crt_file=False) -> Union[Exception, Tuple[int, Union[None, List]]]:
     root_svt_url = "https://fgo.wiki/w/%E8%8B%B1%E7%81%B5%E5%9B%BE%E9%89%B4"
     try:
         get_all = await aiorequests.get(root_svt_url, timeout=20, verify=crt_file, headers=headers)

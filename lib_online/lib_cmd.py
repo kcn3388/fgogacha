@@ -1,11 +1,12 @@
 import re
 
 from bs4 import BeautifulSoup
+from typing import Tuple, Dict
 
 from .lib_online import *
 
 
-async def lib_cmd_online(url, crt_file=False):
+async def lib_cmd_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
@@ -27,7 +28,7 @@ async def lib_cmd_online(url, crt_file=False):
 
 
 # noinspection PyUnresolvedReferences
-async def lib_cmd(cmd_data, crt_file=False):
+async def lib_cmd(cmd_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + cmd_data["name_link"]
     print("查询纹章" + cmd_data["id"] + "……")
     cmd = {
@@ -115,16 +116,19 @@ async def lib_cmd(cmd_data, crt_file=False):
                     if s1[index][i] == "日文":
                         s1[index][i] = "日文解说"
                     result[s1[index][i]] = s2[index][i].replace(
-                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+                        ""
                     )
             else:
                 result[s1[index]] = s2[index].replace(
-                    "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+                    "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+                    ""
                 )
     except IndexError:
         result["解说"] = ""
         result["日文解说"] = s2[-1][0].replace(
-            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+            ""
         )
         pass
 

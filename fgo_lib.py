@@ -3,6 +3,7 @@ import re
 
 from hoshino import Service, priv
 from hoshino.typing import CQEvent
+from typing import Tuple
 from .lib_online.lib_online import get_card
 from .lib_online.lib_svt import lib_svt, lib_svt_online
 from .lib_online.lib_cft import lib_cft, lib_cft_online
@@ -1638,7 +1639,7 @@ async def find_cmd(bot, ev: CQEvent):
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
 
 
-def get_keys(msg):
+def get_keys(msg) -> Tuple:
     is_detail = False
     remove_card = False
     remove_data = False

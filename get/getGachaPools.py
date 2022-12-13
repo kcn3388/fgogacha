@@ -4,6 +4,7 @@ import traceback
 from bs4 import BeautifulSoup
 
 from hoshino import aiorequests
+from typing import Union
 from ..path_and_json import *
 from .solve_svt import get_svt, get_multi_svt
 
@@ -14,7 +15,7 @@ headers = {
 }
 
 
-async def getgachapools(islatest=True, crt_file=None):
+async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
     try:
         pool_url = "https://fgo.wiki/w/%E6%8A%BD%E5%8D%A1%E6%A8%A1%E6%8B%9F%E5%99%A8"
         print(f"Downloading {pool_url} for pools.json")
@@ -242,7 +243,7 @@ async def getgachapools(islatest=True, crt_file=None):
         return e
 
 
-def data_preprocessing(string):
+def data_preprocessing(string) -> str:
     s = string.replace("[", "")
     s = s.replace("]", "")
     s = s.replace("\",", "\t")

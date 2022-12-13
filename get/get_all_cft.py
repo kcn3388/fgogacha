@@ -1,6 +1,7 @@
 import re
 
 from hoshino import aiorequests
+from typing import Union, Tuple, List
 from ..path_and_json import *
 
 headers = {
@@ -10,7 +11,7 @@ headers = {
 }
 
 
-async def get_all_cft(crt_file=False):
+async def get_all_cft(crt_file=False) -> Union[Exception, Tuple[int, Union[None, List]]]:
     root_cft_url = "https://fgo.wiki/w/%E7%A4%BC%E8%A3%85%E5%9B%BE%E9%89%B4"
     try:
         get_all = await aiorequests.get(root_cft_url, timeout=20, verify=crt_file, headers=headers)

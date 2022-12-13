@@ -9,7 +9,7 @@ sv_news_help = '''
 # 新闻相关：
 [获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
 [查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
-- 可以在末尾附加参数``nopic``不使用截图
+- 可以在末尾附加参数``pic``不使用截图
 [清除新闻缓存] 移除新闻截图
 '''.strip()
 
@@ -57,11 +57,11 @@ async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
     args = ev.message.extract_plain_text()
-    no_pic = False
+    pic = False
     get_all = False
     index = 0
-    if "nopic" in args:
-        no_pic = True
+    if "pic" in args:
+        pic = True
     if "all" in args:
         get_all = True
 
@@ -84,7 +84,7 @@ async def get_local_news(bot, ev: CQEvent):
         index = int(index) - 1
         link = f"标题：{news[index]['title']}\n电脑版网页：{news[index]['page']}\n手机版网页：{news[index]['mobile_page']}\n\n"
         msg = ""
-        if not no_pic:
+        if pic:
             img_path = os.path.join(news_img_path, f"{news[index]['id']}.png")
             if not os.path.exists(img_path):
                 getpic(news[index]['page'], img_path)
@@ -95,18 +95,22 @@ async def get_local_news(bot, ev: CQEvent):
             else:
                 sv_news.logger.warning("获取新闻截图出错")
                 msg = "截图出错，请自行查看~"
-        _news = gen_node((link + msg).strip())
-        try:
-            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
-        except ActionFailed:
-            await bot.send(ev, "转发消息失败……尝试直接发送~")
+            _news = gen_node((link + msg).strip())
             try:
-                await bot.send(ev, msg)
+                await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
             except ActionFailed:
-                await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
-                                   f"标题：{news[index]['title']}\n"
-                                   f"电脑版网页：{news[index]['page']}\n"
-                                   f"手机版网页：{news[index]['mobile_page']}")
+                await bot.send(ev, "转发消息失败……尝试直接发送~")
+                try:
+                    await bot.send(ev, msg)
+                except ActionFailed:
+                    await bot.send(ev, f"转发消息失败……可能是新闻太长了，试试直接去官网看看吧~\n"
+                                       f"标题：{news[index]['title']}\n"
+                                       f"电脑版网页：{news[index]['page']}\n"
+                                       f"手机版网页：{news[index]['mobile_page']}")
+        else:
+            _news = link + msg.strip()
+            await bot.send(ev, _news.strip())
+
     if get_all:
         news_all = []
         # noinspection PyUnboundLocalVariable

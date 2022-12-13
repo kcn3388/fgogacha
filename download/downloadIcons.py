@@ -1,8 +1,10 @@
+from typing import Union
+
 from .download import download
 from ..path_and_json import *
 
 
-async def downloadicons(crt_file=False):
+async def downloadicons(crt_file=False) -> Union[int, Exception]:
     download_stat = 1
     if not os.path.exists(svt_path):
         os.mkdir(svt_path)

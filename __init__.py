@@ -490,7 +490,7 @@ async def gacha_100(bot, ev: CQEvent):
     if not lmt.check(ev.user_id):
         await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
         return
-    # lmt.start_cd(ev.user_id)
+    lmt.start_cd(ev.user_id)
 
     g100 = []
     g_counter = 0

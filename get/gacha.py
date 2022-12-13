@@ -1,10 +1,11 @@
 import random
 
 import hoshino
+from typing import Union, Tuple, List
 from ..path_and_json import *
 
 
-async def gacha(gid):
+async def gacha(gid) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
     banners = json.load(open(banner_path, encoding="utf-8"))
     banner = {}
     exists = False
@@ -17,7 +18,7 @@ async def gacha(gid):
         print("no banner")
         return 12, 0, 0
 
-    server = banner["banner"]["server"]
+    server: str = banner["banner"]["server"]
 
     gacha_data = json.load(open(gacha_path, encoding="utf-8"))
     data = {}
@@ -28,7 +29,7 @@ async def gacha(gid):
                     data = each
                     break
             else:
-                data = each
+                data: Dict = each
                 break
     if len(data) == 0:
         print("data error")
@@ -103,7 +104,7 @@ async def gacha(gid):
     return result, server, data
 
 
-async def get_result(pool_data):
+async def get_result(pool_data) -> List:
     # here is svt rate
     # if is pickup 5
     if "svt_pup_5" in pool_data:

@@ -4,6 +4,7 @@ import json
 import os
 import platform
 import time
+from typing import Dict
 
 from PIL import Image, ImageFont, ImageDraw
 # noinspection PyUnresolvedReferences
@@ -63,7 +64,7 @@ lib_command_path = os.path.join(data_path, "lib_cmd.json")
 lib_craft_path = os.path.join(data_path, "lib_cft.json")
 
 
-def create_img(text):
+def create_img(text) -> str:
     font_size = 30
     padding = 10
 
@@ -79,7 +80,7 @@ def create_img(text):
     return msg
 
 
-def gen_node(text, _name="涩茄子", _uin="2087332430"):
+def gen_node(text, _name="涩茄子", _uin="2087332430") -> Dict:
     node = {
         "type": "node",
         "data": {
@@ -92,7 +93,7 @@ def gen_node(text, _name="涩茄子", _uin="2087332430"):
     return node
 
 
-def load_config(ev, get_group=False):
+def load_config(ev, get_group=False) -> Dict:
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
@@ -135,7 +136,7 @@ def load_config(ev, get_group=False):
         return configs
 
 
-def getpic(url, save_img_name, _type=""):
+def getpic(url, save_img_name, _type="") -> bool:
     curr_platform = platform.system().lower()
     if curr_platform == "windows":
         options = webdriver.EdgeOptions()

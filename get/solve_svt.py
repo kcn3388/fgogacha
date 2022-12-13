@@ -1,10 +1,9 @@
 import re
+from typing import List, Tuple
 
 
-# noinspection PyTypeChecker
-# noinspection PyUnresolvedReferences
-async def get_svt(rule, data):
-    svt_cft = re.search(rule, data)[1].split('\\n')[1:]  # .split('\\n')
+async def get_svt(rule, data) -> Tuple[List, List]:
+    svt_cft: List = re.search(rule, data)[1].split('\\n')[1:]  # .split('\\n')
     # split('\\n')[1]号位开始是五星，后面是四星，想想办法获取全部四星
     svt_all = []
     cft_all = []
@@ -36,8 +35,6 @@ async def get_svt(rule, data):
     return svt_all, cft_all
 
 
-# noinspection PyTypeChecker
-# noinspection PyUnresolvedReferences
 async def get_multi_svt(data):
     card_rule = re.compile(r"raw_str_list\s?=\s?\['(.*)']")
     pup_rule = re.compile(r"name_list\s?=\s?\['(.*)']")
@@ -68,8 +65,8 @@ async def get_multi_svt(data):
 
         for each in dailys:
             if each.startswith("ce\t"):
-                svt_all = dailys[:dailys.index(each)]
-                cft_all = dailys[dailys.index(each):]
+                svt_all: List = dailys[:dailys.index(each)]
+                cft_all: List = dailys[dailys.index(each):]
                 break
 
         for i in svt_all:

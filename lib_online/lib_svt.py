@@ -1,4 +1,5 @@
 import re
+from typing import Tuple, Dict
 
 from bs4 import BeautifulSoup
 
@@ -6,7 +7,7 @@ from .lib_online import *
 from ..path_and_json import banned_id
 
 
-async def lib_svt_online(url, crt_file=False):
+async def lib_svt_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
@@ -23,7 +24,7 @@ async def lib_svt_online(url, crt_file=False):
 
 
 # noinspection PyUnresolvedReferences
-async def lib_svt(svt_data, crt_file=False):
+async def lib_svt(svt_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + svt_data["name_link"]
     print("查询Servant" + svt_data["id"] + "……")
     svt = {

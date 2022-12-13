@@ -1,11 +1,12 @@
 import re
 
 from bs4 import BeautifulSoup
+from typing import Tuple, Dict
 
 from .lib_online import *
 
 
-async def lib_cft_online(url, crt_file=False):
+async def lib_cft_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
@@ -27,7 +28,7 @@ async def lib_cft_online(url, crt_file=False):
 
 
 # noinspection PyUnresolvedReferences
-async def lib_cft(cft_data, crt_file=False):
+async def lib_cft(cft_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + cft_data["name_link"]
     print("查询礼装" + cft_data["id"] + "……")
     cft = {
@@ -115,23 +116,27 @@ async def lib_cft(cft_data, crt_file=False):
                     if s1[index][i] == "日文":
                         s1[index][i] = "日文解说"
                     result[s1[index][i]] = s2[index][i].replace(
-                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+                        ""
                     )
             else:
                 if isinstance(s2[index], list):
                     for ids2 in range(len(s2[index])):
                         s2[index][ids2] = s2[index][ids2].replace(
-                            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+                            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+                            ""
                         )
                 if isinstance(s2[index], str):
                     s2[index] = s2[index].replace(
-                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+                        ""
                     )
                 result[s1[index]] = s2[index]
     except IndexError:
         result["解说"] = ""
         result["日文解说"] = s2[-1][0].replace(
-            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n", ""
+            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
+            ""
         )
         pass
 

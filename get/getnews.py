@@ -1,6 +1,7 @@
 import re
 
 from hoshino import aiorequests
+from typing import Tuple, Union
 from ..path_and_json import *
 
 headers = {
@@ -10,7 +11,7 @@ headers = {
 }
 
 
-async def get_news(page_size=6, crt_file=None):
+async def get_news(page_size=6, crt_file=None) -> Tuple[int, Union[bool, Exception]]:
     list_news_url = f"https://api.biligame.com/news/" \
                     f"list.action?gameExtensionId=45&positionId=2&pageNum=1&pageSize={page_size} "
     try:
@@ -61,7 +62,7 @@ async def get_news(page_size=6, crt_file=None):
     return len(all_news), same
 
 
-async def solve_content(strs):
+async def solve_content(strs) -> str:
     s = strs.replace("<br />", "")
     s = s.replace('<p class="p" style="margin-left:0pt;">', "")
     s = s.replace('<p class="p" align="justify" style="margin-left:0pt;text-align:justify;">', "")
