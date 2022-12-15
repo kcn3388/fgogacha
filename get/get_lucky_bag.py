@@ -135,6 +135,7 @@ async def get_lucky_bag_detail(bag: Dict, crt_file=None) -> Union[Exception, Lis
 
 async def get_lucky_bag_image(bag_pools: List) -> List:
     nodes = []
+    counter = 1
     for each_pool in bag_pools:
         pool_title = each_pool["sub_title"]
         svts: List = each_pool["servants"][0]["ids"]
@@ -161,8 +162,10 @@ async def get_lucky_bag_image(bag_pools: List) -> List:
                     c_counter = 0
 
         pic_b64 = util.pic2b64(target)
-        card_msg = f'\n{pool_title}包含的五星从者：\n{MessageSegment.image(pic_b64)}'
+        card_msg = f'编号{counter}：' \
+                   f'\n{pool_title}包含的五星从者：\n{MessageSegment.image(pic_b64)}'
         nodes.append(gen_node(card_msg.strip()))
+        counter += 1
 
     return nodes
 
@@ -189,10 +192,13 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file, is_next=Fals
             lucky_nodes.extend(card_msg)
 
     if isinstance(select_lucky, list):
+        counter = 1
         for each_bag in select_lucky:
             sub_node = []
-            lucky_msg = f"福袋名称：{each_bag['name']}\n" \
+            lucky_msg = f"编号{counter}：\n" \
+                        f"福袋名称：{each_bag['name']}\n" \
                         f"关联卡池：{each_bag['title']}\n"
+            counter += 1
             lucky_img = f"https://fgo.wiki{each_bag['img']}"
             image_bytes = await (
                 await aiorequests.get(lucky_img, headers=headers, verify=crt_file)
