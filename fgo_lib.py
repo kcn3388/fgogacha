@@ -63,7 +63,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_lib.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?(\s.+)?$")
+@sv_lib.on_rex(r"(?i)^[获h更g][取q新x][fb]go[图tl][书si][馆gb](\s.+)?$")
 async def update_lib(bot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -90,7 +90,7 @@ async def update_lib(bot, ev: CQEvent):
     latest = False
 
     rule = re.compile(
-        r"(?i)^([获h更g][取q新x])?[fb]go[图tl][书si][馆gb]([获h更g][取q新x])?\s?([最z][新x]|latest|recent)?$")
+        r"(?i)^[获h更g][取q新x][fb]go[图tl][书si][馆gb]\s?([最z][新x]|latest|recent)?$")
     rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
     rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
     rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
@@ -325,7 +325,7 @@ async def update_lib(bot, ev: CQEvent):
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
 
-@sv_lib.on_rex(r"(?i)^([查c][询x])?[fb]go[图tl][书si][馆gb]([查c][询x])?(\s[\s\S]+)?$")
+@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go[图tl][书si][馆gb](\s[\s\S]+)?$")
 async def add_lib(bot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -366,7 +366,7 @@ async def add_lib(bot, ev: CQEvent):
     await bot.finish(ev, msg.strip())
 
 
-@sv_lib.on_rex(r"(?i)^(增添|add)?[fb]go[图tl][书si][馆gb](增添|add)?(\s.+)?(\s\d+)?$")
+@sv_lib.on_rex(r"(?i)^(增添|add)[fb]go[图tl][书si][馆gb](\s.+)?(\s\d+)?$")
 async def add_lib(bot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -522,9 +522,9 @@ async def add_lib(bot, ev: CQEvent):
         await bot.finish(ev, "已获取纹章数据~")
 
 
-@sv_lib.on_rex(r"(?i)^([修x][补b])?[fb]go"
+@sv_lib.on_rex(r"(?i)^[修x][补b][fb]go"
                r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
-               r"([修x][补b])?(\s.+)?$")
+               r"(\s.+)?$")
 async def fix_lib(bot, ev: CQEvent):
     is_3_args = False
     if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
@@ -672,7 +672,7 @@ async def fix_lib(bot, ev: CQEvent):
             await bot.finish(ev, "纹章数据错误，请再试一次~")
 
 
-@sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([从c][者z]|svt|servant)([查c][询x])?(\s.+)?$")
+@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([从c][者z]|svt|servant)(\s.+)?$")
 async def find_svt(bot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
@@ -1085,7 +1085,7 @@ async def find_svt(bot, ev: CQEvent):
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定从者，或单独指定内容")
 
 
-@sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([礼l][装z]|cft|craft)([查c][询x])?(\s.+)?$")
+@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([礼l][装z]|cft|craft)(\s.+)?$")
 async def find_cft(bot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
@@ -1366,7 +1366,7 @@ async def find_cft(bot, ev: CQEvent):
             await bot.finish(ev, "消息被风控，可能是消息太长，请尝试更精确指定礼装")
 
 
-@sv_lib.on_rex(r"(?i)^([查c])?([询x])?[fb]go([纹w][章z]|cmd|command)([查c][询x])?(\s.+)?$")
+@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([纹w][章z]|cmd|command)(\s.+)?$")
 async def find_cmd(bot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:

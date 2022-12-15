@@ -31,7 +31,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_news.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[新x][闻w]([获h更g][取q新x])?(\s\d+)?$")
+@sv_news.on_rex(r"(?i)^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$")
 async def get_offical_news(bot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
@@ -52,7 +52,7 @@ async def get_offical_news(bot, ev: CQEvent):
         await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
 
 
-@sv_news.on_rex(r"(?i)^([查c])?([询x])?[fb]go[新x][闻w]([查c][询x])?(\s.+)?$")
+@sv_news.on_rex(r"(?i)^[查c][询x][fb]go[新x][闻w](\s.+)?$")
 async def get_local_news(bot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")

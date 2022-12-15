@@ -4,12 +4,6 @@ from hoshino import aiorequests
 from typing import Union, Tuple, List
 from ..path_and_json import *
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-cn"
-}
-
 
 async def get_all_cft(crt_file=False) -> Union[Exception, Tuple[int, Union[None, List]]]:
     root_cft_url = "https://fgo.wiki/w/%E7%A4%BC%E8%A3%85%E5%9B%BE%E9%89%B4"

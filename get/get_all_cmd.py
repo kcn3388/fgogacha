@@ -4,12 +4,6 @@ from hoshino import aiorequests
 from typing import Union, Tuple, List
 from ..path_and_json import *
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-cn"
-}
-
 
 async def get_all_cmd(crt_file=False) -> Union[Exception, Tuple[int, Union[None, List]]]:
     root_cmd_url = "https://fgo.wiki/w/%E6%8C%87%E4%BB%A4%E7%BA%B9%E7%AB%A0%E5%9B%BE%E9%89%B4"

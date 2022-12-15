@@ -1,18 +1,11 @@
 import re
-import traceback
 
 from bs4 import BeautifulSoup
 
-from hoshino import aiorequests
+from hoshino import aiorequests, logger
 from typing import Union
 from ..path_and_json import *
 from .solve_svt import get_svt, get_multi_svt
-
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-cn"
-}
 
 
 async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
@@ -239,7 +232,7 @@ async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
         return 0
 
     except Exception as e:
-        print(traceback.format_exc())
+        logger.warning(f"{e}")
         return e
 
 

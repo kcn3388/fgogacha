@@ -6,6 +6,7 @@ from hoshino.typing import CQEvent
 from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
 from .get.getGachaPools import getgachapools
+from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag
 from .path_and_json import *
 
 jewel_limit = DailyNumberLimiter(3000)
@@ -67,7 +68,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_rex(r"(?i)^([获h更g][取q新x])?[fb]go[卡k][池c]([获h更g][取q新x])?$")
+@sv.on_rex(r"(?i)[获h更g][取q新x][fb]go[卡k][池c]$")
 async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
@@ -83,7 +84,7 @@ async def get_fgo_pool(bot, ev: CQEvent):
         await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
 
 
-@sv.on_rex(r"(?i)^([查c])?([询x])?[fb]go[卡k][池c]([查c][询x])?$")
+@sv.on_rex(r"(?i)^[查c][询x][fb]go[卡k][池c]$")
 async def check_pool(bot, ev: CQEvent):
     if os.path.exists(pools_path):
         try:
@@ -126,7 +127,7 @@ async def check_pool(bot, ev: CQEvent):
 
 
 # noinspection PyTypeChecker
-@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$|^[fb]go[卡k][池c][切qs][换hw](\s\d+)?$")
+@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_ids = ev.message.extract_plain_text().split()
     if len(p_ids) > 1:
@@ -179,7 +180,7 @@ async def switch_pool(bot, ev: CQEvent):
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}")
 
 
-@sv.on_rex(r"(?i)^([切qs][换hw])?[fb]go[日rd][替tp][卡k][池c]([切qs][换hw])?(\s\d+\s\d+)?$")
+@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if not ids:
@@ -259,14 +260,13 @@ async def switch_pool(bot, ev: CQEvent):
 async def gacha_10(bot, ev: CQEvent):
     gid = ev.group_id
     # barrier
-    if not jewel_limit.check(ev.user_id):
-        await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
-    jewel_limit.increase(ev.user_id, 30)
-
     if not lmt.check(ev.user_id):
         await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
         return
-    # lmt.start_cd(ev.user_id)
+    lmt.start_cd(ev.user_id)
+    if not jewel_limit.check(ev.user_id):
+        await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
+    jewel_limit.increase(ev.user_id, 30)
 
     gacha_result, server, pool_list = await gacha(gid)
     if gacha_result == 12:
@@ -483,14 +483,13 @@ async def gacha_10(bot, ev: CQEvent):
 async def gacha_100(bot, ev: CQEvent):
     gid = ev.group_id
     # barrier
-    if not tenjo_limit.check(ev.user_id):
-        await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
-    tenjo_limit.increase(ev.user_id, 1)
-
     if not lmt.check(ev.user_id):
         await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
         return
     lmt.start_cd(ev.user_id)
+    if not tenjo_limit.check(ev.user_id):
+        await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
+    tenjo_limit.increase(ev.user_id, 1)
 
     g100 = []
     g_counter = 0

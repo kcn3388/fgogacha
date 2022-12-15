@@ -1,4 +1,4 @@
-from hoshino import aiorequests
+from hoshino import aiorequests, logger
 from typing import Union
 
 headers = {
@@ -15,7 +15,7 @@ async def get_card(url, crt_file=False) -> Union[bytes, int]:
     except OSError:
         response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
     except Exception as e:
-        print(f"aiorequest error: {e}")
+        logger.warning(f"aiorequest error: {e}")
         return 100
 
     image = await response.content

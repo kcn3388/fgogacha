@@ -105,7 +105,7 @@ async def init(bot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv_manage.on_rex(r"(?i)^([下xd][载zl])?[fb]go[数s][据j]([下xd][载zl])?$")
+@sv_manage.on_rex(r"(?i)^[fb]go[数s][据j][下xd][载zl]$")
 async def get_fgo_data(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -220,7 +220,7 @@ async def enable_crt(bot, ev: CQEvent):
         await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
-@sv_manage.on_rex(r"(?i)^([切qs][换hw])?[抽c][卡k][样y][式s]([切qs][换hw])?\s(text|img|文字|图片)$")
+@sv_manage.on_rex(r"(?i)^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$")
 async def switch_10roll_style(bot, ev: CQEvent):
     style = ev.message.extract_plain_text().split()
 
@@ -259,7 +259,7 @@ async def switch_10roll_style(bot, ev: CQEvent):
     await bot.send(ev, f"已修改十连样式，当前样式：{style}")
 
 
-@sv_manage.on_rex(r"(?i)^([重c][载z])?([配p][置z][文w][件j]|config)([重c][载z])?$")
+@sv_manage.on_rex(r"(?i)^([重c][载z]|reload)\s?([配p][置z][文w][件j]|config)$")
 async def reload_config(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -332,7 +332,7 @@ async def update_pool():
     sv_manage.logger.info("结束自动更新fgo")
 
 
-@sv_manage.on_rex(r"(?i)^([设s][置z])?[fb]go[时s][间j]([设s][置z])?"
+@sv_manage.on_rex(r"(?i)^[设s][置z][fb]go[时s][间j]"
                   r"\s?(\d+(h((our)?s?)?|小时))?"
                   r"\s?(\d+(m((inute)?s?)?|分钟))?"
                   r"\s?(\d+(s((econd)?s?)?|秒))?$")

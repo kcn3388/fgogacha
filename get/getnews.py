@@ -4,12 +4,6 @@ from hoshino import aiorequests
 from typing import Tuple, Union
 from ..path_and_json import *
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-cn"
-}
-
 
 async def get_news(page_size=6, crt_file=None) -> Tuple[int, Union[bool, Exception]]:
     list_news_url = f"https://api.biligame.com/news/" \

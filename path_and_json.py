@@ -13,6 +13,13 @@ from selenium import webdriver
 
 from hoshino import config, util
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-cn"
+}
+
+
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
 basic_path = os.path.join(config.RES_DIR, "img", "fgo")
@@ -34,6 +41,7 @@ banner_path = os.path.join(data_path, 'banner.json')
 config_path = os.path.join(data_path, 'config.json')
 pools_path = os.path.join(data_path, 'pools.json')
 gacha_path = os.path.join(data_path, 'gacha.json')
+lucky_path = os.path.join(data_path, 'lucky_bag.json')
 banner_data_path = os.path.join(data_path, 'b_data.json')
 update_data_path = os.path.join(data_path, 'update.json')
 
@@ -50,8 +58,6 @@ back_cn_path = os.path.join(static_path, 'back_cn.png')
 mask_path = os.path.join(static_path, 'mask.png')
 font_path = os.path.join(static_path, 'SourceHanSansSC-Regular.otf')
 
-all_json = [banner_path, config_path, pools_path, gacha_path, banner_data_path]
-
 crt_folder_path = os.path.join(runtime_path, "crt")
 crt_path = "ca-certificates.crt"
 
@@ -62,6 +68,14 @@ all_craft_path = os.path.join(data_path, "all_cft.json")
 lib_servant_path = os.path.join(data_path, "lib_svt.json")
 lib_command_path = os.path.join(data_path, "lib_cmd.json")
 lib_craft_path = os.path.join(data_path, "lib_cft.json")
+
+all_json = [
+    banner_path, config_path, pools_path, gacha_path, lucky_path,
+    banner_data_path, update_data_path, old_pools_path,
+    news_path, news_detail_path,
+    all_servant_path, all_command_path, all_craft_path,
+    lib_servant_path, lib_command_path, lib_craft_path
+]
 
 
 def create_img(text) -> str:
