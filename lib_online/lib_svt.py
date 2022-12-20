@@ -128,7 +128,7 @@ def get_detail(svts, svt, svt_data):
     s2.pop()
     s2.pop(0)
     s2.pop(0)
-    result = {}
+    result: dict = {}
     for each_stat in s1:
         if each_stat == "ATK" or each_stat == "职阶补正后" or each_stat == "HP" or each_stat == "能力":
             result[each_stat] = []

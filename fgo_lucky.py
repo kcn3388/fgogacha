@@ -1,61 +1,17 @@
 import json.encoder
 import os.path
 import re
-from aiocqhttp import ActionFailed
 from typing import List
 
-from hoshino import priv, Service, HoshinoBot
+from aiocqhttp import ActionFailed
+
+from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter
 from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag, get_lucky_gacha
 from .path_and_json import *
 
 lucky_limit = DailyNumberLimiter(1)
 LUCKY_EXCEED_NOTICE = f"您今天已经抽过{lucky_limit.max}次福袋了，欢迎明早5点后再来！"
-
-height = 194
-width = 178
-dis = 23
-floor = 48
-st1w = 92
-st1h = 200
-st2 = 192
-
-boxlist = []
-
-box1 = (st1w, st1h)
-for box_i in range(6):
-    boxlist.append(box1)
-    lst = list(box1)
-    lst[0] += width + dis
-    box1 = tuple(lst)
-
-box2 = (st2, st1h + height + floor)
-for box_i in range(5):
-    boxlist.append(box2)
-    lst = list(box2)
-    lst[0] += width + dis
-    box2 = tuple(lst)
-
-lucky_sv_help = '''
-[更新fgo福袋] 获取福袋信息
-- 初次查询福袋之前务必先执行此命令
-[查询fgo福袋 + 概况] 查询全部福袋的文字概况
-[查询fgo福袋 + 国服/日服] 查询当前存在的福袋数据
-- [查询fgo福袋 + 国服/日服 + 福袋编号] 查询对应顺序的福袋详细数据
-- [查询fgo福袋 + 国服/日服 + 全部] 查询全部福袋详细数据
-[查询fgo福袋 + 未来] 查询国服千里眼福袋数据
-[抽fgo福袋 + 国服/日服 + 福袋编号 + 子池子编号（默认为1）] 抽福袋
-'''.strip()
-
-lucky_sv = Service(
-    name='fgo福袋',
-    help_=lucky_sv_help,
-    bundle="娱乐",
-    enable_on_default=True,
-    visible=True,
-    use_priv=priv.NORMAL,  # 使用权限
-    manage_priv=priv.ADMIN,  # 管理权限
-)
 
 
 @lucky_sv.on_rex(r"(?i)^[更g][新x][fb]go[福f][袋d]$")

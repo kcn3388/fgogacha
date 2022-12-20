@@ -1,14 +1,11 @@
-import re
-
-from hoshino import priv, Service, HoshinoBot
+from hoshino import HoshinoBot
 from .download.downloadIcons import downloadicons
 from .get.getGachaPools import getgachapools
+from .get.get_all_cft import *
+from .get.get_all_cmd import *
+from .get.get_all_svt import *
 from .get.getnews import get_news
-from .get.get_all_svt import get_all_svt
-from .get.get_all_cft import get_all_cft
-from .get.get_all_cmd import get_all_cmd
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
-from .path_and_json import *
 
 # 更新时间间隔，单位为秒
 flush_second = 0
@@ -30,31 +27,6 @@ except FileNotFoundError:
     pass
 except KeyError:
     pass
-
-sv_manage_help = '''
-# 抽卡管理命令:
-[fgo数据初始化] 初始化数据文件及目录，务必安装后先执行此命令！
-[fgo数据下载] 下载从者及礼装图标，务必先初始化数据再执行下载！
-[跟随最新/剧情卡池] 设置卡池数据更新后跟随最新国服卡池还是国服剧情卡池
-[fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
-[fgo_check_crt] 检查本群crt文件配置状态
-[重载配置文件] 为本群新建默认配置或还原至默认配置，同时修补其他群的配置
-[切换抽卡样式 + 样式] 切换抽卡样式，可选样式：
-- 文字：旧版简约图标
-- 图片：仿真实抽卡
-[设置fgo时间 + 小时 + 分钟 + 秒] 设置自动更新时间间隔，至少输入其中一个参数
-- 例如：``设置fgo时间 1小时60分钟60秒``
-'''.strip()
-
-sv_manage = Service(
-    name='fgo管理',
-    help_=sv_manage_help,
-    bundle="娱乐",
-    enable_on_default=True,
-    visible=True,
-    use_priv=priv.NORMAL,  # 使用权限
-    manage_priv=priv.ADMIN,  # 管理权限
-)
 
 
 @sv_manage.on_fullmatch(("帮助fgo管理", "帮助FGO管理", "帮助bgo管理", "帮助BGO管理"))

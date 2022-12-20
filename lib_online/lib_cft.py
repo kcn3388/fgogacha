@@ -89,7 +89,7 @@ async def lib_cft(cft_data, crt_file=False) -> Dict:
     s1[-1] = s1[-1].split("\n\n")  # noqa
     if s2[-1].startswith("以下翻译内容由Mooncell用户贡献。"):
         s2[-1] = s2[-1].replace("以下翻译内容由Mooncell用户贡献。", "")  # noqa
-        s2[-1] = re.split(r"转载请保留网址 https://fgo.wiki/id/\d+\n\n\n", s2[-1])
+        s2[-1] = re.split(r"转载请保留网址 https://fgo.wiki/id/\d+\n\n\n", s2[-1])  # noqa
     else:
         s2[-1] = s2[-1].split("\n\n\n")  # noqa
 

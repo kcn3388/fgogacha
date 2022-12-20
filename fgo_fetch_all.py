@@ -1,36 +1,10 @@
 from aiocqhttp import ActionFailed
 
-from hoshino import priv, Service, HoshinoBot
+from hoshino import HoshinoBot
 from .download.download_all_res import download_svt, download_cft, download_cmd
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
 from .get.get_all_svt import *
-
-sv_fetch_help = '''
-# 数据管理相关
-[获取全部内容] 获取从者/礼装/纹章的相关内容
-- 从者包括职介和指令卡
-- 礼装/纹章包括技能
-- 子命令：
-  - [获取全部从者]
-  - [获取全部礼装]
-  - [获取全部纹章]
-[下载全部卡片资源] 从上述数据中下载对应静态资源
-- 子命令：
-  - [下载全部从者资源]
-  - [下载全部礼装资源]
-  - [下载全部纹章资源]
-'''.strip()
-
-sv_fetch = Service(
-    name='fgo数据获取',
-    help_=sv_fetch_help,
-    bundle="娱乐",
-    enable_on_default=True,
-    visible=True,
-    use_priv=priv.NORMAL,  # 使用权限
-    manage_priv=priv.ADMIN,  # 管理权限
-)
 
 
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))

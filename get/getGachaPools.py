@@ -226,7 +226,7 @@ async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
         return 0
 
     except Exception as e:
-        logger.warning(f"{e}")
+        sv.logger.warning(f"{e}")
         return e
 
 

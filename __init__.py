@@ -1,7 +1,6 @@
 import json.encoder
 import os.path
 
-from hoshino import priv, Service
 from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
 from .get.getGachaPools import getgachapools
@@ -14,50 +13,6 @@ lmt = FreqLimiter(15)  # 冷却时间15秒
 
 JEWEL_EXCEED_NOTICE = f"您今天已经抽过{jewel_limit.max}石头了，欢迎明早5点后再来！"
 TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，欢迎明早5点后再来！"
-
-height = 194
-width = 178
-dis = 23
-floor = 48
-st1w = 92
-st1h = 200
-st2 = 192
-
-boxlist = []
-
-box1 = (st1w, st1h)
-for box_i in range(6):
-    boxlist.append(box1)
-    lst = list(box1)
-    lst[0] += width + dis
-    box1 = tuple(lst)
-
-box2 = (st2, st1h + height + floor)
-for box_i in range(5):
-    boxlist.append(box2)
-    lst = list(box2)
-    lst[0] += width + dis
-    box2 = tuple(lst)
-
-sv_help = '''
-# 抽卡模拟相关
-[fgo十连] fgo抽卡
-[fgo百连] 100抽
-[获取fgo卡池] 从mooncell获取卡池数据
-[查询fgo卡池] 查询本地缓存的卡池以及本群卡池
-[切换fgo卡池 + 卡池编号] 切换需要的卡池
-[切换fgo日替卡池 + 卡池编号 + 日替卡池编号] 切换需要的日替卡池
-'''.strip()
-
-sv = Service(
-    name='fgo抽卡',
-    help_=sv_help,
-    bundle="娱乐",
-    enable_on_default=True,
-    visible=True,
-    use_priv=priv.NORMAL,  # 使用权限
-    manage_priv=priv.ADMIN,  # 管理权限
-)
 
 
 @sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡", "帮助bgo抽卡", "帮助BGO抽卡"))

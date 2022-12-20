@@ -2,27 +2,10 @@ import re
 import shutil
 
 from aiocqhttp import ActionFailed
-from hoshino import priv, Service, HoshinoBot
+
+from hoshino import HoshinoBot
 from .get.getnews import get_news
 from .path_and_json import *
-
-sv_news_help = '''
-# 新闻相关：
-[获取fgo新闻 + 数量] 从官网获取公告新闻，默认6条，置顶的概率公告会去掉
-[查询fgo新闻 + 编号/all] 从本地查询公告具体内容，all代表全部获取
-- 可以在末尾附加参数``pic``不使用截图
-[清除新闻缓存] 移除新闻截图
-'''.strip()
-
-sv_news = Service(
-    name='fgo新闻获取',
-    help_=sv_news_help,
-    bundle="娱乐",
-    enable_on_default=True,
-    visible=True,
-    use_priv=priv.NORMAL,  # 使用权限
-    manage_priv=priv.ADMIN,  # 管理权限
-)
 
 
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))

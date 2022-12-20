@@ -1,7 +1,6 @@
 import random
-
-import hoshino
 from typing import Tuple, List
+
 from ..path_and_json import *
 
 
@@ -81,7 +80,7 @@ async def gacha(gid) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
     try:
         result = await get_result(pool_data["data"])
     except KeyError as e:
-        hoshino.logger.error(f"{e}")
+        sv.logger.error(f"{e}")
         return 13, 0, 0
     for each_result in result:
         card = int(random.choice(each_result[2]))

@@ -68,7 +68,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
                     page["time_end"] = f'{time_end.string.strip()}（JST）'
                     page["time_delta"] = f'{time_delta.string.strip()}（JST）'
                 except Exception as e:
-                    logger.warning(f"{e}")
+                    lucky_sv.logger.warning(f"{e}")
                     try:
                         time_info = time_soup.find(text="日服卡池信息")
                         time_start = time_info.find_next("td")
@@ -78,7 +78,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
                         page["time_end"] = f'{time_end.string.strip()}（JST）'
                         page["time_delta"] = f'{time_delta.string.strip()}（JST）'
                     except Exception as e:
-                        logger.warning(f"{e}")
+                        lucky_sv.logger.warning(f"{e}")
                         pass
 
                 detail_msg = await get_lucky_bag_detail(page)
@@ -91,7 +91,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
         return lucky_bag
 
     except Exception as e:
-        logger.warning(f"{e}")
+        lucky_sv.logger.warning(f"{e}")
         return e
 
 
@@ -185,7 +185,7 @@ async def get_lucky_bag_image(bag_pools: List) -> List:
                 else:
                     c_counter = 0
 
-        card_msg = f'编号{counter}：' \
+        card_msg = f'编号【{counter}】：' \
                    f'\n{pool_title}包含的五星从者：\n{gen_ms_img(target)}'
         nodes.append(gen_node(card_msg.strip()))
         counter += 1
@@ -219,7 +219,7 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file, is_next=Fals
         counter = 1
         for each_bag in select_lucky:
             sub_node = []
-            lucky_msg = f"编号{counter}：\n" \
+            lucky_msg = f"编号【{counter}】：\n" \
                         f"福袋名称：{each_bag['name']}\n" \
                         f"关联卡池：{each_bag['title']}\n" \
                         f"开放时间：{each_bag['time_start']}\n" \
