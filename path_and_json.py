@@ -1,24 +1,22 @@
-# noinspection PyUnresolvedReferences
 import io
 import json
 import os
 import platform
 import time
-from typing import Dict
+from typing import Dict, Union
 
 from PIL import Image, ImageFont, ImageDraw
-# noinspection PyUnresolvedReferences
-from aiocqhttp import ActionFailed, MessageSegment
+from aiocqhttp import MessageSegment
 from selenium import webdriver
 
-from hoshino import config, util
+from hoshino import config, util, aiorequests, logger
+from hoshino.typing import CQEvent
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.6) ",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "zh-cn"
 }
-
 
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
@@ -94,7 +92,7 @@ def create_img(text) -> str:
     return msg
 
 
-def gen_node(text, _name="涩茄子", _uin="2087332430") -> Dict:
+def gen_node(text, _name="涩茄子", _uin="2902388901") -> Dict:
     node = {
         "type": "node",
         "data": {
@@ -107,7 +105,7 @@ def gen_node(text, _name="涩茄子", _uin="2087332430") -> Dict:
     return node
 
 
-def load_config(ev, get_group=False) -> Dict:
+def load_config(ev: CQEvent, get_group=False) -> Dict:
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
@@ -198,3 +196,36 @@ def getpic(url, save_img_name, _type="") -> bool:
     except Exception as e:
         print(e)
         return False
+
+
+def gen_ms_img(image: Union[bytes, Image.Image]) -> MessageSegment:
+    if isinstance(image, bytes):
+        return MessageSegment.image(
+            util.pic2b64(Image.open(io.BytesIO(image)))
+        )
+    else:
+        return MessageSegment.image(
+            util.pic2b64(image)
+        )
+
+
+async def gen_img_from_url(img_url: str, crt_file) -> Union[Exception, MessageSegment]:
+    img_url = f"https://fgo.wiki{img_url}"
+    image_bytes = await get_content(img_url, crt_file)
+    if isinstance(image_bytes, Exception):
+        return image_bytes
+    return gen_ms_img(image_bytes)
+
+
+async def get_content(url: str, crt_file) -> Union[Exception, bytes]:
+    try:
+        return await (
+            await aiorequests.get(url, headers=headers, verify=crt_file)
+        ).content
+    except OSError:
+        return await (
+            await aiorequests.get(url, timeout=20, verify=False, headers=headers)
+        ).content
+    except Exception as e:
+        logger.warning(f"aiorequest error: {e}")
+        return e

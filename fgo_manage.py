@@ -1,10 +1,12 @@
 import re
 
-from hoshino import priv, Service
-from hoshino.typing import CQEvent
+from hoshino import priv, Service, HoshinoBot
 from .download.downloadIcons import downloadicons
 from .get.getGachaPools import getgachapools
 from .get.getnews import get_news
+from .get.get_all_svt import get_all_svt
+from .get.get_all_cft import get_all_cft
+from .get.get_all_cmd import get_all_cmd
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 from .path_and_json import *
 
@@ -57,7 +59,7 @@ sv_manage = Service(
 
 @sv_manage.on_fullmatch(("帮助fgo管理", "帮助FGO管理", "帮助bgo管理", "帮助BGO管理"))
 @sv_manage.on_rex(r"(?i)^[fb]go[管g][理l][帮b][助z]$")
-async def bangzhu(bot, ev):
+async def bangzhu(bot: HoshinoBot, ev):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     helps = gen_node(sv_manage_help)
@@ -65,7 +67,7 @@ async def bangzhu(bot, ev):
 
 
 @sv_manage.on_rex(r"(?i)^[fb]go[数s][据j][初ci][始sn][化hi]$")
-async def init(bot, ev: CQEvent):
+async def init(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
@@ -106,7 +108,7 @@ async def init(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex(r"(?i)^[fb]go[数s][据j][下xd][载zl]$")
-async def get_fgo_data(bot, ev: CQEvent):
+async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
@@ -135,7 +137,7 @@ async def get_fgo_data(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
-async def follow_latest(bot, ev: CQEvent):
+async def follow_latest(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     global FOLLOW_LATEST_POOL
@@ -161,7 +163,7 @@ async def follow_latest(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex(r"^(?i)fgo_enable_crt(\s.+)?$")
-async def enable_crt(bot, ev: CQEvent):
+async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
     crt = ev.message.extract_plain_text().split()
@@ -205,7 +207,7 @@ async def enable_crt(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex("(?i)^fgo_check_crt$")
-async def enable_crt(bot, ev: CQEvent):
+async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
 
@@ -221,7 +223,7 @@ async def enable_crt(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex(r"(?i)^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$")
-async def switch_10roll_style(bot, ev: CQEvent):
+async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
     style = ev.message.extract_plain_text().split()
 
     if not os.path.exists(config_path):
@@ -260,7 +262,7 @@ async def switch_10roll_style(bot, ev: CQEvent):
 
 
 @sv_manage.on_rex(r"(?i)^([重c][载z]|reload)\s?([配p][置z][文w][件j]|config)$")
-async def reload_config(bot, ev: CQEvent):
+async def reload_config(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -323,6 +325,9 @@ async def update_pool():
         sv_manage.logger.error(f"获取新闻失败，原因：{str(same)}")
 
     # 自动下载资源
+    await get_all_svt(crt_file)
+    await get_all_cft(crt_file)
+    await get_all_cmd(crt_file)
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
@@ -336,7 +341,7 @@ async def update_pool():
                   r"\s?(\d+(h((our)?s?)?|小时))?"
                   r"\s?(\d+(m((inute)?s?)?|分钟))?"
                   r"\s?(\d+(s((econd)?s?)?|秒))?$")
-async def set_update_time(bot, ev: CQEvent):
+async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     msg = ev.message.extract_plain_text()

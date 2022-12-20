@@ -1,14 +1,11 @@
 import os.path
-import re
 
-from hoshino import Service, priv
-from hoshino.typing import CQEvent
-from typing import Tuple
-from .lib_online.lib_online import get_card
-from .lib_online.lib_svt import lib_svt, lib_svt_online
-from .lib_online.lib_cft import lib_cft, lib_cft_online
-from .lib_online.lib_cmd import lib_cmd, lib_cmd_online
-from .path_and_json import *
+from aiocqhttp import ActionFailed
+
+from hoshino import Service, priv, HoshinoBot
+from .lib_online.lib_cft import *
+from .lib_online.lib_cmd import *
+from .lib_online.lib_svt import *
 
 sv_lib_help = '''
 # fgo数据库相关
@@ -58,13 +55,13 @@ sv_lib = Service(
 
 @sv_lib.on_fullmatch(("帮助fgo图书馆", "帮助FGO图书馆", "帮助bgo图书馆", "帮助BGO图书馆"))
 @sv_lib.on_rex(r"(?i)^[fb]go[图tl][书si][馆gb][帮b][助z]$")
-async def bangzhu(bot, ev):
+async def bangzhu(bot: HoshinoBot, ev):
     helps = gen_node(sv_lib_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
 @sv_lib.on_rex(r"(?i)^[获h更g][取q新x][fb]go[图tl][书si][馆gb](\s.+)?$")
-async def update_lib(bot, ev: CQEvent):
+async def update_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
             svt = json.load(f)
@@ -326,7 +323,7 @@ async def update_lib(bot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^[查c][询x][fb]go[图tl][书si][馆gb](\s[\s\S]+)?$")
-async def add_lib(bot, ev: CQEvent):
+async def add_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
             svt = json.load(f)
@@ -367,7 +364,7 @@ async def add_lib(bot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^(增添|add)[fb]go[图tl][书si][馆gb](\s.+)?(\s\d+)?$")
-async def add_lib(bot, ev: CQEvent):
+async def add_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
             svt = json.load(f)
@@ -402,7 +399,7 @@ async def add_lib(bot, ev: CQEvent):
 
     msg = ev.message.extract_plain_text().split()
     if not len(msg) == 3:
-        await bot.finish("食用指南：增添fgo图书馆 + 类型 + id")
+        await bot.finish(ev, "食用指南：增添fgo图书馆 + 类型 + id")
 
     if re.search(rule_svt, msg[1]):
         update_svt = True
@@ -525,7 +522,7 @@ async def add_lib(bot, ev: CQEvent):
 @sv_lib.on_rex(r"(?i)^[修x][补b][fb]go"
                r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
                r"(\s.+)?$")
-async def fix_lib(bot, ev: CQEvent):
+async def fix_lib(bot: HoshinoBot, ev: CQEvent):
     is_3_args = False
     if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
         is_3_args = True
@@ -673,7 +670,7 @@ async def fix_lib(bot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([从c][者z]|svt|servant)(\s.+)?$")
-async def find_svt(bot, ev: CQEvent):
+async def find_svt(bot: HoshinoBot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo从者 + 从者名字]")
@@ -688,8 +685,9 @@ async def find_svt(bot, ev: CQEvent):
 
     del (msg[0])
     svt_data = []
-    is_detail, remove_card, remove_data, remove_info, remove_fool, remove_ultimate, remove_skill, remove_voice \
-        = get_keys(msg)
+    is_detail, remove_card, remove_data, \
+        remove_info, remove_fool, remove_ultimate, \
+        remove_skill, remove_voice, remove_pup = get_keys(msg)
 
     is_search_id = False
     search_id = None
@@ -892,9 +890,7 @@ async def find_svt(bot, ev: CQEvent):
                 #     msg_send += f"{MessageSegment.image(pic_card)}\n"
 
                 if os.path.exists(img_path):
-                    img = Image.open(img_path)
-                    pic_b64 = util.pic2b64(img)
-                    msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                    msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
 
                 msg_send += f"中文名：{each['name_cn']}\n原名：{each['name_jp']}\n稀有度：{each['rare']}\n" \
                             f"获取方法：{each['method']}\n职阶：{each['detail']['职阶']}\n"
@@ -905,14 +901,11 @@ async def find_svt(bot, ev: CQEvent):
                 if not remove_card:
                     msg_card = ""
                     for cards in each["cards_url"]:
-                        card = await get_card(each["cards_url"][cards], crt_file)
-                        if isinstance(card, int) and card == 100:
+                        card = await gen_img_from_url(each["cards_url"][cards], crt_file)
+                        if isinstance(card, Exception):
                             continue
                         else:
-                            bio_card = Image.open(io.BytesIO(card))
-                            pic_card = util.pic2b64(bio_card)
-                            msg_card += f"{cards}\n"
-                            msg_card += f"{MessageSegment.image(pic_card)}\n"
+                            msg_card += f"{card}\n"
 
                     send_card = gen_node(msg_card.strip())
                     details.append(send_card)
@@ -963,11 +956,9 @@ async def find_svt(bot, ev: CQEvent):
                         msg_skill_icon = ""
                         for data in each["技能"][skills]:
                             if data == "图标":
-                                icon = await get_card(each["技能"][skills][data], crt_file)
-                                if not isinstance(icon, int) and not icon == 100:
-                                    bio_card = Image.open(io.BytesIO(icon))
-                                    pic_card = util.pic2b64(bio_card)
-                                    msg_skill_icon += f"{MessageSegment.image(pic_card)}\n"
+                                icon = await gen_img_from_url(each["技能"][skills][data], crt_file)
+                                if not isinstance(icon, Exception):
+                                    msg_skill_icon += f"{icon}\n"
                                 continue
                             if isinstance(each["技能"][skills][data], list):
                                 msg_skill += f'\t\t\t\t{data}：\n'
@@ -990,6 +981,20 @@ async def find_svt(bot, ev: CQEvent):
                         msg_voice = create_img(msg_voice.strip())
                         send_voice = gen_node(msg_voice)
                         details.append(send_voice)
+                if not remove_pup:
+                    details.append(gen_node("国服未来Pick Up情况："))
+                    pool_counter = 1
+                    for each_pool in each["pup"]:
+                        msg_pup = f"{pool_counter}:{each_pool['title']}\n" \
+                                  f"开放时间：{each_pool['time_start']}\n" \
+                                  f"结束时间：{each_pool['time_end']}\n" \
+                                  f"卡池时长：{each_pool['time_delta']}\n"
+                        pup_img = await gen_img_from_url(each_pool['img_url'], crt_file)
+                        if isinstance(pup_img, Exception):
+                            continue
+                        msg_pup += pup_img
+                        send_pup = gen_node(msg_pup)
+                        details.append(send_pup)
 
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
@@ -1063,9 +1068,7 @@ async def find_svt(bot, ev: CQEvent):
 
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
-                img = Image.open(img_path)
-                pic_b64 = util.pic2b64(img)
-                msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
 
             msg_send += f"中文名：{each['name_cn']}\n原名：{each['name_jp']}\n稀有度：{each['rare']}\n" \
                         f"获取方法：{each['method']}\n职阶：{each['detail']['职阶']}\n"
@@ -1086,7 +1089,7 @@ async def find_svt(bot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([礼l][装z]|cft|craft)(\s.+)?$")
-async def find_cft(bot, ev: CQEvent):
+async def find_cft(bot: HoshinoBot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo礼装 + 礼装名字]")
@@ -1253,8 +1256,6 @@ async def find_cft(bot, ev: CQEvent):
                     details.append(send_error)
                     continue
 
-                img = Image.open(img_path)
-                pic_b64 = util.pic2b64(img)
                 if counter < 2:
                     msg_send = "你找的可能是：\n"
                     msg_send += f"{counter}：{each['name_link']}\n"
@@ -1264,17 +1265,15 @@ async def find_cft(bot, ev: CQEvent):
                     counter += 1
                 if len(cft_data) == 1:
                     msg_send = f"你找的可能是：\n{each['name_link']}\n"
-                msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n礼装类型：{each['type']}\n\n"
 
                 msg_send += "卡面：\n"
-                card = await get_card(each["cards_url"], crt_file)
-                if isinstance(card, int) and card == 100:
+                card = await gen_img_from_url(each["cards_url"], crt_file)
+                if isinstance(card, Exception):
                     sv_lib.logger.error(f"获取礼装{each['id']}卡面出错")
                 else:
-                    bio_card = Image.open(io.BytesIO(card))
-                    pic_card = util.pic2b64(bio_card)
-                    msg_send += f"{MessageSegment.image(pic_card)}\n"
+                    msg_send += f"{card}\n"
 
                 msg_data = ""
                 for data in each["detail"]:
@@ -1284,9 +1283,7 @@ async def find_cft(bot, ev: CQEvent):
                     if data == "持有技能":
                         msg_data += f"{data}："
                         skill = os.path.join(skill_path, each["skill_icon"])
-                        skill_img = Image.open(skill)
-                        pic_card = util.pic2b64(skill_img)
-                        msg_data += f"\n{MessageSegment.image(pic_card)}\n"
+                        msg_data += f"\n{gen_ms_img(Image.open(skill))}\n"
                         if isinstance(each['detail'][data], list):
                             for each_skill in each['detail'][data]:
                                 each_skill = each_skill.replace("\n+", "+").replace("+", "\n")
@@ -1350,9 +1347,7 @@ async def find_cft(bot, ev: CQEvent):
                 msg_send = f"你找的可能是：\n{each['name_link']}\n"
             img_path = os.path.join(cft_path, each["cft_icon"])
             if os.path.exists(img_path):
-                img = Image.open(img_path)
-                pic_b64 = util.pic2b64(img)
-                msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n礼装类型：{each['type']}\n\n"
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
@@ -1367,7 +1362,7 @@ async def find_cft(bot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([纹w][章z]|cmd|command)(\s.+)?$")
-async def find_cmd(bot, ev: CQEvent):
+async def find_cmd(bot: HoshinoBot, ev: CQEvent):
     msg = ev.message.extract_plain_text().split()
     if len(msg) < 2:
         await bot.finish(ev, "食用指南：[查询fgo纹章 + 纹章名字]")
@@ -1531,8 +1526,6 @@ async def find_cmd(bot, ev: CQEvent):
                     details.append(send_error)
                     continue
 
-                img = Image.open(img_path)
-                pic_b64 = util.pic2b64(img)
                 if counter < 2:
                     msg_send = "你找的可能是：\n"
                     msg_send += f"{counter}：{each['name_link']}\n"
@@ -1542,17 +1535,15 @@ async def find_cmd(bot, ev: CQEvent):
                     counter += 1
                 if len(cmd_data) == 1:
                     msg_send = f"你找的可能是：\n{each['name_link']}\n"
-                msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n纹章类型：{each['type']}\n\n"
 
                 msg_send += "卡面：\n"
-                card = await get_card(each["cards_url"], crt_file)
-                if isinstance(card, int) and card == 100:
+                card = await gen_img_from_url(each["cards_url"], crt_file)
+                if isinstance(card, Exception):
                     sv_lib.logger.error(f"获取纹章{each['id']}卡面出错")
                 else:
-                    bio_card = Image.open(io.BytesIO(card))
-                    pic_card = util.pic2b64(bio_card)
-                    msg_send += f"{MessageSegment.image(pic_card)}\n"
+                    msg_send += f"{card}\n"
 
                 msg_data = ""
                 for data in each["detail"]:
@@ -1562,9 +1553,7 @@ async def find_cmd(bot, ev: CQEvent):
                     if data == "持有技能":
                         msg_data += f"{data}："
                         skill = os.path.join(skill_path, each["skill_icon"])
-                        skill_img = Image.open(skill)
-                        pic_card = util.pic2b64(skill_img)
-                        msg_data += f"\n{MessageSegment.image(pic_card)}\n"
+                        msg_data += f"\n{gen_ms_img(Image.open(skill))}\n"
                         msg_data += f"{each['detail'][data]}\n"
                     else:
                         msg_data += f"{data}：{each['detail'][data]}\n"
@@ -1623,9 +1612,7 @@ async def find_cmd(bot, ev: CQEvent):
                 msg_send = f"你找的可能是：\n{each['name_link']}\n"
             img_path = os.path.join(cmd_path, each["cmd_icon"])
             if os.path.exists(img_path):
-                img = Image.open(img_path)
-                pic_b64 = util.pic2b64(img)
-                msg_send += f"{MessageSegment.image(pic_b64)}\n"
+                msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
                 msg_send += f"名字：{each['name']}\n稀有度：{each['rare']}\n纹章类型：{each['type']}\n\n"
             else:
                 await bot.finish(ev, "没有本地资源~请先获取本地资源~")
@@ -1648,6 +1635,7 @@ def get_keys(msg) -> Tuple:
     remove_ultimate = False
     remove_skill = False
     remove_voice = False
+    remove_pup = False
     rule = re.compile(r"(?i)(详细|detail)")
     if re.match(rule, msg[-1]):
         is_detail = True
@@ -1661,6 +1649,7 @@ def get_keys(msg) -> Tuple:
         remove_ultimate = True
         remove_skill = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule2 = re.compile(r"(?i)(数据|data)")
     if re.match(rule2, msg[-1]):
@@ -1671,6 +1660,7 @@ def get_keys(msg) -> Tuple:
         remove_ultimate = True
         remove_skill = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule3 = re.compile(r"(?i)(资料|info)")
     if re.match(rule3, msg[-1]):
@@ -1681,6 +1671,7 @@ def get_keys(msg) -> Tuple:
         remove_ultimate = True
         remove_skill = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule4 = re.compile(r"(?i)(愚人节|fool)")
     if re.match(rule4, msg[-1]):
@@ -1691,6 +1682,7 @@ def get_keys(msg) -> Tuple:
         remove_ultimate = True
         remove_skill = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule5 = re.compile(r"(?i)(宝具|bj|ultimate)")
     if re.match(rule5, msg[-1]):
@@ -1701,6 +1693,7 @@ def get_keys(msg) -> Tuple:
         remove_fool = True
         remove_skill = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule6 = re.compile(r"(?i)(技能|skill)")
     if re.match(rule6, msg[-1]):
@@ -1711,6 +1704,7 @@ def get_keys(msg) -> Tuple:
         remove_fool = True
         remove_ultimate = True
         remove_voice = True
+        remove_pup = True
         msg.pop()
     rule7 = re.compile(r"(?i)(语音|voice)")
     if re.match(rule7, msg[-1]):
@@ -1721,6 +1715,22 @@ def get_keys(msg) -> Tuple:
         remove_fool = True
         remove_ultimate = True
         remove_skill = True
+        remove_pup = True
+        msg.pop()
+    rule8 = re.compile(r"(?i)(未来|pup)")
+    if re.match(rule8, msg[-1]):
+        is_detail = True
+        remove_data = True
+        remove_card = True
+        remove_info = True
+        remove_fool = True
+        remove_ultimate = True
+        remove_voice = True
+        remove_skill = True
         msg.pop()
 
-    return is_detail, remove_card, remove_data, remove_info, remove_fool, remove_ultimate, remove_skill, remove_voice
+    return (
+        is_detail, remove_card, remove_data,
+        remove_info, remove_fool, remove_ultimate,
+        remove_skill, remove_voice, remove_pup
+    )

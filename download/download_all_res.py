@@ -1,8 +1,6 @@
 import re
 
-from typing import Union
-from .download import download
-from ..path_and_json import *
+from .download import *
 
 
 async def download_svt(crt_file=False) -> Union[int, Exception]:

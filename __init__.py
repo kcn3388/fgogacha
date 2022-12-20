@@ -2,14 +2,13 @@ import json.encoder
 import os.path
 
 from hoshino import priv, Service
-from hoshino.typing import CQEvent
 from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
 from .get.getGachaPools import getgachapools
 from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag
 from .path_and_json import *
 
-jewel_limit = DailyNumberLimiter(3000)
+jewel_limit = DailyNumberLimiter(100)
 tenjo_limit = DailyNumberLimiter(10)
 lmt = FreqLimiter(15)  # 冷却时间15秒
 
@@ -68,7 +67,7 @@ async def bangzhu(bot, ev):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_rex(r"(?i)[获h更g][取q新x][fb]go[卡k][池c]$")
+@sv.on_rex(r"(?i)^[获h更g][取q新x][fb]go[卡k][池c]$")
 async def get_fgo_pool(bot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
@@ -99,12 +98,10 @@ async def check_pool(bot, ev: CQEvent):
 
     msg = "当前卡池："
     for each in pools:
-        s = f"\n{each['id']}：{each['banner']}({each['server']})"
-        msg += s
+        msg += f"\n{each['id'] + 1}：{each['banner']}({each['server']})"
         if "sub_pool" in each:
             for sub_pools in each["sub_pool"]:
-                s = f"\n\t{sub_pools['id']}：{sub_pools['sub_title']}"
-                msg += s
+                msg += f"\n\t{sub_pools['id'] + 1}：{sub_pools['sub_title']}"
 
     if os.path.exists(banner_path):
         banners = json.load(open(banner_path, encoding="utf-8"))
@@ -126,7 +123,6 @@ async def check_pool(bot, ev: CQEvent):
         await bot.send(ev, msg)
 
 
-# noinspection PyTypeChecker
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$")
 async def switch_pool(bot, ev: CQEvent):
     p_ids = ev.message.extract_plain_text().split()
@@ -160,11 +156,11 @@ async def switch_pool(bot, ev: CQEvent):
         "banner": []
     }
 
-    dp_pool = [each for each in pools if each["id"] == int(p_id)]
+    dp_pool = [each for each in pools if each["id"] == int(p_id) - 1]
     if not dp_pool:
         await bot.finish(ev, "卡池编号不存在")
     banner["banner"] = dp_pool[0]
-    if banner["banner"]["type"] == "daily pickup":
+    if dp_pool[0]["type"] == "daily pickup":
         await bot.finish(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
 
     gb_index = [i for i in range(len(banners)) if banners[i]["group"] == ev.group_id]
@@ -175,9 +171,9 @@ async def switch_pool(bot, ev: CQEvent):
     with open(banner_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(banners, indent=2, ensure_ascii=False))
 
-    title = banner["banner"]["title"]
-    b_name = banner["banner"]["banner"]
-    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}")
+    title = dp_pool[0]["title"]
+    b_name = dp_pool[0]["banner"]
+    await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({dp_pool[0]['server']})\n从属活动：\n{title}")
 
 
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$")
@@ -218,10 +214,10 @@ async def switch_pool(bot, ev: CQEvent):
         "banner": []
     }
 
-    gp = [each for each in pools if each["id"] == int(p_id) and each["type"] == "daily pickup"]
+    gp = [each for each in pools if each["id"] == (int(p_id) - 1) and each["type"] == "daily pickup"]
     if not gp:
         await bot.finish(ev, "卡池参数错误")
-    gps = [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == int(s_id)]
+    gps = [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == (int(s_id) - 1)]
     if not gps:
         await bot.finish(ev, "卡池参数错误")
 
@@ -264,9 +260,9 @@ async def gacha_10(bot, ev: CQEvent):
         await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
         return
     lmt.start_cd(ev.user_id)
-    if not jewel_limit.check(ev.user_id):
+    if not jewel_limit.check(f"{ev.user_id}@{ev.group_id}"):
         await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
-    jewel_limit.increase(ev.user_id, 30)
+    jewel_limit.increase(f"{ev.user_id}@{ev.group_id}", 1)
 
     gacha_result, server, pool_list = await gacha(gid)
     if gacha_result == 12:
@@ -353,8 +349,7 @@ async def gacha_10(bot, ev: CQEvent):
             tmp_img = tmp_img.convert('RGBA')
             base_img.paste(tmp_img, boxlist[i], mask=masker)
 
-    pic_b64 = util.pic2b64(base_img)
-    msg = "\n您本次的抽卡结果：\n" + f"{MessageSegment.image(pic_b64)}\n"
+    msg = f"\n您本次的抽卡结果：\n{gen_ms_img(base_img)}\n"
 
     full_pup5 = False
     get_pup5 = 0
@@ -472,9 +467,7 @@ async def gacha_10(bot, ev: CQEvent):
                     msg += "十连卡池毕业~这你还不补宝？\n"
                     is_seal = True
     if is_seal:
-        img = Image.open(seal_path)
-        pic_b64 = util.pic2b64(img)
-        msg += f'\n{MessageSegment.image(pic_b64)}'
+        msg += f'\n{gen_ms_img(Image.open(seal_path))}'
 
     await bot.send(ev, msg.strip(), at_sender=True)
 
@@ -487,9 +480,9 @@ async def gacha_100(bot, ev: CQEvent):
         await bot.send(ev, f'冷却中,剩余时间{round(lmt.left_time(ev.user_id))}秒', at_sender=True)
         return
     lmt.start_cd(ev.user_id)
-    if not tenjo_limit.check(ev.user_id):
+    if not tenjo_limit.check(f"{ev.user_id}@{ev.group_id}"):
         await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
-    tenjo_limit.increase(ev.user_id, 1)
+    tenjo_limit.increase(f"{ev.user_id}@{ev.group_id}", 1)
 
     g100 = []
     g_counter = 0
@@ -585,8 +578,7 @@ async def gacha_100(bot, ev: CQEvent):
                 else:
                     c_counter = 0
 
-        pic_b64 = util.pic2b64(target)
-        msg += f'\n您本次的抽卡结果：\n\n{MessageSegment.image(pic_b64)}\n\n'
+        msg += f'\n您本次的抽卡结果：\n\n{gen_ms_img(target)}\n\n'
 
     else:
         # 如需图片版请取消之后一行的注释，并注释下一行
@@ -708,9 +700,7 @@ async def gacha_100(bot, ev: CQEvent):
                     is_seal = True
 
     if is_seal:
-        img = Image.open(seal_path)
-        pic_b64 = util.pic2b64(img)
-        msg += f'\n{MessageSegment.image(pic_b64)}'
+        msg += f'\n{gen_ms_img(Image.open(seal_path))}'
 
     # 如需图片版请取消注释，并将之后一行加一次缩进
     # if not style == "图片":

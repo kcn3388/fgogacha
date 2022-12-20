@@ -1,9 +1,8 @@
 import re
 
 from bs4 import BeautifulSoup
-from typing import Tuple, Dict
-
-from .lib_online import *
+from typing import Tuple
+from ..path_and_json import *
 
 
 async def lib_cft_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
@@ -27,7 +26,6 @@ async def lib_cft_online(url, crt_file=False) -> Tuple[Union[Exception, str], in
         return "在线也没找到", 0
 
 
-# noinspection PyUnresolvedReferences
 async def lib_cft(cft_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + cft_data["name_link"]
     print("查询礼装" + cft_data["id"] + "……")
@@ -88,12 +86,12 @@ async def lib_cft(cft_data, crt_file=False) -> Dict:
         if not arg == '' and not arg.startswith("卡面为"):
             s2.append(arg)
 
-    s1[-1] = s1[-1].split("\n\n")
+    s1[-1] = s1[-1].split("\n\n")  # noqa
     if s2[-1].startswith("以下翻译内容由Mooncell用户贡献。"):
-        s2[-1] = s2[-1].replace("以下翻译内容由Mooncell用户贡献。", "")
+        s2[-1] = s2[-1].replace("以下翻译内容由Mooncell用户贡献。", "")  # noqa
         s2[-1] = re.split(r"转载请保留网址 https://fgo.wiki/id/\d+\n\n\n", s2[-1])
     else:
-        s2[-1] = s2[-1].split("\n\n\n")
+        s2[-1] = s2[-1].split("\n\n\n")  # noqa
 
     if len(s1) < len(s2):
         t1 = s1.pop()

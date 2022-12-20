@@ -1,7 +1,6 @@
 import re
 
-from hoshino import aiorequests
-from typing import Tuple, Union
+from typing import Tuple
 from ..path_and_json import *
 
 

@@ -1,7 +1,6 @@
 import re
 
-from hoshino import aiorequests
-from typing import Union, Tuple, List
+from typing import Tuple, List
 from ..path_and_json import *
 
 
@@ -32,8 +31,8 @@ async def get_all_cft(crt_file=False) -> Union[Exception, Tuple[int, Union[None,
         except json.decoder.JSONDecodeError:
             old_all_cft = []
 
-    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
-    all_cft_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
+    rule_all_cft = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
+    all_cft_icons = re.search(rule_all_cft, raw_data).group(0).split(",")
     rule_png = re.compile(r"/images/.+\.(png|jpg)")
     for i in range(len(all_cft_icons) - 1, -1, -1):
         if not re.match(rule_png, all_cft_icons[i]):

@@ -1,7 +1,8 @@
 import re
 import shutil
-from hoshino import priv, Service
-from . import CQEvent
+
+from aiocqhttp import ActionFailed
+from hoshino import priv, Service, HoshinoBot
 from .get.getnews import get_news
 from .path_and_json import *
 
@@ -26,13 +27,13 @@ sv_news = Service(
 
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))
 @sv_news.on_rex(r"(?i)^[fb]go[新x][闻w][获h][取q][帮b][助z]$")
-async def bangzhu(bot, ev):
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_news_help.strip())
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
 @sv_news.on_rex(r"(?i)^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$")
-async def get_offical_news(bot, ev: CQEvent):
+async def get_offical_news(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
     if not group_config["crt_path"] == "False":
@@ -53,7 +54,7 @@ async def get_offical_news(bot, ev: CQEvent):
 
 
 @sv_news.on_rex(r"(?i)^[查c][询x][fb]go[新x][闻w](\s.+)?$")
-async def get_local_news(bot, ev: CQEvent):
+async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
     args = ev.message.extract_plain_text()
@@ -62,7 +63,7 @@ async def get_local_news(bot, ev: CQEvent):
     index = 0
     if "pic" in args:
         pic = True
-    if "all" in args:
+    if "all" in args or "全部" in args:
         get_all = True
 
     match = re.search(r"\d+", args)
@@ -72,11 +73,11 @@ async def get_local_news(bot, ev: CQEvent):
         news = json.load(open(news_detail_path, encoding="utf-8"))
     except json.decoder.JSONDecodeError:
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+        return
 
     if not os.path.exists(news_img_path):
         sv_news.logger.info("初始化新闻图片目录...")
         os.mkdir(news_img_path)
-    # noinspection PyUnboundLocalVariable
     news_num = len(news)
     if not get_all:
         if not index:
@@ -89,9 +90,7 @@ async def get_local_news(bot, ev: CQEvent):
             if not os.path.exists(img_path):
                 getpic(news[index]['page'], img_path)
             if os.path.exists(img_path):
-                news_img = Image.open(img_path)
-                pic_b64 = util.pic2b64(news_img)
-                msg = f"{MessageSegment.image(pic_b64)}\n"
+                msg = f"{gen_ms_img(Image.open(img_path))}\n"
             else:
                 sv_news.logger.warning("获取新闻截图出错")
                 msg = "截图出错，请自行查看~"
@@ -113,7 +112,6 @@ async def get_local_news(bot, ev: CQEvent):
 
     if get_all:
         news_all = []
-        # noinspection PyUnboundLocalVariable
         for i in range(news_num):
             link = f"标题：{news[i]['title']}\n电脑版网页：{news[i]['page']}\n手机版网页：{news[i]['mobile_page']}\n\n"
             _news = gen_node(link.strip())
@@ -138,6 +136,6 @@ async def get_local_news(bot, ev: CQEvent):
 
 
 @sv_news.on_fullmatch("清除新闻缓存")
-async def delete_news_cache(bot, ev: CQEvent):
+async def delete_news_cache(bot: HoshinoBot, ev: CQEvent):
     shutil.rmtree(news_img_path)
     await bot.finish(ev, "已清理新闻缓存")

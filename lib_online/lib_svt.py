@@ -1,10 +1,9 @@
 import re
-from typing import Tuple, Dict
+from typing import Tuple
 
 from bs4 import BeautifulSoup
 
-from .lib_online import *
-from ..path_and_json import banned_id
+from ..path_and_json import *
 
 
 async def lib_svt_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
@@ -23,7 +22,6 @@ async def lib_svt_online(url, crt_file=False) -> Tuple[Union[Exception, str], in
         return "在线也没找到", 0
 
 
-# noinspection PyUnresolvedReferences
 async def lib_svt(svt_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + svt_data["name_link"]
     print("查询Servant" + svt_data["id"] + "……")
@@ -87,6 +85,8 @@ async def lib_svt(svt_data, crt_file=False) -> Dict:
 
     get_info(svt, soup)
 
+    await get_pickup(svt, url, crt_file)
+
     try:
         base = soup.findAll(class_="wikitable nomobile logo")
     except AttributeError:
@@ -108,7 +108,6 @@ async def lib_svt(svt_data, crt_file=False) -> Dict:
     return svt
 
 
-# noinspection PyUnresolvedReferences
 def get_detail(svts, svt, svt_data):
     s1 = []
     s2 = []
@@ -180,8 +179,8 @@ def get_nick_name(svt, soup):
     nick_name = None
     for each_nick in nick:
         if each_nick.has_attr("name"):
-            if each_nick.attrs["name"] == "keywords":
-                nick_name = each_nick.attrs["content"]
+            if each_nick.get("name") == "keywords":
+                nick_name = each_nick.get("content")
 
     if nick_name is not None:
         if nick_name == "{{{昵称}}}":
@@ -374,13 +373,13 @@ def get_info(svt, soup):
             try:
                 svt_info = soup.findAll(title=rule_svt_info)
             except Exception as e:
+                svt_info = []
                 if "error" in svt:
                     svt["error"].append(f"svt_info_main error: {e}")
                 else:
                     svt["error"] = [f"svt_info_main error: {e}"]
                 pass
 
-    # noinspection PyUnboundLocalVariable
     for each_info in svt_info:
         try:
             all_p = each_info.findAll("p")
@@ -413,19 +412,23 @@ def get_info(svt, soup):
                 if i == 0:
                     svt_detail["角色详情"] = {
                         "资料": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         ),
                         "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         )
                     }
                 else:
                     svt_detail["个人资料" + str(int(i / 2))] = {
                         "资料": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         ),
                         "原文": re.sub(r"\n\n+", "\n", detail_info[i + 1]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         )
                     }
         else:
@@ -434,14 +437,16 @@ def get_info(svt, soup):
                     svt_detail["角色详情"] = {
                         "资料": "",
                         "原文": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         )
                     }
                 else:
                     svt_detail["个人资料" + str(i)] = {
                         "资料": "",
                         "原文": re.sub(r"\n\n+", "\n", detail_info[i]).replace(
-                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。", ""
+                            "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
+                            ""
                         )
                     }
     except IndexError as e:
@@ -556,7 +561,6 @@ def get_ultimate(svt, base):
     svt["宝具信息"] = ultimates
 
 
-# noinspection PyUnresolvedReferences
 def get_skills(svt, base, raw_html):
     skill_soup = base[len(svt["宝具信息"]):]
     skill_list = []
@@ -565,7 +569,7 @@ def get_skills(svt, base, raw_html):
             (skill_soup[i], skill_soup[i].text.strip())
         )
 
-    skills = {}
+    skills: dict = {}
 
     skill_flag = 0
     counter_skill = 1
@@ -601,7 +605,7 @@ def get_skills(svt, base, raw_html):
     for each_skill in skills:
         if each_skill == "职阶技能":
             continue
-        data = skills[each_skill][0].strip()
+        data = skills.get(each_skill)[0].strip()
         data = re.sub(r"\n+", "\n", data)
         rule_filter = re.compile(
             r"Ø|∅|\d+%\+\d+%\*\(.+\)|(\d+[.,])?\d+%(\*.+)?|\d\d+[^→]|\d+(\*.|次\n)"
@@ -612,7 +616,7 @@ def get_skills(svt, base, raw_html):
             if each_text.isdigit() or each_text == "":
                 if not each_skill == "职阶技能":
                     data.remove(each_text)
-        bak_data = data.copy()
+        bak_data: list = data.copy()
         if not each_skill == "职阶技能":
             bak_data.append(skills[each_skill][1])
             tr_counter = 3
@@ -622,7 +626,6 @@ def get_skills(svt, base, raw_html):
                 tr_counter += 2
                 for each_value in value_soup:
                     value.append(each_value.text.strip())
-                # noinspection PyTypeChecker
                 bak_data[data.index(each_effect)] = [each_effect, value]
 
         skills[each_skill] = bak_data
@@ -708,7 +711,6 @@ def get_voice(svt, soup):
 
     for each_type in svt_voice:
         for each_voice in svt_voice[each_type]:
-            # noinspection PyUnresolvedReferences
             text = svt_voice[each_type][each_voice]["文本"]
             # text = text.replace("。", "。\n").strip()
             # text = text.replace("(持有", "\n(持有")
@@ -722,3 +724,81 @@ def get_voice(svt, soup):
             svt_voice[each_type][each_voice]["文本"] = text
 
     svt["语音"] = svt_voice
+
+
+async def get_pickup(svt, url, crt_file):
+    new_url = f"{url}/未来Pick_Up情况"
+
+    try:
+        response = await aiorequests.get(new_url, timeout=20, verify=crt_file, headers=headers)
+    except OSError:
+        response = await aiorequests.get(new_url, timeout=20, verify=False, headers=headers)
+    except Exception as e:
+        if "error" in svt:
+            svt["error"].append(f"get_pickup error: {e}")
+        else:
+            svt["error"] = [f"get_pickup error: {e}"]
+        return
+
+    soup = BeautifulSoup(await response.content, 'html.parser')
+
+    try:
+        pup = soup.find(class_="mw-parser-output")
+    except Exception as e:
+        if "error" in svt:
+            svt["error"].append(f"get_pickup error: {e}")
+        else:
+            svt["error"] = [f"get_pickup error: {e}"]
+        return
+
+    if pup is None:
+        return
+
+    pup_status = []
+
+    all_tds = pup.find_all("td")
+    for each_td in all_tds:
+        each_pool: BeautifulSoup = each_td.find("a")
+        img_soup = each_pool.find("img")
+        href = each_pool.get("href")
+        try:
+            img_urls = img_soup.get("srcset").split(",")[-1].strip()
+        except AttributeError:
+            img_urls = img_soup.get("data-srcset").split(",")[-1].strip()
+
+        pup_future = {
+            "title": each_pool.get("title"),
+            "href": href,
+            "img_url": img_urls,
+            "time_start": "",
+            "time_end": "",
+            "time_delta": ""
+        }
+        time_soup = BeautifulSoup(await get_content(f"https://fgo.wiki{href}", crt_file), 'html.parser')
+        try:
+            time_info = time_soup.find(text="日服卡池信息")
+            time_start = time_info.find_next("td")
+            time_end = time_start.find_next("td")
+            time_delta = time_end.find_next("td")
+            pup_future["time_start"] = f'{time_start.string.strip()}（JST）'
+            pup_future["time_end"] = f'{time_end.string.strip()}（JST）'
+            pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
+        except Exception as e:
+            logger.warning(f"{e}")
+            try:
+                time_info = time_soup.find(text="日服卡池信息(使用日本标准时间)")
+                time_start = time_info.find_next("td")
+                time_end = time_start.find_next("td")
+                time_delta = time_end.find_next("td")
+                pup_future["time_start"] = f'{time_start.string.strip()}（JST）'
+                pup_future["time_end"] = f'{time_end.string.strip()}（JST）'
+                pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
+            except Exception as e:
+                if "error" in svt:
+                    svt["error"].append(f"get_pickup error: {e}")
+                else:
+                    svt["error"] = [f"get_pickup error: {e}"]
+                continue
+        pup_status.append(pup_future)
+
+    svt["pup"] = pup_status

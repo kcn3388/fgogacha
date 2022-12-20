@@ -1,11 +1,9 @@
 import math
 import random
 import re
-from typing import Union
 
 from bs4 import BeautifulSoup
 
-from hoshino import aiorequests, logger
 from typing import List
 from .solve_svt import get_multi_svt
 from ..path_and_json import *
@@ -48,14 +46,40 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
                     page_url = page_url.find_next("a")
 
                 pool_img = page_url.find_next("img")
-
+                href = page_url.get("href")
                 page = {
                     "name": each_bag.text,
                     "title": page_url.get("title"),
-                    "href": page_url.get("href"),
+                    "href": href,
                     "img": pool_img.get("data-src"),
-                    "sim": sim_url
+                    "sim": sim_url,
+                    "time_start": "",
+                    "time_end": "",
+                    "time_delta": ""
                 }
+
+                time_soup = BeautifulSoup(await get_content(f"https://fgo.wiki{href}", crt_file), 'html.parser')
+                try:
+                    time_info = time_soup.find(text="日服卡池信息(使用日本标准时间)")
+                    time_start = time_info.find_next("td")
+                    time_end = time_start.find_next("td")
+                    time_delta = time_end.find_next("td")
+                    page["time_start"] = f'{time_start.string.strip()}（JST）'
+                    page["time_end"] = f'{time_end.string.strip()}（JST）'
+                    page["time_delta"] = f'{time_delta.string.strip()}（JST）'
+                except Exception as e:
+                    logger.warning(f"{e}")
+                    try:
+                        time_info = time_soup.find(text="日服卡池信息")
+                        time_start = time_info.find_next("td")
+                        time_end = time_start.find_next("td")
+                        time_delta = time_end.find_next("td")
+                        page["time_start"] = f'{time_start.string.strip()}（JST）'
+                        page["time_end"] = f'{time_end.string.strip()}（JST）'
+                        page["time_delta"] = f'{time_delta.string.strip()}（JST）'
+                    except Exception as e:
+                        logger.warning(f"{e}")
+                        pass
 
                 detail_msg = await get_lucky_bag_detail(page)
                 if isinstance(detail_msg, list):
@@ -161,9 +185,8 @@ async def get_lucky_bag_image(bag_pools: List) -> List:
                 else:
                     c_counter = 0
 
-        pic_b64 = util.pic2b64(target)
         card_msg = f'编号{counter}：' \
-                   f'\n{pool_title}包含的五星从者：\n{MessageSegment.image(pic_b64)}'
+                   f'\n{pool_title}包含的五星从者：\n{gen_ms_img(target)}'
         nodes.append(gen_node(card_msg.strip()))
         counter += 1
 
@@ -176,14 +199,15 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file, is_next=Fals
         lucky_nodes.append(gen_node("国服千里眼卡池："))
     if isinstance(select_lucky, dict):
         lucky_msg = f"福袋名称：{select_lucky['name']}\n" \
-                    f"关联卡池：{select_lucky['title']}\n"
+                    f"关联卡池：{select_lucky['title']}\n" \
+                    f"开放时间：{select_lucky['time_start']}\n" \
+                    f"结束时间：{select_lucky['time_end']}\n" \
+                    f"卡池时长：{select_lucky['time_delta']}\n"
         lucky_img = f"https://fgo.wiki{select_lucky['img']}"
-        image_bytes = await (
-            await aiorequests.get(lucky_img, headers=headers, verify=crt_file)
-        ).content
-        lucky_msg += MessageSegment.image(
-            util.pic2b64(Image.open(io.BytesIO(image_bytes)))
-        )
+        image_bytes = await get_content(lucky_img, crt_file)
+        if isinstance(image_bytes, Exception):
+            return [gen_node("获取失败")]
+        lucky_msg += gen_ms_img(image_bytes)
         lucky_nodes.append(gen_node(lucky_msg))
 
         if "detail" in select_lucky:
@@ -197,15 +221,16 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file, is_next=Fals
             sub_node = []
             lucky_msg = f"编号{counter}：\n" \
                         f"福袋名称：{each_bag['name']}\n" \
-                        f"关联卡池：{each_bag['title']}\n"
-            counter += 1
+                        f"关联卡池：{each_bag['title']}\n" \
+                        f"开放时间：{each_bag['time_start']}\n" \
+                        f"结束时间：{each_bag['time_end']}\n" \
+                        f"卡池时长：{each_bag['time_delta']}\n"
             lucky_img = f"https://fgo.wiki{each_bag['img']}"
-            image_bytes = await (
-                await aiorequests.get(lucky_img, headers=headers, verify=crt_file)
-            ).content
-            lucky_msg += MessageSegment.image(
-                util.pic2b64(Image.open(io.BytesIO(image_bytes)))
-            )
+            image_bytes = await get_content(lucky_img, crt_file)
+            if isinstance(image_bytes, Exception):
+                continue
+            counter += 1
+            lucky_msg += gen_ms_img(image_bytes)
             sub_node.append(gen_node(lucky_msg))
             if "detail" in each_bag:
                 bag_pools: List = each_bag["detail"]

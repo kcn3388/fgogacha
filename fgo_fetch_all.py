@@ -1,10 +1,10 @@
-from hoshino import priv, Service
-from . import CQEvent
+from aiocqhttp import ActionFailed
+
+from hoshino import priv, Service, HoshinoBot
 from .download.download_all_res import download_svt, download_cft, download_cmd
-from .get.get_all_cft import get_all_cft
-from .get.get_all_cmd import get_all_cmd
-from .get.get_all_svt import get_all_svt
-from .path_and_json import *
+from .get.get_all_cft import *
+from .get.get_all_cmd import *
+from .get.get_all_svt import *
 
 sv_fetch_help = '''
 # 数据管理相关
@@ -35,13 +35,13 @@ sv_fetch = Service(
 
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))
 @sv_fetch.on_rex(r"(?i)^[fb]go[数s][据j][获h][取q][帮b][助z]$")
-async def bangzhu(bot, ev):
+async def bangzhu(bot: HoshinoBot, ev):
     helps = gen_node(sv_fetch_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
 @sv_fetch.on_fullmatch("获取全部内容")
-async def get_all_mooncell(bot, ev: CQEvent):
+async def get_all_mooncell(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -122,7 +122,7 @@ async def get_all_mooncell(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("获取全部从者")
-async def get_all_mooncell_svt(bot, ev: CQEvent):
+async def get_all_mooncell_svt(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -165,7 +165,7 @@ async def get_all_mooncell_svt(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("获取全部礼装")
-async def get_all_mooncell_cft(bot, ev: CQEvent):
+async def get_all_mooncell_cft(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -218,7 +218,7 @@ async def get_all_mooncell_cft(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("获取全部纹章")
-async def get_all_mooncell_cmd(bot, ev: CQEvent):
+async def get_all_mooncell_cmd(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -271,7 +271,7 @@ async def get_all_mooncell_cmd(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("下载全部卡片资源")
-async def down_all_card_res(bot, ev: CQEvent):
+async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -318,7 +318,7 @@ async def down_all_card_res(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("下载全部从者资源")
-async def down_all_card_res(bot, ev: CQEvent):
+async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -341,7 +341,7 @@ async def down_all_card_res(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("下载全部礼装资源")
-async def down_all_card_res(bot, ev: CQEvent):
+async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
@@ -364,7 +364,7 @@ async def down_all_card_res(bot, ev: CQEvent):
 
 
 @sv_fetch.on_fullmatch("下载全部纹章资源")
-async def down_all_card_res(bot, ev: CQEvent):
+async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 

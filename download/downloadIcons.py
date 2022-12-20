@@ -1,7 +1,4 @@
-from typing import Union
-
-from .download import download
-from ..path_and_json import *
+from .download import *
 
 
 async def downloadicons(crt_file=False) -> Union[int, Exception]:

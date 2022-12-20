@@ -1,9 +1,9 @@
 import re
+from typing import Tuple
 
 from bs4 import BeautifulSoup
-from typing import Tuple, Dict
 
-from .lib_online import *
+from ..path_and_json import *
 
 
 async def lib_cmd_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
@@ -27,7 +27,6 @@ async def lib_cmd_online(url, crt_file=False) -> Tuple[Union[Exception, str], in
         return "在线也没找到", 0
 
 
-# noinspection PyUnresolvedReferences
 async def lib_cmd(cmd_data, crt_file=False) -> Dict:
     url = "https://fgo.wiki/w/" + cmd_data["name_link"]
     print("查询纹章" + cmd_data["id"] + "……")

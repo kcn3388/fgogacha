@@ -2,8 +2,6 @@ import re
 
 from bs4 import BeautifulSoup
 
-from hoshino import aiorequests, logger
-from typing import Union
 from ..path_and_json import *
 from .solve_svt import get_svt, get_multi_svt
 
@@ -12,18 +10,15 @@ async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
     try:
         pool_url = "https://fgo.wiki/w/%E6%8A%BD%E5%8D%A1%E6%A8%A1%E6%8B%9F%E5%99%A8"
         print(f"Downloading {pool_url} for pools.json")
-        try:
-            pools_page = await aiorequests.get(pool_url, timeout=20, verify=crt_file, headers=headers)
-        except OSError:
-            pools_page = await aiorequests.get(pool_url, timeout=20, verify=False, headers=headers)
-        except Exception as e:
-            return e
+        pools_page = await get_content(pool_url, crt_file)
+        if isinstance(pools_page, Exception):
+            return pools_page
         # debug_path = os.path.join(runtime_path, "data/html.txt")
         # with open(debug_path, "w", encoding="utf-8") as f:
         #     f.write(await pools_page.text)
         pools = []
         gacha_data = []
-        soup = BeautifulSoup(await pools_page.content, 'html.parser')
+        soup = BeautifulSoup(pools_page, 'html.parser')
         all_a = soup.find_all("a", href=True, title=True)
         id_counter = 0
         default_pool = None
@@ -82,7 +77,6 @@ async def getgachapools(islatest=True, crt_file=None) -> Union[Exception, int]:
             if s is not None:
                 i["banner"] = s.string
             else:
-                # noinspection PyUnresolvedReferences
                 i["banner"] = i["title"]
 
             print(i["banner"])
