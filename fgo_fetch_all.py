@@ -88,9 +88,25 @@ async def get_all_mooncell(bot: HoshinoBot, ev: CQEvent):
             updates = json.load(open(update_data_path, encoding="utf-8"))
         except json.decoder.JSONDecodeError:
             pass
+
+    if not updates["svt"]:
         updates["svt"] = updated_servant_list if updated_servant_list is not None else []
+    else:
+        if updated_servant_list is not None:
+            updates["svt"].extend(updated_servant_list)
+
+    if not updates["cft"]:
         updates["cft"] = updated_cft_list if updated_cft_list is not None else []
+    else:
+        if updated_cft_list is not None:
+            updates["cft"].extend(updated_cft_list)
+
+    if not updates["cmd"]:
         updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
+    else:
+        if updated_cmd_list is not None:
+            updates["cmd"].extend(updated_cmd_list)
+
     with open(update_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
@@ -126,7 +142,13 @@ async def get_all_mooncell_svt(bot: HoshinoBot, ev: CQEvent):
                 updates = json.load(open(update_data_path, encoding="utf-8"))
             except json.decoder.JSONDecodeError:
                 pass
-            updates["svt"] = updated_servant_list
+
+        if not updates["svt"]:
+            updates["svt"] = updated_servant_list if updated_servant_list is not None else []
+        else:
+            if updated_servant_list is not None:
+                updates["svt"].extend(updated_servant_list)
+
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
         msg = "本次更新的从者："
@@ -179,7 +201,13 @@ async def get_all_mooncell_cft(bot: HoshinoBot, ev: CQEvent):
                 updates = json.load(open(update_data_path, encoding="utf-8"))
             except json.decoder.JSONDecodeError:
                 pass
-            updates["cft"] = updated_cft_list
+
+        if not updates["cft"]:
+            updates["cft"] = updated_cft_list if updated_cft_list is not None else []
+        else:
+            if updated_cft_list is not None:
+                updates["cft"].extend(updated_cft_list)
+
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
         msg = "本次更新的礼装："
@@ -232,7 +260,13 @@ async def get_all_mooncell_cmd(bot: HoshinoBot, ev: CQEvent):
                 updates = json.load(open(update_data_path, encoding="utf-8"))
             except json.decoder.JSONDecodeError:
                 pass
-            updates["cmd"] = updated_cmd_list
+
+        if not updates["cmd"]:
+            updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
+        else:
+            if updated_cmd_list is not None:
+                updates["cmd"].extend(updated_cmd_list)
+
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
         msg = "本次更新的纹章："
