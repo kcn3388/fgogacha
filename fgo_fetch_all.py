@@ -5,11 +5,12 @@ from .download.download_all_res import download_svt, download_cft, download_cmd
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
 from .get.get_all_svt import *
+from hoshino.typing import CQEvent
 
 
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))
 @sv_fetch.on_rex(r"(?i)^[fb]go[数s][据j][获h][取q][帮b][助z]$")
-async def bangzhu(bot: HoshinoBot, ev):
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_fetch_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
@@ -107,6 +108,9 @@ async def get_all_mooncell(bot: HoshinoBot, ev: CQEvent):
         if updated_cmd_list is not None:
             updates["cmd"].extend(updated_cmd_list)
 
+    for each_attr in updates:
+        updates[each_attr] = list(set(updates[each_attr]))
+
     with open(update_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
@@ -148,6 +152,8 @@ async def get_all_mooncell_svt(bot: HoshinoBot, ev: CQEvent):
         else:
             if updated_servant_list is not None:
                 updates["svt"].extend(updated_servant_list)
+
+        updates["svt"] = list(set(updates["svt"]))
 
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
@@ -208,6 +214,8 @@ async def get_all_mooncell_cft(bot: HoshinoBot, ev: CQEvent):
             if updated_cft_list is not None:
                 updates["cft"].extend(updated_cft_list)
 
+        updates["cft"] = list(set(updates["cft"]))
+
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
         msg = "本次更新的礼装："
@@ -266,6 +274,8 @@ async def get_all_mooncell_cmd(bot: HoshinoBot, ev: CQEvent):
         else:
             if updated_cmd_list is not None:
                 updates["cmd"].extend(updated_cmd_list)
+
+        updates["cmd"] = list(set(updates["cmd"]))
 
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))

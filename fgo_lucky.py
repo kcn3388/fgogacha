@@ -9,12 +9,22 @@ from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter
 from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag, get_lucky_gacha
 from .path_and_json import *
+from hoshino.typing import CQEvent
 
 lucky_limit = DailyNumberLimiter(1)
 LUCKY_EXCEED_NOTICE = f"您今天已经抽过{lucky_limit.max}次福袋了，欢迎明早5点后再来！"
 
 
-@lucky_sv.on_rex(r"(?i)^[更g][新x][fb]go[福f][袋d]$")
+@sv_lucky.on_fullmatch(("帮助fgo福袋", "帮助FGO福袋", "帮助bgo福袋", "帮助BGO福袋"))
+@sv_lucky.on_rex(r"(?i)^[fb]go[福f][袋d][帮b][助z]$")
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    helps = gen_node(sv_lucky_help)
+    await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
+
+
+@sv_lucky.on_rex(r"(?i)^[更g][新x][fb]go[福f][袋d]$")
 async def update_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
@@ -30,7 +40,7 @@ async def update_lucky_bag(bot: HoshinoBot, ev: CQEvent):
         await bot.finish(ev, "福袋信息获取错误")
 
 
-@lucky_sv.on_rex(r"(?i)^[查c][询x][fb]go[福f][袋d](\s("
+@sv_lucky.on_rex(r"(?i)^[查c][询x][fb]go[福f][袋d](\s("
                  r"jp(\s.+)?|日(服)?(\s.+)?|"
                  r"cn(\s.+)?|国(服)?(\s.+)?|"
                  r"abstract|概况|"
@@ -47,7 +57,7 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     if not os.path.exists(lucky_path):
-        lucky_sv.logger.info("初始化数据json...")
+        sv_lucky.logger.info("初始化数据json...")
         open(lucky_path, 'w')
         lucky_bag = {
             "abstract": "",
@@ -133,7 +143,7 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
             await bot.finish(ev, "合并转发失败，请尝试获取单独福袋信息")
 
 
-@lucky_sv.on_rex(r"(?i)^[抽c][fb]go[福f][袋d](\s("
+@sv_lucky.on_rex(r"(?i)^[抽c][fb]go[福f][袋d](\s("
                  r"jp((\s\d+)+)?|日(服)?((\s\d+)+)?|"
                  r"cn((\s\d+)+)?|国(服)?((\s\d+)+)?"
                  r"))?$")
@@ -148,7 +158,7 @@ async def gacha_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     try:
         lucky_bag = json.load(open(lucky_path, encoding="utf-8"))
     except Exception as e:
-        lucky_sv.logger.warning(f"获取福袋数据出错：{e}")
+        sv_lucky.logger.warning(f"获取福袋数据出错：{e}")
         await bot.send(ev, "获取福袋数据出错，请先获取福袋：[更新fgo福袋]")
         return
 

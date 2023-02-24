@@ -68,7 +68,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
                     page["time_end"] = f'{time_end.string.strip()}（JST）'
                     page["time_delta"] = f'{time_delta.string.strip()}（JST）'
                 except Exception as e:
-                    lucky_sv.logger.warning(f"{e}")
+                    sv_lucky.logger.warning(f"{e}")
                     try:
                         time_info = time_soup.find(text="日服卡池信息")
                         time_start = time_info.find_next("td")
@@ -78,7 +78,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
                         page["time_end"] = f'{time_end.string.strip()}（JST）'
                         page["time_delta"] = f'{time_delta.string.strip()}（JST）'
                     except Exception as e:
-                        lucky_sv.logger.warning(f"{e}")
+                        sv_lucky.logger.warning(f"{e}")
                         pass
 
                 detail_msg = await get_lucky_bag_detail(page)
@@ -91,7 +91,7 @@ async def get_all_lucky_bag(crt_file=None) -> Union[Exception, Dict]:
         return lucky_bag
 
     except Exception as e:
-        lucky_sv.logger.warning(f"{e}")
+        sv_lucky.logger.warning(f"{e}")
         return e
 
 

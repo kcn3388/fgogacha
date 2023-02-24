@@ -31,6 +31,13 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 ### 2022
 #### ※建议更新后清除全部配置文件并重新生成，每次更新会尽可能兼容之前的配置文件，但是出现问题请先排查配置文件的问题
+- 🚀 **v2.6.6 (2023-02-24)**
+  - 优化自动更新
+  - 优化代码
+
+<details>
+<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
+
 - 🚀 **v2.6.5 (2023-01-03)**
   - 优化自动更新
 - 🚀 **v2.6.4 (2022-12-20)**
@@ -56,10 +63,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
       - ``[查询fgo福袋 + 国服/日服 + 全部]``查询全部福袋详细数据
     - ``[查询fgo福袋 + 未来]``查询国服千里眼福袋数据
     - ``[抽fgo福袋 + 国服/日服 + 福袋编号 + 子池子编号（默认为1）]`` 抽福袋
-
-<details>
-<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
-
 - 🚀 **v2.5.8 (2022-12-12)**
   - 调整获取新闻，由于性能问题，现在获取新闻默认不截图，如需截图请附加``pic``
 - 🚀 **v2.5.7 (2022-11-07)**

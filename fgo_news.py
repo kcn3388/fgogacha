@@ -6,6 +6,7 @@ from aiocqhttp import ActionFailed
 from hoshino import HoshinoBot
 from .get.getnews import get_news
 from .path_and_json import *
+from hoshino.typing import CQEvent
 
 
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))

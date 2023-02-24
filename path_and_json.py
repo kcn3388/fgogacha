@@ -103,7 +103,7 @@ sv_lib = Service(
     manage_priv=priv.ADMIN,  # 管理权限
 )
 
-lucky_sv_help = '''
+sv_lucky_help = '''
 [更新fgo福袋] 获取福袋信息
 - 初次查询福袋之前务必先执行此命令
 [查询fgo福袋 + 概况] 查询全部福袋的文字概况
@@ -114,9 +114,9 @@ lucky_sv_help = '''
 [抽fgo福袋 + 国服/日服 + 福袋编号 + 子池子编号（默认为1）] 抽福袋
 '''.strip()
 
-lucky_sv = Service(
+sv_lucky = Service(
     name='fgo福袋',
-    help_=lucky_sv_help,
+    help_=sv_lucky_help,
     bundle="娱乐",
     enable_on_default=True,
     visible=True,

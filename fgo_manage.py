@@ -6,6 +6,7 @@ from .get.get_all_cmd import *
 from .get.get_all_svt import *
 from .get.getnews import get_news
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
+from hoshino.typing import CQEvent
 
 # 更新时间间隔，单位为秒
 flush_second = 0
@@ -31,7 +32,7 @@ except KeyError:
 
 @sv_manage.on_fullmatch(("帮助fgo管理", "帮助FGO管理", "帮助bgo管理", "帮助BGO管理"))
 @sv_manage.on_rex(r"(?i)^[fb]go[管g][理l][帮b][助z]$")
-async def bangzhu(bot: HoshinoBot, ev):
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
     helps = gen_node(sv_manage_help)
@@ -297,14 +298,52 @@ async def update_pool():
         sv_manage.logger.error(f"获取新闻失败，原因：{str(same)}")
 
     # 自动下载资源
-    await get_all_svt(crt_file)
-    await get_all_cft(crt_file)
-    await get_all_cmd(crt_file)
+    _, updated_servant_list = await get_all_svt(crt_file)
+    _, updated_cft_list = await get_all_cft(crt_file)
+    _, updated_cmd_list = await get_all_cmd(crt_file)
     icon_stat = await downloadicons(crt_file)
     if not isinstance(icon_stat, int):
         sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
     if icon_stat:
         sv_manage.logger.info(f'icon没有更新，跳过……')
+
+    updates = {
+        "svt": [],
+        "cft": [],
+        "cmd": []
+    }
+    if not os.path.exists(update_data_path):
+        sv_fetch.logger.info("初始化数据json...")
+        open(update_data_path, 'w')
+    else:
+        try:
+            updates = json.load(open(update_data_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pass
+
+    if not updates["svt"]:
+        updates["svt"] = updated_servant_list if updated_servant_list is not None else []
+    else:
+        if updated_servant_list is not None:
+            updates["svt"].extend(updated_servant_list)
+
+    if not updates["cft"]:
+        updates["cft"] = updated_cft_list if updated_cft_list is not None else []
+    else:
+        if updated_cft_list is not None:
+            updates["cft"].extend(updated_cft_list)
+
+    if not updates["cmd"]:
+        updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
+    else:
+        if updated_cmd_list is not None:
+            updates["cmd"].extend(updated_cmd_list)
+
+    for each_attr in updates:
+        updates[each_attr] = list(set(updates[each_attr]))
+
+    with open(update_data_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
     sv_manage.logger.info("结束自动更新fgo")
 

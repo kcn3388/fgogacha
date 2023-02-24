@@ -1,11 +1,13 @@
 import json.encoder
 import os.path
 
+from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
 from .get.getGachaPools import getgachapools
 from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag
 from .path_and_json import *
+from hoshino.typing import CQEvent
 
 jewel_limit = DailyNumberLimiter(100)
 tenjo_limit = DailyNumberLimiter(10)
@@ -17,13 +19,13 @@ TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，
 
 @sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡", "帮助bgo抽卡", "帮助BGO抽卡"))
 @sv.on_rex(r"(?i)^[fb]go[抽c][卡k][帮b][助z]$")
-async def bangzhu(bot, ev):
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
 @sv.on_rex(r"(?i)^[获h更g][取q新x][fb]go[卡k][池c]$")
-async def get_fgo_pool(bot, ev: CQEvent):
+async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
     group_config = load_config(ev, True)
@@ -39,7 +41,7 @@ async def get_fgo_pool(bot, ev: CQEvent):
 
 
 @sv.on_rex(r"(?i)^[查c][询x][fb]go[卡k][池c]$")
-async def check_pool(bot, ev: CQEvent):
+async def check_pool(bot: HoshinoBot, ev: CQEvent):
     if os.path.exists(pools_path):
         try:
             pools = json.load(open(pools_path, encoding="utf-8"))
@@ -79,7 +81,7 @@ async def check_pool(bot, ev: CQEvent):
 
 
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$")
-async def switch_pool(bot, ev: CQEvent):
+async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     p_ids = ev.message.extract_plain_text().split()
     if len(p_ids) > 1:
         p_id = p_ids[1]
@@ -132,7 +134,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 
 @sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$")
-async def switch_pool(bot, ev: CQEvent):
+async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if not ids:
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
@@ -208,7 +210,7 @@ async def switch_pool(bot, ev: CQEvent):
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
 @sv.on_rex(r'(?i)^[fb]go(十|10|s)[连l]$')
-async def gacha_10(bot, ev: CQEvent):
+async def gacha_10(bot: HoshinoBot, ev: CQEvent):
     gid = ev.group_id
     # barrier
     if not lmt.check(ev.user_id):
@@ -428,7 +430,7 @@ async def gacha_10(bot, ev: CQEvent):
 
 
 @sv.on_rex(r'(?i)^[fb]go(百|100|b)[连l]$')
-async def gacha_100(bot, ev: CQEvent):
+async def gacha_100(bot: HoshinoBot, ev: CQEvent):
     gid = ev.group_id
     # barrier
     if not lmt.check(ev.user_id):
@@ -670,7 +672,7 @@ async def gacha_100(bot, ev: CQEvent):
 
 
 @sv.on_prefix('氪圣晶石')
-async def kakin(bot, ev: CQEvent):
+async def kakin(bot: HoshinoBot, ev: CQEvent):
     if ev.user_id not in bot.config.SUPERUSERS:
         bot.finish(ev, "小孩子别在游戏里氪金！", at_sender=True)
     count = 0

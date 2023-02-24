@@ -3,11 +3,12 @@ import os.path
 from .lib_local.svt_local import *
 from .lib_local.cft_local import *
 from .lib_local.cmd_local import *
+from hoshino.typing import CQEvent
 
 
 @sv_lib.on_fullmatch(("帮助fgo图书馆", "帮助FGO图书馆", "帮助bgo图书馆", "帮助BGO图书馆"))
 @sv_lib.on_rex(r"(?i)^[fb]go[图tl][书si][馆gb][帮b][助z]$")
-async def bangzhu(bot: HoshinoBot, ev):
+async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_lib_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
@@ -275,7 +276,7 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
 
 
 @sv_lib.on_rex(r"(?i)^[查c][询x][fb]go[图tl][书si][馆gb](\s[\s\S]+)?$")
-async def add_lib(bot: HoshinoBot, ev: CQEvent):
+async def check_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
             svt = json.load(f)
