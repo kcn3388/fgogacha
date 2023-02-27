@@ -82,11 +82,20 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
 
             svt_latest_local = int(servants[0]["id"])
             svt_latest_remote = int(svt[0]["id"])
-            svt_ids = [servants[i_svt]["id"] for i_svt in range(len(servants))]
+            svt_ids = [int(servants[i_svt]["id"]) for i_svt in range(len(servants))]
+            svt_ids.sort(reverse=True)
+            svt_ids = list(map(str, svt_ids))
             if not svt_latest_local == svt_latest_remote or updates["svt"]:
-                update_svt_list = list(reversed(updates["svt"]))
+                update_svt_list = list(map(int, updates["svt"]))
+                update_svt_list.sort()
+                update_svt_list = list(map(str, update_svt_list))
                 for each_update_svt_id in update_svt_list:
-                    ready_svt = [each_svt for each_svt in svt if each_svt.get("id") == each_update_svt_id][0]
+                    try:
+                        ready_svt = [each_svt for each_svt in svt if each_svt.get("id") == each_update_svt_id][0]
+                    except IndexError:
+                        sv.logger.info(f"no id: {each_update_svt_id}")
+                        await bot.send(ev, f"不存在的从者id：{each_update_svt_id}")
+                        continue
                     svt_data = await lib_svt(ready_svt, crt_file)
                     if each_update_svt_id in svt_ids:
                         servants[svt_ids.index(each_update_svt_id)] = svt_data
@@ -94,13 +103,12 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
                         servants.insert(0, svt_data)
                     if "error" in svt_data:
                         sv_lib.logger.error(f"更新从者{each_update_svt_id}出错：{svt_data['error']}")
-                        errors.append(each_update_svt_id["id"])
+                        errors.append(each_update_svt_id)
 
             updates["svt"] = []
 
         else:
             servants = []
-
             # data = await lib_svt(svt[23], crt_file)
             for each_svt in svt:
                 data = await lib_svt(each_svt, crt_file)
@@ -150,11 +158,20 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
 
             cft_latest_local = int(crafts[0]["id"])
             cft_latest_remote = int(cft[0]["id"])
-            cft_ids = [crafts[i_cft]["id"] for i_cft in range(len(crafts))]
+            cft_ids = [int(crafts[i_cft]["id"]) for i_cft in range(len(crafts))]
+            cft_ids.sort(reverse=True)
+            cft_ids = list(map(str, cft_ids))
             if not cft_latest_local == cft_latest_remote or updates["cft"]:
-                update_cft_list = list(reversed(updates["cft"]))
+                update_cft_list = list(map(int, updates["cft"]))
+                update_cft_list.sort()
+                update_cft_list = list(map(str, update_cft_list))
                 for each_update_cft_id in update_cft_list:
-                    ready_cft = [each_cft for each_cft in cft if each_cft.get("id") == each_update_cft_id][0]
+                    try:
+                        ready_cft = [each_cft for each_cft in cft if each_cft.get("id") == each_update_cft_id][0]
+                    except IndexError:
+                        sv.logger.info(f"no id: {each_update_cft_id}")
+                        await bot.send(ev, f"不存在的礼装id：{each_update_cft_id}")
+                        continue
                     cft_data = await lib_cft(ready_cft, crt_file)
                     if each_update_cft_id in cft_ids:
                         crafts[cft_ids.index(each_update_cft_id)] = cft_data
@@ -218,11 +235,20 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
 
             cmd_latest_local = int(commands[0]["id"])
             cmd_latest_remote = int(cmd[0]["id"])
-            cmd_ids = [commands[i_cmd]["id"] for i_cmd in range(len(commands))]
+            cmd_ids = [int(commands[i_cmd]["id"]) for i_cmd in range(len(commands))]
+            cmd_ids.sort(reverse=True)
+            cmd_ids = list(map(str, cmd_ids))
             if not cmd_latest_local == cmd_latest_remote or updates["cmd"]:
-                update_cmd_list = list(reversed(updates["cmd"]))
+                update_cmd_list = list(map(int, updates["cmd"]))
+                update_cmd_list.sort()
+                update_cmd_list = list(map(str, update_cmd_list))
                 for each_update_cmd_id in update_cmd_list:
-                    ready_cmd = [each_cmd for each_cmd in cmd if each_cmd.get("id") == each_update_cmd_id][0]
+                    try:
+                        ready_cmd = [each_cmd for each_cmd in cmd if each_cmd.get("id") == each_update_cmd_id][0]
+                    except IndexError:
+                        sv.logger.info(f"no id: {each_update_cmd_id}")
+                        await bot.send(ev, f"不存在的纹章id：{each_update_cmd_id}")
+                        continue
                     cmd_data = await lib_cmd(ready_cmd, crt_file)
                     if each_update_cmd_id in cmd_ids:
                         commands[cmd_ids.index(each_update_cmd_id)] = cmd_data
@@ -377,7 +403,7 @@ async def add_lib(bot: HoshinoBot, ev: CQEvent):
         # data = await lib_svt(svt[23], crt_file)
         data = None
         if not int(msg[2]) > int(servants[0]["id"]):
-            await bot.finish(ev, "此从者本地已有数据~更新从者数据请使用[更新fgo图书馆 + 从者 + id]")
+            await bot.finish(ev, "此从者本地已有数据~更新从者数据请使用[修补fgo图书馆 + 从者 + id]")
 
         if not int(msg[2]) == int(servants[0]["id"]) + 1:
             await bot.finish(ev, f"此id前还存在未增添的从者~本地最新id：{servants[0]['id']}")
@@ -413,7 +439,7 @@ async def add_lib(bot: HoshinoBot, ev: CQEvent):
         # data = await lib_cft(cft[0], crt_file)
         data = None
         if not int(msg[2]) > int(crafts[0]["id"]):
-            await bot.finish(ev, "此礼装本地已有数据~更新礼装数据请使用[更新fgo图书馆 + 礼装 + id]")
+            await bot.finish(ev, "此礼装本地已有数据~更新礼装数据请使用[修补fgo图书馆 + 礼装 + id]")
 
         if not int(msg[2]) == int(crafts[0]["id"]) + 1:
             await bot.finish(ev, f"此id前还存在未增添的礼装~本地最新id：{crafts[0]['id']}")
@@ -449,7 +475,7 @@ async def add_lib(bot: HoshinoBot, ev: CQEvent):
         # data = await lib_cmd(cft[0], crt_file)
         data = None
         if not int(msg[2]) > int(commands[0]["id"]):
-            await bot.finish(ev, "此纹章本地已有数据~更新纹章数据请使用[更新fgo图书馆 + 纹章 + id]")
+            await bot.finish(ev, "此纹章本地已有数据~更新纹章数据请使用[修补fgo图书馆 + 纹章 + id]")
 
         if not int(msg[2]) == int(commands[0]["id"]) + 1:
             await bot.finish(ev, f"此id前还存在未增添的纹章~本地最新id：{commands[0]['id']}")

@@ -4,7 +4,7 @@ import shutil
 from aiocqhttp import ActionFailed
 
 from hoshino import HoshinoBot
-from .get.getnews import get_news
+from .get.get_news import get_news
 from .path_and_json import *
 from hoshino.typing import CQEvent
 
@@ -17,7 +17,7 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 
 
 @sv_news.on_rex(r"(?i)^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$")
-async def get_offical_news(bot: HoshinoBot, ev: CQEvent):
+async def get_official_news(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
     if not group_config["crt_path"] == "False":
@@ -53,6 +53,8 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     match = re.search(r"\d+", args)
     if match:
         index = int(match.group(0))
+    if not index:
+        get_all = True
     try:
         news = json.load(open(news_detail_path, encoding="utf-8"))
     except json.decoder.JSONDecodeError:
@@ -64,11 +66,8 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
         os.mkdir(news_img_path)
     news_num = len(news)
     if not get_all:
-        if not index:
-            await bot.finish(ev, f"本地共有{news_num}条新闻，请用编号查对应新闻~")
         index = int(index) - 1
         link = f"标题：{news[index]['title']}\n电脑版网页：{news[index]['page']}\n手机版网页：{news[index]['mobile_page']}\n\n"
-        msg = ""
         if pic:
             img_path = os.path.join(news_img_path, f"{news[index]['id']}.png")
             if not os.path.exists(img_path):
@@ -91,10 +90,13 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
                                        f"电脑版网页：{news[index]['page']}\n"
                                        f"手机版网页：{news[index]['mobile_page']}")
         else:
-            _news = link + msg.strip()
-            await bot.send(ev, _news.strip())
+            msg = create_img(news[index]['content'].strip())
+            _news = [gen_node(link.strip()), gen_node(msg)]
+            await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_news)
 
     if get_all:
+        if not index:
+            await bot.send(ev, f"本地共有{news_num}条新闻，请用编号查对应新闻~")
         news_all = []
         for i in range(news_num):
             link = f"标题：{news[i]['title']}\n电脑版网页：{news[i]['page']}\n手机版网页：{news[i]['mobile_page']}\n\n"

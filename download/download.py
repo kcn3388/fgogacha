@@ -9,7 +9,9 @@ headers = {
 }
 
 
-async def download(url, path, mute=False, crt_file=False) -> Union[int, Exception]:
+async def download(
+        url: str, path: str, mute: bool = False, crt_file: Union[str, bool] = False
+) -> Union[int, Exception]:
     if not mute:
         print("start download img resources")
     png = await get_content(url, crt_file)

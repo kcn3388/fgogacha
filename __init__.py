@@ -4,7 +4,7 @@ import os.path
 from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter, FreqLimiter
 from .get.gacha import gacha
-from .get.getGachaPools import getgachapools
+from .get.get_gacha_pools import get_gacha_pools
 from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag
 from .path_and_json import *
 from hoshino.typing import CQEvent
@@ -31,7 +31,7 @@ async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     group_config = load_config(ev, True)
     if not group_config["crt_path"] == "False":
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
-    download_stat = await getgachapools(True, crt_file)
+    download_stat = await get_gacha_pools(True, crt_file)
     if not isinstance(download_stat, int):
         await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
     if not download_stat:
@@ -301,10 +301,10 @@ async def gacha_10(bot: HoshinoBot, ev: CQEvent):
             base_img = Image.open(back_path).convert("RGBA")
         masker = Image.open(mask_path).resize((width, height))
 
-        for i, picpath in enumerate(img_path):
-            tmp_img = Image.open(picpath).resize((width, height))
+        for i, pic_path in enumerate(img_path):
+            tmp_img = Image.open(pic_path).resize((width, height))
             tmp_img = tmp_img.convert('RGBA')
-            base_img.paste(tmp_img, boxlist[i], mask=masker)
+            base_img.paste(tmp_img, box_list[i], mask=masker)
 
     msg = f"\n您本次的抽卡结果：\n{gen_ms_img(base_img)}\n"
 
@@ -556,10 +556,10 @@ async def gacha_100(bot: HoshinoBot, ev: CQEvent):
         #         base_img = Image.open(back_path).convert("RGBA")
         #     masker = Image.open(mask_path).resize((width, height))
         #
-        #     for i, picpath in enumerate(img_path):
-        #         tmp_img = Image.open(picpath).resize((width, height))
+        #     for i, pic_path in enumerate(img_path):
+        #         tmp_img = Image.open(pic_path).resize((width, height))
         #         tmp_img = tmp_img.convert('RGBA')
-        #         base_img.paste(tmp_img, boxlist[i], mask=masker)
+        #         base_img.paste(tmp_img, box_list[i], mask=masker)
         #
         #     b64s.append(util.pic2b64(base_img))
 

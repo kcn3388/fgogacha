@@ -3,7 +3,7 @@ import re
 from .download import *
 
 
-async def download_svt(crt_file=False) -> Union[int, Exception]:
+async def download_svt(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
@@ -71,7 +71,7 @@ async def download_svt(crt_file=False) -> Union[int, Exception]:
         return download_stat
 
 
-async def download_cft(crt_file=False) -> Union[int, Exception]:
+async def download_cft(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
@@ -126,7 +126,7 @@ async def download_cft(crt_file=False) -> Union[int, Exception]:
         return download_stat
 
 
-async def download_cmd(crt_file=False) -> Union[int, Exception]:
+async def download_cmd(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:

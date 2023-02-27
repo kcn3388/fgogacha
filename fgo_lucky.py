@@ -255,10 +255,10 @@ async def gacha_lucky_bag(bot: HoshinoBot, ev: CQEvent):
             base_img = Image.open(back_path).convert("RGBA")
         masker = Image.open(mask_path).resize((width, height))
 
-        for i, picpath in enumerate(img_path):
-            tmp_img = Image.open(picpath).resize((width, height))
+        for i, pic_path in enumerate(img_path):
+            tmp_img = Image.open(pic_path).resize((width, height))
             tmp_img = tmp_img.convert('RGBA')
-            base_img.paste(tmp_img, boxlist[i], mask=masker)
+            base_img.paste(tmp_img, box_list[i], mask=masker)
 
     msg = f"\n抽取的福袋：{select_lucky['name']}\n" \
           f"抽取的子福袋：{select_lucky_pool['sub_title']}\n" \

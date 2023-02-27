@@ -4,7 +4,7 @@ from typing import Tuple, List
 from ..path_and_json import *
 
 
-async def gacha(gid) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
+async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
     banners = json.load(open(banner_path, encoding="utf-8"))
     banner = {}
     exists = False
@@ -78,7 +78,7 @@ async def gacha(gid) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
         f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
 
     try:
-        result = await get_result(pool_data["data"])
+        result = await get_gacha_result(pool_data["data"])
     except KeyError as e:
         sv.logger.error(f"{e}")
         return 13, 0, 0
@@ -103,7 +103,7 @@ async def gacha(gid) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
     return result, server, data
 
 
-async def get_result(pool_data) -> List:
+async def get_gacha_result(pool_data: dict) -> List:
     # here is svt rate
     # if is pickup 5
     if "svt_pup_5" in pool_data:

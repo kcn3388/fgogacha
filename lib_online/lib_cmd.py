@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from ..path_and_json import *
 
 
-async def lib_cmd_online(url, crt_file=False) -> Tuple[Union[Exception, str], int]:
+async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
@@ -27,7 +27,7 @@ async def lib_cmd_online(url, crt_file=False) -> Tuple[Union[Exception, str], in
         return "在线也没找到", 0
 
 
-async def lib_cmd(cmd_data, crt_file=False) -> Dict:
+async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
     url = "https://fgo.wiki/w/" + cmd_data["name_link"]
     print("查询纹章" + cmd_data["id"] + "……")
     cmd = {
@@ -61,95 +61,55 @@ async def lib_cmd(cmd_data, crt_file=False) -> Dict:
         cmd["error"] = [f"aiorequest error: {e}"]
         return cmd
 
+    raw_html = await response.text
     soup = BeautifulSoup(await response.content, 'html.parser')
     try:
-        cmds = soup.find(class_="wikitable nomobile").find("tbody")
-    except AttributeError:
-        try:
-            cmds = soup.find(class_="wikitable nomobile").find("tbody")
-        except AttributeError:
-            try:
-                cmds = soup.find(class_="wikitable nomobile").find("tbody")
-            except Exception as e:
-                cmd["error"] = [f"first bs error: {e}"]
-                return cmd
+        cmds = soup.find(class_="wikitable nodesktop").find("tbody")
+    except Exception as e:
+        cmd["error"] = [f"first bs error: {e}"]
+        return cmd
 
-    s1 = []
-    s2 = []
-    info1 = cmds.find_all("th")
-    info2 = cmds.find_all("td")
-    for each in info1:
-        arg = each.text.strip()
-        if not arg == '' and not arg.startswith("No.") and not arg == "稀有度":
-            s1.append(arg)
-    for each in info2:
-        arg = each.text.strip()
-        if not arg == '' and not arg.startswith("卡面为"):
-            s2.append(arg)
+    cmd_detail = {
+        "画师": "",
+        "持有技能": "",
+        "解说": "",
+        "日文解说": "",
+    }
 
-    s1[-1] = s1[-1].split("\n\n")
-    if s2[-1].startswith("以下翻译内容由Mooncell用户贡献。"):
-        s2[-1] = s2[-1].replace("以下翻译内容由Mooncell用户贡献。\n", "")
-        s2[-1] = re.split(r"\n\n转载请保留网址 https://fgo.wiki/id/\d+\n", s2[-1])
-    else:
-        s2[-1] = s2[-1].split("\n\n\n")
+    info = [cmds.find("a", title="画师一览").text.strip() if cmds.find("a", title="画师一览") else ""]
+    info_soup = cmds.find_all("div", class_="poem")
+    for each_is in info_soup:
+        next_p = each_is.find_next("p")
+        if next_p:
+            info.append(next_p.text.strip())
+        else:
+            info.append("")
 
-    if len(s1) < len(s2):
-        t1 = s1.pop()
-        t2 = s2.pop()
-        skills = []
-        ts2 = s2.copy()
-        for i in range(len(ts2) - 1, 3, -1):
-            skills.append(ts2[i])
-            s2.pop()
-        skills.reverse()
-        s2.append(skills)
-        s1.append(t1)
-        s2.append(t2)
+    detail_counter = 0
+    for each_cd in cmd_detail:
+        cmd_detail[each_cd] = info[detail_counter]
+        detail_counter += 1
 
-    result = {}
-    try:
-        for index in range(len(s1)):
-            if isinstance(s1[index], list):
-                for i in range(len(s1[index])):
-                    if s1[index][i] == "日文":
-                        s1[index][i] = "日文解说"
-                    result[s1[index][i]] = s2[index][i].replace(
-                        "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
-                        ""
-                    )
-            else:
-                result[s1[index]] = s2[index].replace(
-                    "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
-                    ""
-                )
-    except IndexError:
-        result["解说"] = ""
-        result["日文解说"] = s2[-1][0].replace(
-            "这部分内容目前尚无翻译。您可以勾选“日文”以查看原文，也可以编辑页面在“解说”中添加翻译。未经许可请勿添加其他来源的翻译。禁止添加机翻、塞翻等低质量翻译。\n",
-            ""
-        )
-        pass
-
-    cmd["detail"] = result
+    cmd["detail"] = cmd_detail
 
     card_url = ""
-    rule_card = re.compile(r"卡面为游戏资源原始图片.+,(\s+)?/images/.+\.(png|jpg)")
-    raw_html = await response.text
+    curl_soup = cmds.find_all("span")
+    for each_cls in curl_soup:
+        if each_cls.text.strip() == "卡面为游戏资源原始图片，未经任何处理。":
+            curl_soup = each_cls
+            break
+
     try:
-        card_url = re.search(rule_card, raw_html).group(0).split()[-1]
-    except AttributeError:
-        try:
-            card_url = re.search(rule_card, raw_html).group(0).split()[-1]
-        except AttributeError:
-            try:
-                card_url = re.search(rule_card, raw_html).group(0).split()[-1]
-            except Exception as e:
-                if "error" in cmd:
-                    cmd["error"].append(f"get card img error: {e}")
-                else:
-                    cmd["error"] = [f"get card img error: {e}"]
-                pass
+        curl_soup = curl_soup.find_next("img").get("data-srcset")
+        rule_card = re.compile(r"/images/.+?.\.(?:png|jpg)")
+        card_set = re.findall(rule_card, curl_soup)
+        card_url = card_set[-1]
+    except Exception as e:
+        if "error" in cmd:
+            cmd["error"].append(f"get card img error: {e}")
+        else:
+            cmd["error"] = [f"get card img error: {e}"]
+        pass
 
     cmd["cards_url"] = card_url
 
@@ -158,22 +118,12 @@ async def lib_cmd(cmd_data, crt_file=False) -> Dict:
         rule_star = re.compile(r"wgCategories.+星")
         star = re.search(rule_star, raw_html).group(0)
         star = star.split("\"")[-1].split("星")[0]
-    except AttributeError:
-        try:
-            rule_star = re.compile(r"wgCategories.+星")
-            star = re.search(rule_star, raw_html).group(0)
-            star = star.split("\"")[-1].split("星")[0]
-        except AttributeError:
-            try:
-                rule_star = re.compile(r"wgCategories.+星")
-                star = re.search(rule_star, raw_html).group(0)
-                star = star.split("\"")[-1].split("星")[0]
-            except Exception as e:
-                if "error" in cmd:
-                    cmd["error"].append(f"get star error: {e}")
-                else:
-                    cmd["error"] = [f"get star error: {e}"]
-                pass
+    except Exception as e:
+        if "error" in cmd:
+            cmd["error"].append(f"get star error: {e}")
+        else:
+            cmd["error"] = [f"get star error: {e}"]
+        pass
 
     cmd["rare"] = star + "星"
 

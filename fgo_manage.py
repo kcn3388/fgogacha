@@ -1,10 +1,10 @@
 from hoshino import HoshinoBot
-from .download.downloadIcons import downloadicons
-from .get.getGachaPools import getgachapools
+from .download.download_icons import download_icons
+from .get.get_gacha_pools import get_gacha_pools
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
 from .get.get_all_svt import *
-from .get.getnews import get_news
+from .get.get_news import get_news
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
 from hoshino.typing import CQEvent
 
@@ -97,7 +97,7 @@ async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     sv_manage.logger.info("开始下载icon")
-    icon_stat = await downloadicons(crt_file)
+    icon_stat = await download_icons(crt_file)
     if not isinstance(icon_stat, int):
         await bot.send(ev, f'下载icons失败，原因：\n{icon_stat}')
     if icon_stat:
@@ -288,7 +288,7 @@ async def update_pool():
                 crt_file = False
 
     # 自动更新卡池
-    r = await getgachapools(True, crt_file)
+    r = await get_gacha_pools(True, crt_file)
     if not isinstance(r, int):
         sv_manage.logger.error(f"获取卡池失败，原因：{str(r)}")
 
@@ -301,7 +301,7 @@ async def update_pool():
     _, updated_servant_list = await get_all_svt(crt_file)
     _, updated_cft_list = await get_all_cft(crt_file)
     _, updated_cmd_list = await get_all_cmd(crt_file)
-    icon_stat = await downloadicons(crt_file)
+    icon_stat = await download_icons(crt_file)
     if not isinstance(icon_stat, int):
         sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
     if icon_stat:
@@ -350,8 +350,8 @@ async def update_pool():
 
 @sv_manage.on_rex(r"(?i)^[设s][置z][fb]go[时s][间j]"
                   r"\s?(\d+(h((our)?s?)?|小时))?"
-                  r"\s?(\d+(m((inute)?s?)?|分钟))?"
-                  r"\s?(\d+(s((econd)?s?)?|秒))?$")
+                  r"\s?(\d+(m((inute)?s?)?|分钟))?"  # noqa
+                  r"\s?(\d+(s((econd)?s?)?|秒))?$")  # noqa
 async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')

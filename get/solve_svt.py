@@ -2,8 +2,9 @@ import re
 from typing import List, Tuple
 
 
-async def get_svt(rule, data) -> Tuple[List, List]:
-    svt_cft: List = re.search(rule, data)[1].split('\\n')[1:]  # .split('\\n')
+async def get_svt(rule: re.Pattern, data: str) -> Tuple[List, List]:
+    svts: str = re.search(rule, data)[1]
+    svt_cft: List = svts.split('\\n')[1:]  # .split('\\n')
     # split('\\n')[1]号位开始是五星，后面是四星，想想办法获取全部四星
     svt_all = []
     cft_all = []
@@ -44,29 +45,29 @@ async def get_multi_svt(data):
     sub_list = list(filter(None, sub_list))
     svt_cft = re.search(card_rule, data)[1].split('\\n')[1:]
 
-    indexs = [0]
+    all_index = [0]
     for i in range(len(svt_cft)):
         if svt_cft[i].endswith(",'type\tstar\tweight\tdisplay\tids"):
-            indexs.append(i + 1)
+            all_index.append(i + 1)
 
-    l_i = len(indexs)
+    l_i = len(all_index)
     svt_data = []
     for k in range(l_i):
         if k + 1 == l_i:
-            svt_data.append(svt_cft[indexs[k]:])
+            svt_data.append(svt_cft[all_index[k]:])
         else:
-            svt_data.append(svt_cft[indexs[k]: indexs[k + 1]])
+            svt_data.append(svt_cft[all_index[k]: all_index[k + 1]])
 
     combine_list = []
-    for dailys in svt_data:
-        index = svt_data.index(dailys)
+    for all_daily in svt_data:
+        index = svt_data.index(all_daily)
         svt_all = []
         cft_all = []
 
-        for each in dailys:
+        for each in all_daily:
             if each.startswith("ce\t"):
-                svt_all: List = dailys[:dailys.index(each)]
-                cft_all: List = dailys[dailys.index(each):]
+                svt_all: List = all_daily[:all_daily.index(each)]
+                cft_all: List = all_daily[all_daily.index(each):]
                 break
 
         for i in svt_all:

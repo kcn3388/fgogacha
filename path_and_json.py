@@ -175,18 +175,18 @@ st1w = 92
 st1h = 200
 st2 = 192
 
-boxlist = []
+box_list = []
 
 box1 = (st1w, st1h)
 for box_i in range(6):
-    boxlist.append(box1)
+    box_list.append(box1)
     lst = list(box1)
     lst[0] += width + dis
     box1 = tuple(lst)
 
 box2 = (st2, st1h + height + floor)
 for box_i in range(5):
-    boxlist.append(box2)
+    box_list.append(box2)
     lst = list(box2)
     lst[0] += width + dis
     box2 = tuple(lst)
@@ -348,7 +348,7 @@ def getpic(url, save_img_name, _type="") -> bool:
 
     driver.maximize_window()
     js_height = "return document.body.clientHeight"
-    picname = save_img_name
+    pic_name = save_img_name
     link = url
     try:
         # print(link)
@@ -370,7 +370,7 @@ def getpic(url, save_img_name, _type="") -> bool:
         if not _type == "":
             scroll_width = 600
         driver.set_window_size(scroll_width, scroll_height)
-        driver.get_screenshot_as_file(picname)
+        driver.get_screenshot_as_file(pic_name)
         return True
     except Exception as e:
         print(e)
