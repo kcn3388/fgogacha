@@ -1,5 +1,3 @@
-import re
-
 from typing import Tuple, List
 from ..path_and_json import *
 

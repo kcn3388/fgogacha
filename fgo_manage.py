@@ -31,7 +31,7 @@ except KeyError:
 
 
 @sv_manage.on_fullmatch(("帮助fgo管理", "帮助FGO管理", "帮助bgo管理", "帮助BGO管理"))
-@sv_manage.on_rex(r"(?i)^[fb]go[管g][理l][帮b][助z]$")
+@sv_manage.on_rex(re.compile(r"^[fb]go[管g][理l][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -39,7 +39,7 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_manage.on_rex(r"(?i)^[fb]go[数s][据j][初ci][始sn][化hi]$")
+@sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][初ci][始sn][化hi]$", re.IGNORECASE))
 async def init(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -80,7 +80,7 @@ async def init(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv_manage.on_rex(r"(?i)^[fb]go[数s][据j][下xd][载zl]$")
+@sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][下xd][载zl]$", re.IGNORECASE))
 async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -109,7 +109,7 @@ async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, "下载完成")
 
 
-@sv_manage.on_rex(r"(?i)^[g跟][s随][z最j剧][x新q情][k卡][c池]$")
+@sv_manage.on_rex(re.compile(r"^[g跟][s随][z最j剧][x新q情][k卡][c池]$", re.IGNORECASE))
 async def follow_latest(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -117,8 +117,8 @@ async def follow_latest(bot: HoshinoBot, ev: CQEvent):
     args = ev.message.extract_plain_text()
     configs = load_config(ev)
 
-    rule_latest = re.compile(r"(?i)^[g跟][s随][z最][x新][k卡][c池]$")
-    rule_story = re.compile(r"(?i)^[g跟][s随][j剧][q情][k卡][c池]$")
+    rule_latest = re.compile(r"^[g跟][s随][z最][x新][k卡][c池]$", re.IGNORECASE)
+    rule_story = re.compile(r"^[g跟][s随][j剧][q情][k卡][c池]$", re.IGNORECASE)
     if re.match(rule_latest, args):
         FOLLOW_LATEST_POOL = True
     if re.match(rule_story, args):
@@ -135,7 +135,7 @@ async def follow_latest(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, "切换成功，当前跟随剧情卡池")
 
 
-@sv_manage.on_rex(r"^(?i)fgo_enable_crt(\s.+)?$")
+@sv_manage.on_rex(re.compile(r"^fgo_enable_crt(\s.+)?$", re.IGNORECASE))
 async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
@@ -149,7 +149,7 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     if isinstance(crt, list):
         crt = crt[0]
 
-    rule = re.compile(r"^(?i)false$")
+    rule = re.compile(r"^false$", re.IGNORECASE)
     match = re.match(rule, crt)
     if match:
         crt = "False"
@@ -179,7 +179,7 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
         await bot.finish(ev, f"已禁用crt文件")
 
 
-@sv_manage.on_rex("(?i)^fgo_check_crt$")
+@sv_manage.on_rex(re.compile("^fgo_check_crt$", re.IGNORECASE))
 async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
@@ -195,17 +195,23 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
         await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
 
 
-@sv_manage.on_rex(r"(?i)^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$")
+@sv_manage.on_rex(re.compile(r"^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$", re.IGNORECASE))
 async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
     style = ev.message.extract_plain_text().split()
 
     if not os.path.exists(config_path):
         await bot.finish(ev, "未配置crt文件")
 
-    if re.match(r"(?i)(text|文字)", style[1]):
+    if re.match(
+            re.compile(r"(text|文字)", re.IGNORECASE),
+            style[1]
+    ):
         style = "文字"
 
-    if re.match(r"(?i)(img|图片)", style[1]):
+    if re.match(
+            re.compile(r"(img|图片)", re.IGNORECASE),
+            style[1]
+    ):
         style = "图片"
 
     if not style == "图片":
@@ -234,7 +240,7 @@ async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, f"已修改十连样式，当前样式：{style}")
 
 
-@sv_manage.on_rex(r"(?i)^([重c][载z]|reload)\s?([配p][置z][文w][件j]|config)$")
+@sv_manage.on_rex(re.compile(r"^([重c][载z]|reload)\s?([配p][置z][文w][件j]|config)$", re.IGNORECASE))
 async def reload_config(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -348,10 +354,12 @@ async def update_pool():
     sv_manage.logger.info("结束自动更新fgo")
 
 
-@sv_manage.on_rex(r"(?i)^[设s][置z][fb]go[时s][间j]"
-                  r"\s?(\d+(h((our)?s?)?|小时))?"
-                  r"\s?(\d+(m((inute)?s?)?|分钟))?"  # noqa
-                  r"\s?(\d+(s((econd)?s?)?|秒))?$")  # noqa
+@sv_manage.on_rex(re.compile(
+    r"^[设s][置z][fb]go[时s][间j]"
+    r"\s?(\d+(h((our)?s?)?|小时))?"
+    r"\s?(\d+(m((inute)?s?)?|分钟))?"
+    r"\s?(\d+(s((econd)?s?)?|秒))?$", re.IGNORECASE
+))
 async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -360,15 +368,15 @@ async def set_update_time(bot: HoshinoBot, ev: CQEvent):
 
     configs = load_config(ev)
 
-    rule_c = re.compile("(?i)^([设s][置z])?[fb]go[时s][间j]([设s][置z])?$")
+    rule_c = re.compile("^([设s][置z])?[fb]go[时s][间j]([设s][置z])?$", re.IGNORECASE)
     if re.search(rule_c, times[0]) and len(times) == 1:
         await bot.send(ev, "食用指南：设置fgo时间 + 小时 + 分钟 + 秒（至少存在一个）")
         await bot.finish(ev, f"当前自动更新时间：{configs['flush_hour']}小时"
                              f"{configs['flush_minute']}分钟{configs['flush_second']}秒")
 
-    rule_h = re.compile(r"(?i)\d+(h((our)?s?)?|小时)")
-    rule_m = re.compile(r"(?i)\d+(m((inute)?s?)?|分钟)")
-    rule_s = re.compile(r"(?i)\d+(s((econd)?s?)?|秒)")
+    rule_h = re.compile(r"\d+(h((our)?s?)?|小时)", re.IGNORECASE)
+    rule_m = re.compile(r"\d+(m((inute)?s?)?|分钟)", re.IGNORECASE)
+    rule_s = re.compile(r"\d+(s((econd)?s?)?|秒)", re.IGNORECASE)
 
     for each in times:
         if re.findall(rule_h, each):

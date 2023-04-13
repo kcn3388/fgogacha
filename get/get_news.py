@@ -1,4 +1,3 @@
-
 from bs4 import BeautifulSoup
 from typing import Tuple
 from ..path_and_json import *

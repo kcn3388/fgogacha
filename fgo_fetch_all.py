@@ -9,7 +9,7 @@ from hoshino.typing import CQEvent
 
 
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))
-@sv_fetch.on_rex(r"(?i)^[fb]go[数s][据j][获h][取q][帮b][助z]$")
+@sv_fetch.on_rex(re.compile(r"^[fb]go[数s][据j][获h][取q][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_fetch_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)

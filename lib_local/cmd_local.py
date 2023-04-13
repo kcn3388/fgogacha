@@ -1,8 +1,6 @@
 from aiocqhttp import ActionFailed
-from hoshino import HoshinoBot
 
 from ..lib_online.lib_cmd import *
-from ..path_and_json import *
 
 
 async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
@@ -21,7 +19,7 @@ async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
     del (msg[0])
     cmd_data = []
     is_detail = False
-    rule = re.compile(r"(?i)(详细|detail)")
+    rule = re.compile(r"(详细|detail)", re.IGNORECASE)
     if re.match(rule, msg[-1]):
         is_detail = True
         msg.pop()

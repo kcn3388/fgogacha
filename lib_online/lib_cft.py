@@ -1,8 +1,7 @@
-import re
-
 from bs4 import BeautifulSoup
 from typing import Tuple
-from ..path_and_json import *
+
+from .lib_json import *
 
 
 async def lib_cft_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
@@ -57,7 +56,7 @@ async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
     except OSError:
         response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
     except Exception as e:
-        cft["error"] = [f"aiorequest error: {e}"]
+        cft["error"] = [f"cft{cft['id']} aiorequest error: {e}"]
         return cft
 
     raw_html = await response.text
@@ -65,18 +64,8 @@ async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
     try:
         cfts = soup.find(class_="wikitable nodesktop").find("tbody")
     except Exception as e:
-        cft["error"] = [f"first bs error: {e}"]
+        cft["error"] = [f"cft{cft['id']} first bs error: {e}"]
         return cft
-
-    cft_detail = {
-        "画师": "",
-        "Cost": "",
-        "初始/满级HP": "",
-        "初始/满级ATK": "",
-        "持有技能": "",
-        "解说": "",
-        "日文解说": ""
-    }
 
     info = [cfts.find("a", title="画师一览").text.strip() if cfts.find("a", title="画师一览") else ""]
     effect_soup = cfts.find_all("th")
@@ -114,9 +103,9 @@ async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
         card_url = card_set[-1]
     except Exception as e:
         if "error" in cft:
-            cft["error"].append(f"get card img error: {e}")
+            cft["error"].append(f"cft{cft['id']} get card img error: {e}")
         else:
-            cft["error"] = [f"get card img error: {e}"]
+            cft["error"] = [f"cft{cft['id']} get card img error: {e}"]
         pass
 
     cft["cards_url"] = card_url
@@ -128,9 +117,9 @@ async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
         star = star.split("\"")[-1].split("星")[0]
     except Exception as e:
         if "error" in cft:
-            cft["error"].append(f"get star error: {e}")
+            cft["error"].append(f"cft{cft['id']} get star error: {e}")
         else:
-            cft["error"] = [f"get star error: {e}"]
+            cft["error"] = [f"cft{cft['id']} get star error: {e}"]
         pass
 
     cft["rare"] = star + "星"

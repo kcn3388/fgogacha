@@ -1,9 +1,8 @@
-import re
 from typing import Tuple
 
 from bs4 import BeautifulSoup
 
-from ..path_and_json import *
+from .lib_json import *
 
 
 async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
@@ -58,7 +57,7 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
     except OSError:
         response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
     except Exception as e:
-        cmd["error"] = [f"aiorequest error: {e}"]
+        cmd["error"] = [f"cmd{cmd['id']} aiorequest error: {e}"]
         return cmd
 
     raw_html = await response.text
@@ -66,15 +65,8 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
     try:
         cmds = soup.find(class_="wikitable nodesktop").find("tbody")
     except Exception as e:
-        cmd["error"] = [f"first bs error: {e}"]
+        cmd["error"] = [f"cmd{cmd['id']} first bs error: {e}"]
         return cmd
-
-    cmd_detail = {
-        "画师": "",
-        "持有技能": "",
-        "解说": "",
-        "日文解说": "",
-    }
 
     info = [cmds.find("a", title="画师一览").text.strip() if cmds.find("a", title="画师一览") else ""]
     info_soup = cmds.find_all("div", class_="poem")
@@ -106,9 +98,9 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
         card_url = card_set[-1]
     except Exception as e:
         if "error" in cmd:
-            cmd["error"].append(f"get card img error: {e}")
+            cmd["error"].append(f"cmd{cmd['id']} cmd{cmd['id']} get card img error: {e}")
         else:
-            cmd["error"] = [f"get card img error: {e}"]
+            cmd["error"] = [f"cmd{cmd['id']} cmd{cmd['id']} get card img error: {e}"]
         pass
 
     cmd["cards_url"] = card_url
@@ -120,9 +112,9 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
         star = star.split("\"")[-1].split("星")[0]
     except Exception as e:
         if "error" in cmd:
-            cmd["error"].append(f"get star error: {e}")
+            cmd["error"].append(f"cmd{cmd['id']} get star error: {e}")
         else:
-            cmd["error"] = [f"get star error: {e}"]
+            cmd["error"] = [f"cmd{cmd['id']} get star error: {e}"]
         pass
 
     cmd["rare"] = star + "星"

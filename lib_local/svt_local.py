@@ -1,8 +1,6 @@
 from aiocqhttp import ActionFailed
-from hoshino import HoshinoBot
 
 from ..lib_online.lib_svt import *
-from ..path_and_json import *
 
 
 async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
@@ -449,11 +447,11 @@ def get_keys(msg) -> Tuple:
     remove_skill = False
     remove_voice = False
     remove_pup = False
-    rule = re.compile(r"(?i)(详细|detail)")
+    rule = re.compile(r"(详细|detail)", re.IGNORECASE)
     if re.match(rule, msg[-1]):
         is_detail = True
         msg.pop()
-    rule1 = re.compile(r"(?i)(卡面|card)")
+    rule1 = re.compile(r"(卡面|card)", re.IGNORECASE)
     if re.match(rule1, msg[-1]):
         is_detail = True
         remove_data = True
@@ -464,7 +462,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule2 = re.compile(r"(?i)(数据|data)")
+    rule2 = re.compile(r"(数据|data)", re.IGNORECASE)
     if re.match(rule2, msg[-1]):
         is_detail = True
         remove_card = True
@@ -475,7 +473,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule3 = re.compile(r"(?i)(资料|info)")
+    rule3 = re.compile(r"(资料|info)", re.IGNORECASE)
     if re.match(rule3, msg[-1]):
         is_detail = True
         remove_data = True
@@ -486,7 +484,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule4 = re.compile(r"(?i)(愚人节|fool)")
+    rule4 = re.compile(r"(愚人节|fool)", re.IGNORECASE)
     if re.match(rule4, msg[-1]):
         is_detail = True
         remove_data = True
@@ -497,7 +495,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule5 = re.compile(r"(?i)(宝具|bj|ultimate)")
+    rule5 = re.compile(r"(宝具|bj|ultimate)", re.IGNORECASE)
     if re.match(rule5, msg[-1]):
         is_detail = True
         remove_data = True
@@ -508,7 +506,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule6 = re.compile(r"(?i)(技能|skill)")
+    rule6 = re.compile(r"(技能|skill)", re.IGNORECASE)
     if re.match(rule6, msg[-1]):
         is_detail = True
         remove_data = True
@@ -519,7 +517,7 @@ def get_keys(msg) -> Tuple:
         remove_voice = True
         remove_pup = True
         msg.pop()
-    rule7 = re.compile(r"(?i)(语音|voice)")
+    rule7 = re.compile(r"(语音|voice)", re.IGNORECASE)
     if re.match(rule7, msg[-1]):
         is_detail = True
         remove_data = True
@@ -530,7 +528,7 @@ def get_keys(msg) -> Tuple:
         remove_skill = True
         remove_pup = True
         msg.pop()
-    rule8 = re.compile(r"(?i)(未来|pup)")
+    rule8 = re.compile(r"(未来|pup)", re.IGNORECASE)
     if re.match(rule8, msg[-1]):
         is_detail = True
         remove_data = True

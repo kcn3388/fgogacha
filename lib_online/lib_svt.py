@@ -1,9 +1,8 @@
-import re
 from typing import Tuple
 
 from bs4 import BeautifulSoup
 
-from ..path_and_json import *
+from .lib_json import *
 
 
 async def lib_svt_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
@@ -55,14 +54,14 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> Dict:
     except OSError:
         response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
     except Exception as e:
-        svt["error"] = [f"aiorequest error: {e}"]
+        svt["error"] = [f"svt{svt['id']} aiorequest error: {e}"]
         return svt
 
     soup = BeautifulSoup(await response.content, 'html.parser')
     try:
         soup.find(class_="wikitable nomobile").find("tbody")
     except Exception as e:
-        svt["error"] = [f"first bs error: {e}"]
+        svt["error"] = [f"svt{svt['id']} first bs error: {e}"]
         return svt
 
     raw_html = await response.text
@@ -84,7 +83,7 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> Dict:
     try:
         base = soup.findAll(class_="wikitable nomobile logo")
     except Exception as e:
-        svt["error"] = [f"find power bs error: {e}"]
+        svt["error"] = [f"svt{svt['id']} find power bs error: {e}"]
         return svt
 
     get_ultimate(svt, base)
@@ -97,7 +96,12 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> Dict:
 
 
 def get_base(base_soup: BeautifulSoup, svt: dict, svt_data: dict):
-    base_table = base_soup.find("span", id="基础数值").find_next("tbody")
+    try:
+        base_table = base_soup.find("span", id=re.compile("基础数值")).find_next("tbody")
+    except AttributeError as e:
+        svt["error"] = [f"svt{svt['id']} base soup error: {e}"]
+        sv_lib.logger.error(f"svt{svt['id']} base soup error: {e}")
+        return
     base_data = []
     info = base_table.find_all("td")
     for each_info in info:
@@ -105,109 +109,25 @@ def get_base(base_soup: BeautifulSoup, svt: dict, svt_data: dict):
         if not arg == '':
             base_data.append(arg)
 
-    base_detail = {
-        "画师": "",
-        "声优": "",
-        "职阶": "",
-        "性别（用于战斗和任务时的数据）": "",
-        "身高": "",
-        "体重": "",
-        "属性": "",
-        "隐藏属性": "",
-        "筋力": "",
-        "耐久": "",
-        "敏捷": "",
-        "魔力": "",
-        "幸运": "",
-        "宝具资料面板中列出的参数": "",
-        "能力": [
-            "基础",
-            "满级",
-            "90级",
-            "100级",
-            "120级"
-        ],
-        "ATK": [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ],
-        "职阶补正后": [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ],
-        "HP": [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ],
-        "Hit信息（括号内为每hit伤害百分比）": "",
-        "Quick": "",
-        "Arts": "",
-        "Buster": "",
-        "Extra": "",
-        "宝具": "",
-        "NP获得率": {
-            "Quick": "",
-            "Arts": "",
-            "Buster": "",
-            "Extra": "",
-            "宝具": ""
-        },
-        "受击": "",
-        "出星率": "",
-        "被即死率": "",
-        "暴击星分配权重": "",
-        "特性": "",
-        "人型": "",
-        "被EA特攻": "",
-        "猪化状态": ""
-    }
-    sp_detail = {
-        "画师": "",
-        "声优": "",
-        "职阶": "",
-        "性别": "",
-        "身高": "",
-        "体重": "",
-        "属性": "",
-        "隐藏属性": "",
-        "筋力": "",
-        "耐久": "",
-        "敏捷": "",
-        "魔力": "",
-        "幸运": "",
-        "宝具": "",
-        "特性": "",
-        "人型": ""
-    }
-
     base_data = base_data[2:-1]
     counter = 0
     if not svt["id"] in banned_id:
         try:
-            for each_data in base_detail:
+            for each_data in base_svt_detail:
                 if svt_data["id"] == "351":
                     if each_data == "特性":
-                        base_detail[each_data] = ""
+                        base_svt_detail[each_data] = ""
                         continue
                 if each_data == "ATK" or each_data == "职阶补正后" or each_data == "HP":
-                    base_detail[each_data] = base_data[counter: counter + 5]
+                    base_svt_detail[each_data] = base_data[counter: counter + 5]
                     counter += 5
                 elif each_data == "能力":
                     continue
                 elif each_data.startswith("Hit信息"):
-                    base_detail[each_data] = ""
+                    base_svt_detail[each_data] = ""
                     continue
                 elif each_data == "NP获得率":
-                    base_detail[each_data] = {
+                    base_svt_detail[each_data] = {
                         "Quick": base_data[counter],
                         "Arts": base_data[counter + 1],
                         "Buster": base_data[counter + 2],
@@ -216,17 +136,17 @@ def get_base(base_soup: BeautifulSoup, svt: dict, svt_data: dict):
                     }
                     counter += 5
                 else:
-                    base_detail[each_data] = base_data[counter]
+                    base_svt_detail[each_data] = base_data[counter]
                     counter += 1
         except IndexError:
             print(svt_data["id"])
             pass
-        svt["detail"] = base_detail
+        svt["detail"] = base_svt_detail
     else:
-        for each_sp_data in sp_detail:
-            sp_detail[each_sp_data] = base_data[counter]
+        for each_sp_data in sp_svt_detail:
+            sp_svt_detail[each_sp_data] = base_data[counter]
             counter += 1
-        svt["detail"] = sp_detail
+        svt["detail"] = sp_svt_detail
 
 
 def get_nick_name(svt: dict, soup: BeautifulSoup):
@@ -276,9 +196,9 @@ def get_card_url(svt: dict, raw_html: str, card_soup: BeautifulSoup):
                 cards_url.append(solomon_set[-1])
     except Exception as e:
         if "error" in svt:
-            svt["error"].append(f"get card img error: {e}")
+            svt["error"].append(f"svt{svt['id']} get card img error: {e}")
         else:
-            svt["error"] = [f"get card img error: {e}"]
+            svt["error"] = [f"svt{svt['id']} get card img error: {e}"]
         pass
 
     cards_name = []
@@ -327,9 +247,9 @@ def get_star(svt, raw_html):
                 star = star.split("\"")[-1].split("星")[0]
             except Exception as e:
                 if "error" in svt:
-                    svt["error"].append(f"get star error: {e}")
+                    svt["error"].append(f"svt{svt['id']} get star error: {e}")
                 else:
-                    svt["error"] = [f"get star error: {e}"]
+                    svt["error"] = [f"svt{svt['id']} get star error: {e}"]
                 pass
         else:
             try:
@@ -338,9 +258,9 @@ def get_star(svt, raw_html):
                 star = star.split("\"")[-1].split("星")[0]
             except Exception as e:
                 if "error" in svt:
-                    svt["error"].append(f"get star error: {e}")
+                    svt["error"].append(f"svt{svt['id']} get star error: {e}")
                 else:
-                    svt["error"] = [f"get star error: {e}"]
+                    svt["error"] = [f"svt{svt['id']} get star error: {e}"]
                 pass
 
     svt["rare"] = star + "星"
@@ -355,22 +275,24 @@ def get_info(svt: dict, soup: BeautifulSoup):
     except Exception as e:
         svt_info = []
         if "error" in svt:
-            svt["error"].append(f"svt_info_main error: {e}")
+            svt["error"].append(f"svt{svt['id']} svt_info_main error: {e}")
         else:
-            svt["error"] = [f"svt_info_main error: {e}"]
+            svt["error"] = [f"svt{svt['id']} svt_info_main error: {e}"]
         pass
 
     for each_info in svt_info:
         try:
             cn_p: BeautifulSoup = each_info.find("div", class_="tl_svt_profile_cn_1")
             jp_p: BeautifulSoup = each_info.find("div", class_="tl_svt_profile_jp_1")
+            if cn_p is None or jp_p is None:
+                continue
             detail_info_cn.append(cn_p.find_next("p").text.strip())
             detail_info_jp.append(jp_p.find_next("p").text.strip())
         except Exception as e:
             if "error" in svt:
-                svt["error"].append(f"svt_info error: {e}")
+                svt["error"].append(f"svt{svt['id']} svt_info error: {e}")
             else:
-                svt["error"] = [f"svt_info error: {e}"]
+                svt["error"] = [f"svt{svt['id']} svt_info error: {e}"]
             pass
 
     svt_detail = {}
@@ -402,9 +324,9 @@ def get_info(svt: dict, soup: BeautifulSoup):
                 }
     except IndexError as e:
         if "error" in svt:
-            svt["error"].append(f"svt_detail error: {e}")
+            svt["error"].append(f"svt{svt['id']} svt_detail error: {e}")
         else:
-            svt["error"] = [f"svt_detail error: {e}"]
+            svt["error"] = [f"svt{svt['id']} svt_detail error: {e}"]
 
     svt["svt_detail"] = svt_detail
 
@@ -440,9 +362,9 @@ def get_ultimate(svt: dict, base: list):
         pass
     except Exception as e:
         if "error" in svt:
-            svt["error"].append(f"get ultimate error: {e}")
+            svt["error"].append(f"svt{svt['id']} get ultimate error: {e}")
         else:
-            svt["error"] = [f"get ultimate error: {e}"]
+            svt["error"] = [f"svt{svt['id']} get ultimate error: {e}"]
         pass
 
     if not ul_soup:
@@ -688,9 +610,9 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
         response = await aiorequests.get(new_url, timeout=20, verify=False, headers=headers)
     except Exception as e:
         if "error" in svt:
-            svt["error"].append(f"get_pickup error: {e}")
+            svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
         else:
-            svt["error"] = [f"get_pickup error: {e}"]
+            svt["error"] = [f"svt{svt['id']} get_pickup error: {e}"]
         return
 
     soup = BeautifulSoup(await response.content, 'html.parser')
@@ -699,9 +621,9 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
         pup = soup.find(class_="mw-parser-output")
     except Exception as e:
         if "error" in svt:
-            svt["error"].append(f"get_pickup error: {e}")
+            svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
         else:
-            svt["error"] = [f"get_pickup error: {e}"]
+            svt["error"] = [f"svt{svt['id']} get_pickup error: {e}"]
         return
 
     if pup is None:
@@ -737,7 +659,7 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
             pup_future["time_end"] = f'{time_end.string.strip()}（JST）'
             pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
         except Exception as e:
-            logger.warning(f"{e}")
+            sv_lib.logger.error(f"{e}")
             try:
                 time_info = time_soup.find(text="日服卡池信息(使用日本标准时间)")
                 time_start = time_info.find_next("td")
@@ -748,9 +670,9 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
                 pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
             except Exception as e:
                 if "error" in svt:
-                    svt["error"].append(f"get_pickup error: {e}")
+                    svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
                 else:
-                    svt["error"] = [f"get_pickup error: {e}"]
+                    svt["error"] = [f"svt{svt['id']} get_pickup error: {e}"]
                 continue
         pup_status.append(pup_future)
 

@@ -7,13 +7,13 @@ from hoshino.typing import CQEvent
 
 
 @sv_lib.on_fullmatch(("帮助fgo图书馆", "帮助FGO图书馆", "帮助bgo图书馆", "帮助BGO图书馆"))
-@sv_lib.on_rex(r"(?i)^[fb]go[图tl][书si][馆gb][帮b][助z]$")
+@sv_lib.on_rex(re.compile(r"^[fb]go[图tl][书si][馆gb][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_lib_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_lib.on_rex(r"(?i)^[获h更g][取q新x][fb]go[图tl][书si][馆gb](\s.+)?$")
+@sv_lib.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[图tl][书si][馆gb](\s.+)?$", re.IGNORECASE))
 async def update_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -40,11 +40,13 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
     latest = False
 
     rule = re.compile(
-        r"(?i)^[获h更g][取q新x][fb]go[图tl][书si][馆gb]\s?([最z][新x]|latest|recent)?$")
-    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
-    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
-    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
-    rule_latest = re.compile(r"(?i)([最z][新x]|latest|recent)")
+        r"^[获h更g][取q新x][fb]go[图tl][书si][馆gb]\s?([最z][新x]|latest|recent)?$",
+        re.IGNORECASE
+    )
+    rule_svt = re.compile(r"([从c][者z]|svt|servant)", re.IGNORECASE)
+    rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
+    rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
+    rule_latest = re.compile(r"([最z][新x]|latest|recent)", re.IGNORECASE)
 
     msg = ev.message.extract_plain_text()
 
@@ -301,7 +303,7 @@ async def update_lib(bot: HoshinoBot, ev: CQEvent):
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
 
-@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go[图tl][书si][馆gb](\s[\s\S]+)?$")
+@sv_lib.on_rex(re.compile(r"^[查c][询x][fb]go[图tl][书si][馆gb](\s[\s\S]+)?$", re.IGNORECASE))
 async def check_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -321,9 +323,9 @@ async def check_lib(bot: HoshinoBot, ev: CQEvent):
     except FileNotFoundError:
         await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[获取全部内容]")
 
-    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
-    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
-    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    rule_svt = re.compile(r"([从c][者z]|svt|servant)", re.IGNORECASE)
+    rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
+    rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
     args = ev.message.extract_plain_text()
     msg = ""
 
@@ -342,7 +344,7 @@ async def check_lib(bot: HoshinoBot, ev: CQEvent):
     await bot.finish(ev, msg.strip())
 
 
-@sv_lib.on_rex(r"(?i)^(增添|add)[fb]go[图tl][书si][馆gb](\s.+)?(\s\d+)?$")
+@sv_lib.on_rex(re.compile(r"^(增添|add)[fb]go[图tl][书si][馆gb](\s.+)?(\s\d+)?$", re.IGNORECASE))
 async def add_lib(bot: HoshinoBot, ev: CQEvent):
     try:
         with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -372,9 +374,9 @@ async def add_lib(bot: HoshinoBot, ev: CQEvent):
     update_cft = False
     update_cmd = False
 
-    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
-    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
-    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    rule_svt = re.compile(r"([从c][者z]|svt|servant)", re.IGNORECASE)
+    rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
+    rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
 
     msg = ev.message.extract_plain_text().split()
     if not len(msg) == 3:
@@ -498,12 +500,15 @@ async def add_lib(bot: HoshinoBot, ev: CQEvent):
         await bot.finish(ev, "已获取纹章数据~")
 
 
-@sv_lib.on_rex(r"(?i)^[修x][补b][fb]go"
-               r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
-               r"(\s.+)?$")
+@sv_lib.on_rex(re.compile(
+    r"^[修x][补b][fb]go"
+    r"([图tl][书si][馆gb]|([从c][者z]|svt|servant)|([礼l][装z]|cft|craft)|([纹w][章z]|cmd|command))"
+    r"(\s.+)?$", re.IGNORECASE
+))
 async def fix_lib(bot: HoshinoBot, ev: CQEvent):
     is_3_args = False
-    if re.match(r"(?i)^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", ev.raw_message):
+    rule_raw = re.compile(r"^([修x])?([补b])?[fb]go[图tl][书si][馆gb]([修x])?([补b])?(\s.+)?$", re.IGNORECASE)
+    if re.match(rule_raw, ev.raw_message):
         is_3_args = True
 
     msg = ev.message.extract_plain_text().split()
@@ -551,7 +556,7 @@ async def fix_lib(bot: HoshinoBot, ev: CQEvent):
         except json.decoder.JSONDecodeError:
             pass
 
-    rule_svt = re.compile(r"(?i)([从c][者z]|svt|servant)")
+    rule_svt = re.compile(r"([从c][者z]|svt|servant)", re.IGNORECASE)
     is_svt = False
     if re.search(rule_svt, msg[1]):
         is_svt = True
@@ -583,7 +588,7 @@ async def fix_lib(bot: HoshinoBot, ev: CQEvent):
         else:
             await bot.finish(ev, "从者数据错误，请再试一次~")
 
-    rule_cft = re.compile(r"(?i)([礼l][装z]|cft|craft)")
+    rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
     is_cft = False
     if re.search(rule_cft, msg[1]):
         is_cft = True
@@ -615,7 +620,7 @@ async def fix_lib(bot: HoshinoBot, ev: CQEvent):
         else:
             await bot.finish(ev, "礼装数据错误，请再试一次~")
 
-    rule_cmd = re.compile(r"(?i)([纹w][章z]|cmd|command)")
+    rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
     is_cmd = False
     if re.search(rule_cmd, msg[1]):
         is_cmd = True
@@ -648,16 +653,16 @@ async def fix_lib(bot: HoshinoBot, ev: CQEvent):
             await bot.finish(ev, "纹章数据错误，请再试一次~")
 
 
-@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([从c][者z]|svt|servant)(\s.+)?$")
+@sv_lib.on_rex(re.compile(r"^[查c][询x][fb]go([从c][者z]|svt|servant)(\s.+)?$", re.IGNORECASE))
 async def find_svt(bot: HoshinoBot, ev: CQEvent):
     await local_find_svt(bot, ev)
 
 
-@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([礼l][装z]|cft|craft)(\s.+)?$")
+@sv_lib.on_rex(re.compile(r"^[查c][询x][fb]go([礼l][装z]|cft|craft)(\s.+)?$", re.IGNORECASE))
 async def find_cft(bot: HoshinoBot, ev: CQEvent):
     await local_find_cft(bot, ev)
 
 
-@sv_lib.on_rex(r"(?i)^[查c][询x][fb]go([纹w][章z]|cmd|command)(\s.+)?$")
+@sv_lib.on_rex(re.compile(r"^[查c][询x][fb]go([纹w][章z]|cmd|command)(\s.+)?$", re.IGNORECASE))
 async def find_cmd(bot: HoshinoBot, ev: CQEvent):
     await local_find_cmd(bot, ev)

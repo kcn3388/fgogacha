@@ -2,6 +2,8 @@ import io
 import json
 import os
 import platform
+import re  # noqa
+import sys  # noqa
 import time
 from typing import Dict, Union
 
@@ -406,5 +408,5 @@ async def get_content(url: str, crt_file) -> Union[Exception, bytes]:
             await aiorequests.get(url, timeout=20, verify=False, headers=headers)
         ).content
     except Exception as e:
-        logger.warning(f"aiorequest error: {e}")
+        logger.error(f"aiorequest error: {e}")
         return e

@@ -18,13 +18,13 @@ TENJO_EXCEED_NOTICE = f"您今天已经抽过{tenjo_limit.max}张百连券了，
 
 
 @sv.on_fullmatch(("帮助fgo抽卡", "帮助FGO抽卡", "帮助bgo抽卡", "帮助BGO抽卡"))
-@sv.on_rex(r"(?i)^[fb]go[抽c][卡k][帮b][助z]$")
+@sv.on_rex(re.compile(r"^[fb]go[抽c][卡k][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv.on_rex(r"(?i)^[获h更g][取q新x][fb]go[卡k][池c]$")
+@sv.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[卡k][池c]$", re.IGNORECASE))
 async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
@@ -40,7 +40,7 @@ async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
 
 
-@sv.on_rex(r"(?i)^[查c][询x][fb]go[卡k][池c]$")
+@sv.on_rex(re.compile(r"^[查c][询x][fb]go[卡k][池c]$", re.IGNORECASE))
 async def check_pool(bot: HoshinoBot, ev: CQEvent):
     if os.path.exists(pools_path):
         try:
@@ -80,7 +80,7 @@ async def check_pool(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, msg)
 
 
-@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$")
+@sv.on_rex(re.compile(r"^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$", re.IGNORECASE))
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     p_ids = ev.message.extract_plain_text().split()
     if len(p_ids) > 1:
@@ -133,7 +133,7 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({dp_pool[0]['server']})\n从属活动：\n{title}")
 
 
-@sv.on_rex(r"(?i)^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$")
+@sv.on_rex(re.compile(r"^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$", re.IGNORECASE))
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     ids = ev.message.extract_plain_text()
     if not ids:
@@ -209,7 +209,7 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
-@sv.on_rex(r'(?i)^[fb]go(十|10|s)[连l]$')
+@sv.on_rex(re.compile(r'^[fb]go(十|10|s)[连l]$', re.IGNORECASE))
 async def gacha_10(bot: HoshinoBot, ev: CQEvent):
     gid = ev.group_id
     # barrier
@@ -429,7 +429,7 @@ async def gacha_10(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, msg.strip(), at_sender=True)
 
 
-@sv.on_rex(r'(?i)^[fb]go(百|100|b)[连l]$')
+@sv.on_rex(re.compile(r'^[fb]go(百|100|b)[连l]$', re.IGNORECASE))
 async def gacha_100(bot: HoshinoBot, ev: CQEvent):
     gid = ev.group_id
     # barrier

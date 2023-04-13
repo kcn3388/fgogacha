@@ -1,4 +1,3 @@
-import re
 import shutil
 
 from aiocqhttp import ActionFailed
@@ -10,13 +9,13 @@ from hoshino.typing import CQEvent
 
 
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))
-@sv_news.on_rex(r"(?i)^[fb]go[新x][闻w][获h][取q][帮b][助z]$")
+@sv_news.on_rex(re.compile(r"^[fb]go[新x][闻w][获h][取q][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     helps = gen_node(sv_news_help.strip())
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_news.on_rex(r"(?i)^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$")
+@sv_news.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$", re.IGNORECASE))
 async def get_official_news(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
@@ -37,7 +36,7 @@ async def get_official_news(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
 
 
-@sv_news.on_rex(r"(?i)^[查c][询x][fb]go[新x][闻w](\s.+)?$")
+@sv_news.on_rex(re.compile(r"^[查c][询x][fb]go[新x][闻w](\s.+)?$", re.IGNORECASE))
 async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
@@ -75,7 +74,7 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
             if os.path.exists(img_path):
                 msg = f"{gen_ms_img(Image.open(img_path))}\n"
             else:
-                sv_news.logger.warning("获取新闻截图出错")
+                sv_news.logger.error("获取新闻截图出错")
                 msg = "截图出错，请自行查看~"
             _news = gen_node((link + msg).strip())
             try:

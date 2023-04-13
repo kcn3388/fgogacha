@@ -1,5 +1,3 @@
-import re
-
 from bs4 import BeautifulSoup
 
 from ..path_and_json import *
@@ -226,7 +224,7 @@ async def get_gacha_pools(is_latest: bool = True, crt_file: Union[str, bool] = F
         return 0
 
     except Exception as e:
-        sv.logger.warning(f"{e}")
+        sv.logger.error(f"{e}")
         return e
 
 
