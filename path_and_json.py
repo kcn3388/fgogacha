@@ -401,7 +401,7 @@ async def gen_img_from_url(img_url: str, crt_file) -> Union[Exception, MessageSe
 async def get_content(url: str, crt_file) -> Union[Exception, bytes]:
     try:
         return await (
-            await aiorequests.get(url, headers=headers, verify=crt_file)
+            await aiorequests.get(url, timeout=20, headers=headers, verify=crt_file)
         ).content
     except OSError:
         return await (

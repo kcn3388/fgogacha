@@ -76,7 +76,7 @@ async def get_all_lucky_bag(crt_file: Union[str, bool] = False) -> Union[Excepti
                         sv_lucky.logger.error(f"{e}")
                         pass
 
-                detail_msg = await get_lucky_bag_detail(page)
+                detail_msg = await get_lucky_bag_detail(page, crt_file)
                 if isinstance(detail_msg, list):
                     page["detail"] = detail_msg
 
