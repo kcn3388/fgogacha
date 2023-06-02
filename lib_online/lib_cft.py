@@ -1,5 +1,8 @@
-from bs4 import BeautifulSoup
+import copy
+import re
 from typing import Tuple
+
+from bs4 import BeautifulSoup
 
 from .lib_json import *
 
@@ -25,9 +28,9 @@ async def lib_cft_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
         return "在线也没找到", 0
 
 
-async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
+async def lib_cft(cft_data: dict, crt_file: str = False) -> dict:
     url = "https://fgo.wiki/w/" + cft_data["name_link"]
-    print("查询礼装" + cft_data["id"] + "……")
+    sv_lib.logger.info("查询礼装" + cft_data["id"] + "……")
     cft = {
         "id": cft_data["id"],
         "name": cft_data["name"],
@@ -84,10 +87,11 @@ async def lib_cft(cft_data: dict, crt_file: str = False) -> Dict:
             info.append("")
 
     detail_counter = 0
-    for each_cd in cft_detail:
-        cft_detail[each_cd] = info[detail_counter]
+    single_cft_detail = copy.deepcopy(cft_detail)
+    for each_cd in single_cft_detail:
+        single_cft_detail[each_cd] = info[detail_counter]
         detail_counter += 1
-    cft["detail"] = cft_detail
+    cft["detail"] = single_cft_detail
 
     card_url = ""
     curl_soup = cfts.find_all("span")

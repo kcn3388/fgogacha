@@ -1,12 +1,11 @@
 from hoshino import HoshinoBot
-from .download.download_icons import download_icons
-from .get.get_gacha_pools import get_gacha_pools
+from .download.download_icons import *
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
 from .get.get_all_svt import *
-from .get.get_news import get_news
+from .get.get_gacha_pools import *
+from .get.get_news import *
 from .loop import Counter  # 借助 use_reloader 实现当模块发生变化时自动重载整个 Python
-from hoshino.typing import CQEvent
 
 # 更新时间间隔，单位为秒
 flush_second = 0
@@ -39,7 +38,7 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
 
-@sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][初ci][始sn][化hi]$", re.IGNORECASE))
+@sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][初ci][始sn][化hi]|fgo\sinit$", re.IGNORECASE))
 async def init(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
@@ -62,7 +61,6 @@ async def init(bot: HoshinoBot, ev: CQEvent):
             open(each, 'w')
             if each == config_path:
                 basic_config = {
-                    "group": ev.group_id,
                     "crt_path": crt_path,
                     "style": "图片"
                 }
@@ -71,7 +69,9 @@ async def init(bot: HoshinoBot, ev: CQEvent):
                     "flush_hour": flush_hour,
                     "flush_minute": flush_minute,
                     "flush_second": flush_second,
-                    "groups": [basic_config]
+                    "groups": {
+                        str(ev.group_id): basic_config
+                    }
                 }
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -93,7 +93,7 @@ async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     sv_manage.logger.info("开始下载icon")
@@ -137,6 +137,7 @@ async def follow_latest(bot: HoshinoBot, ev: CQEvent):
 
 @sv_manage.on_rex(re.compile(r"^fgo_enable_crt(\s.+)?$", re.IGNORECASE))
 async def enable_crt(bot: HoshinoBot, ev: CQEvent):
+    gid = str(ev.group_id)
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.finish(ev, '此命令仅主さま可用~')
     crt = ev.message.extract_plain_text().split()
@@ -152,31 +153,25 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
     rule = re.compile(r"^false$", re.IGNORECASE)
     match = re.match(rule, crt)
     if match:
-        crt = "False"
+        crt = False
 
     configs = load_config(ev)
-    group_config = load_config(ev, True)
 
-    crt_config = {
-        "group": ev.group_id,
-        "crt_path": crt,
-        "style": group_config["style"]
-    }
-
-    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
-
-    if not gc_index:
-        configs["groups"].append(crt_config)
+    if gid in configs["groups"]:
+        configs["groups"][gid]["crt_path"] = crt
     else:
-        configs["groups"][gc_index[0]] = crt_config
+        configs["groups"][gid] = {
+            "crt_path": crt,
+            "style": "图片"
+        }
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
 
-    if not crt == "False":
-        await bot.finish(ev, f"已配置crt文件，文件路径：{crt}")
-    else:
+    if not crt:
         await bot.finish(ev, f"已禁用crt文件")
+    else:
+        await bot.finish(ev, f"已配置crt文件，文件路径：{crt}")
 
 
 @sv_manage.on_rex(re.compile("^fgo_check_crt$", re.IGNORECASE))
@@ -189,7 +184,7 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
 
     crt_config = load_config(ev, True)
 
-    if crt_config['crt_path'] == "False":
+    if not crt_config['crt_path']:
         await bot.finish(ev, "本群已禁用crt文件")
     else:
         await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
@@ -197,21 +192,16 @@ async def enable_crt(bot: HoshinoBot, ev: CQEvent):
 
 @sv_manage.on_rex(re.compile(r"^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$", re.IGNORECASE))
 async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
+    gid = str(ev.group_id)
     style = ev.message.extract_plain_text().split()
 
     if not os.path.exists(config_path):
-        await bot.finish(ev, "未配置crt文件")
+        await bot.finish(ev, "未初始化配置文件")
 
-    if re.match(
-            re.compile(r"(text|文字)", re.IGNORECASE),
-            style[1]
-    ):
+    if re.match(re.compile(r"(text|文字)", re.IGNORECASE), style[1]):
         style = "文字"
 
-    if re.match(
-            re.compile(r"(img|图片)", re.IGNORECASE),
-            style[1]
-    ):
+    if re.match(re.compile(r"(img|图片)", re.IGNORECASE), style[1]):
         style = "图片"
 
     if not style == "图片":
@@ -219,20 +209,14 @@ async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
             await bot.finish(ev, "参数错误")
 
     configs = load_config(ev)
-    group_config = load_config(ev, True)
-
-    style_config = {
-        "group": ev.group_id,
-        "crt_path": group_config["crt_path"],
-        "style": style
-    }
-
-    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
-
-    if not gc_index:
-        configs["groups"].append(style_config)
+    if gid in configs:
+        configs["groups"][gid]["style"] = style
     else:
-        configs["groups"][gc_index[0]] = style_config
+        style_config = {
+            "crt_path": crt_path,
+            "style": style
+        }
+        configs["groups"][gid] = style_config
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -242,23 +226,15 @@ async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
 
 @sv_manage.on_rex(re.compile(r"^([重c][载z]|reload)\s?([配p][置z][文w][件j]|config)$", re.IGNORECASE))
 async def reload_config(bot: HoshinoBot, ev: CQEvent):
+    gid = str(ev.group_id)
     if not priv.check_priv(ev, priv.ADMIN):
         await bot.finish(ev, '此命令仅群管可用~')
 
     configs = load_config(ev)
-
-    default_config = {
-        "group": ev.group_id,
+    configs["groups"][gid] = {
         "crt_path": crt_path,
         "style": "图片"
     }
-
-    gc_index = [i for i in range(len(configs["groups"])) if configs["groups"][i]["group"] == ev.group_id]
-
-    if not gc_index:
-        configs["groups"].append(default_config)
-    else:
-        configs["groups"][gc_index[0]] = default_config
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -274,24 +250,9 @@ async def update_pool():
     sv_manage.logger.info("开始自动更新fgo")
 
     # 寻找crt
-    if not os.path.exists(config_path):
-        crt_file = os.path.join(crt_folder_path, crt_path)
-        if not os.path.exists(crt_file):
-            crt_file = False
-    else:
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            crt_file = configs["groups"][0]["crt_path"]
-            if not crt_file == "False":
-                crt_file = os.path.join(crt_folder_path, crt_file)
-            else:
-                crt_file = os.path.join(crt_folder_path, crt_path)
-                if not os.path.exists(crt_file):
-                    crt_file = False
-        except json.decoder.JSONDecodeError:
-            crt_file = os.path.join(crt_folder_path, crt_path)
-            if not os.path.exists(crt_file):
-                crt_file = False
+    crt_file = os.path.join(crt_folder_path, crt_path)
+    if not os.path.exists(crt_file):
+        crt_file = False
 
     # 自动更新卡池
     r = await get_gacha_pools(True, crt_file)
@@ -299,9 +260,9 @@ async def update_pool():
         sv_manage.logger.error(f"获取卡池失败，原因：{str(r)}")
 
     # 自动更新新闻
-    news, same = await get_news(6, crt_file)
-    if not isinstance(same, bool) and news == -100:
-        sv_manage.logger.error(f"获取新闻失败，原因：{str(same)}")
+    news = await get_news(6, crt_file)
+    if isinstance(news, Exception):
+        sv_manage.logger.error(f"获取新闻失败，原因：{str(news)}")
 
     # 自动下载资源
     _, updated_servant_list = await get_all_svt(crt_file)

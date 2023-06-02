@@ -1,15 +1,14 @@
+import asyncio
 import io
 import json
 import os
-import platform
-import re  # noqa
-import sys  # noqa
-import time
-from typing import Dict, Union
+
+from jsonpath import jsonpath  # noqa
+from typing import Union, List
 
 from PIL import Image, ImageFont, ImageDraw
 from aiocqhttp import MessageSegment
-from selenium import webdriver
+from playwright.async_api import async_playwright
 
 from hoshino import config, util, aiorequests, logger, Service, priv
 from hoshino.typing import CQEvent
@@ -257,7 +256,7 @@ all_json = [
 ]
 
 
-def create_img(text) -> str:
+def create_img(text: str) -> str:
     font_size = 30
     padding = 10
 
@@ -273,7 +272,7 @@ def create_img(text) -> str:
     return msg
 
 
-def gen_node(text, _name="涩茄子", _uin="2902388901") -> Dict:
+def gen_node(text: Union[str, List[str]], _name: str = "涩茄子", _uin: str = "2902388901") -> dict:
     node = {
         "type": "node",
         "data": {
@@ -286,30 +285,29 @@ def gen_node(text, _name="涩茄子", _uin="2902388901") -> Dict:
     return node
 
 
-def load_config(ev: CQEvent, get_group=False) -> Dict:
+def load_config(ev: CQEvent, get_group: bool = False) -> dict:
+    gid = str(ev.group_id)
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
-            group = [gs for gs in configs["groups"] if gs["group"] == ev.group_id]
-            if not group:
+            if gid not in configs["groups"]:
                 basic_config = {
-                    "group": ev.group_id,
                     "crt_path": crt_path,
                     "style": "图片"
                 }
-                configs["groups"].append(basic_config)
+                configs["groups"][gid] = basic_config
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
             if get_group:
-                if group:
-                    return group[0]
+                if gid in configs["groups"]:
+                    return configs["groups"][gid]
             else:
                 return configs
         except json.decoder.JSONDecodeError:
             pass
 
     basic_config = {
-        "group": ev.group_id,
         "crt_path": crt_path,
         "style": "图片"
     }
@@ -318,7 +316,9 @@ def load_config(ev: CQEvent, get_group=False) -> Dict:
         "flush_hour": 0,
         "flush_minute": 60,
         "flush_second": 0,
-        "groups": [basic_config]
+        "groups": {
+            gid: basic_config
+        }
     }
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2, ensure_ascii=False))
@@ -329,54 +329,29 @@ def load_config(ev: CQEvent, get_group=False) -> Dict:
         return configs
 
 
-def getpic(url, save_img_name, _type="") -> bool:
-    curr_platform = platform.system().lower()
-    if curr_platform == "windows":
-        options = webdriver.EdgeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--no-sandbox')
-        msedgedriver = os.path.join(static_path, "msedgedriver.exe")
-        driver = webdriver.Edge(options=options, executable_path=msedgedriver)
-    elif curr_platform == "linux":
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--no-sandbox')
-        chromedriver = os.path.join(static_path, "chromedriver")
-        driver = webdriver.Chrome(options=options, executable_path=chromedriver)
-    else:
-        return False
-
-    driver.maximize_window()
-    js_height = "return document.body.clientHeight"
-    pic_name = save_img_name
-    link = url
-    try:
-        # print(link)
-        driver.get(link)
-        k = 1
-        window_height = driver.execute_script(js_height)
-        while True:
-            if k * 500 < window_height:
-                js_move = "window.scrollTo(0,{})".format(k * 500)
-                # print(js_move)
-                driver.execute_script(js_move)
-                time.sleep(0.2)
-                window_height = driver.execute_script(js_height)
-                k += 1
-            else:
-                break
-        scroll_width = driver.execute_script('return document.body.parentNode.scrollWidth')
-        scroll_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-        if not _type == "":
-            scroll_width = 600
-        driver.set_window_size(scroll_width, scroll_height)
-        driver.get_screenshot_as_file(pic_name)
+async def getpic(url: str, img_path: str) -> bool:
+    if os.path.exists(img_path):
         return True
-    except Exception as e:
-        print(e)
-        return False
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
+        try:
+            await page.goto(url)
+        except Exception as e:
+            sv.logger.error(f"访问网站超时{type(e)}\n`{e}`")
+            return False
+        await asyncio.sleep(1)
+        sv.logger.info("正在保存图片...")
+        await page.screenshot(
+            path=img_path,
+            full_page=True
+        )
+        sv.logger.info("正在压缩图片...")
+        img_convert = Image.open(img_path)
+        img_convert.save(img_path, quality=70)
+        sv.logger.info("图片保存成功！")
+        await browser.close()
+        return True
 
 
 def gen_ms_img(image: Union[bytes, Image.Image]) -> MessageSegment:
@@ -390,7 +365,7 @@ def gen_ms_img(image: Union[bytes, Image.Image]) -> MessageSegment:
         )
 
 
-async def gen_img_from_url(img_url: str, crt_file) -> Union[Exception, MessageSegment]:
+async def gen_img_from_url(img_url: str, crt_file: Union[bool, str]) -> Union[Exception, MessageSegment]:
     img_url = f"https://fgo.wiki{img_url}"
     image_bytes = await get_content(img_url, crt_file)
     if isinstance(image_bytes, Exception):
@@ -398,7 +373,7 @@ async def gen_img_from_url(img_url: str, crt_file) -> Union[Exception, MessageSe
     return gen_ms_img(image_bytes)
 
 
-async def get_content(url: str, crt_file) -> Union[Exception, bytes]:
+async def get_content(url: str, crt_file: Union[bool, str]) -> Union[Exception, bytes]:
     try:
         return await (
             await aiorequests.get(url, timeout=20, headers=headers, verify=crt_file)
@@ -410,3 +385,40 @@ async def get_content(url: str, crt_file) -> Union[Exception, bytes]:
     except Exception as e:
         logger.error(f"aiorequest error: {e}")
         return e
+
+
+async def gen_gacha_img(style: str, img_path: List[str], server: str) -> Image:
+    # 文字图标版，更快
+    if not style == "图片":
+        cards = []
+        for each in img_path:
+            cards.append(Image.open(each).resize((66, 72)))
+        rows = 3
+        cols = 4
+        base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
+        r_counter = 0
+        c_counter = 0
+        for each in cards:
+            base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
+            c_counter += 1
+            if c_counter >= cols:
+                r_counter += 1
+                if r_counter >= rows:
+                    break
+                else:
+                    c_counter = 0
+
+    else:
+        # 图片版，较慢
+        if server == "国服":
+            base_img = Image.open(back_cn_path).convert("RGBA")
+        else:
+            base_img = Image.open(back_path).convert("RGBA")
+        masker = Image.open(mask_path).resize((width, height))
+
+        for i, pic_path in enumerate(img_path):
+            tmp_img = Image.open(pic_path).resize((width, height))
+            tmp_img = tmp_img.convert('RGBA')
+            base_img.paste(tmp_img, box_list[i], mask=masker)
+
+    return base_img

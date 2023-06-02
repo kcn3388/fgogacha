@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 
+from .solve_svt import *
 from ..path_and_json import *
-from .solve_svt import get_svt, get_multi_svt
 
 
 async def get_gacha_pools(is_latest: bool = True, crt_file: Union[str, bool] = False) -> Union[Exception, int]:

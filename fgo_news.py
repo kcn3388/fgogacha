@@ -1,3 +1,4 @@
+import re
 import shutil
 
 from aiocqhttp import ActionFailed
@@ -5,7 +6,6 @@ from aiocqhttp import ActionFailed
 from hoshino import HoshinoBot
 from .get.get_news import get_news
 from .path_and_json import *
-from hoshino.typing import CQEvent
 
 
 @sv_news.on_fullmatch(("帮助fgo新闻获取", "帮助FGO新闻获取", "帮助bgo新闻获取", "帮助BGO新闻获取"))
@@ -19,7 +19,7 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 async def get_official_news(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     num = ev.message.extract_plain_text().split()
@@ -27,9 +27,18 @@ async def get_official_news(bot: HoshinoBot, ev: CQEvent):
         num = int(num[1])
     else:
         num = 6
-    news, same = await get_news(num, crt_file)
-    if not isinstance(same, bool) and news == -100:
-        await bot.finish(ev, f"获取新闻出错，原因：\n{str(same)}")
+    news = await get_news(num, crt_file)
+    if isinstance(news, Exception):
+        await bot.finish(ev, f"获取新闻出错，原因：\n{str(news)}")
+
+    same = False
+    try:
+        old_news = json.load(open(news_detail_path, encoding="utf-8"))
+        if news == old_news:
+            same = True
+    except json.decoder.JSONDecodeError:
+        pass
+
     if same:
         await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
     else:
@@ -41,17 +50,11 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
         await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
     args = ev.message.extract_plain_text()
-    pic = False
-    get_all = False
-    index = 0
-    if "pic" in args:
-        pic = True
-    if "all" in args or "全部" in args:
-        get_all = True
+    pic = True if "pic" in args else False
+    get_all = True if "all" in args or "全部" in args else False
 
     match = re.search(r"\d+", args)
-    if match:
-        index = int(match.group(0))
+    index = int(match.group(0)) if match else 0
     if not index:
         get_all = True
     try:
@@ -69,9 +72,8 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
         link = f"标题：{news[index]['title']}\n电脑版网页：{news[index]['page']}\n手机版网页：{news[index]['mobile_page']}\n\n"
         if pic:
             img_path = os.path.join(news_img_path, f"{news[index]['id']}.png")
-            if not os.path.exists(img_path):
-                getpic(news[index]['page'], img_path)
-            if os.path.exists(img_path):
+            resp = await getpic(news[index]['page'], img_path)
+            if resp:
                 msg = f"{gen_ms_img(Image.open(img_path))}\n"
             else:
                 sv_news.logger.error("获取新闻截图出错")

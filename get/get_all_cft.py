@@ -1,8 +1,10 @@
-from typing import Tuple, List
+import re
+from typing import Tuple
+
 from ..path_and_json import *
 
 
-async def get_all_cft(crt_file: Union[str, bool] = False) -> Union[Exception, Tuple[int, Union[None, List]]]:
+async def get_all_cft(crt_file: Union[str, bool] = False) -> Union[Exception, Tuple[int, Union[None, list]]]:
     root_cft_url = "https://fgo.wiki/w/%E7%A4%BC%E8%A3%85%E5%9B%BE%E9%89%B4"
     try:
         get_all = await aiorequests.get(root_cft_url, timeout=20, verify=crt_file, headers=headers)

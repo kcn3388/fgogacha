@@ -1,5 +1,3 @@
-import re
-
 from aiocqhttp import ActionFailed
 
 from ..lib_online.lib_cft import *
@@ -37,9 +35,12 @@ async def local_find_cft(bot: HoshinoBot, ev: CQEvent):
             is_search_id = True
 
     for i in cft:
-        if is_search_id and i["id"] == search_id:
-            cft_data.append(i)
-            break
+        if is_search_id:
+            try:
+                cft_data.append(cft[jsonpath(cft, "$..id").index(search_id)])
+                break
+            except ValueError:
+                pass
         trans = {}
         tmp = []
         for j in i:
@@ -102,9 +103,9 @@ async def local_find_cft(bot: HoshinoBot, ev: CQEvent):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                if int(each) == ev.group_id:
+                    if not configs["groups"][each]["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, configs["groups"][each]["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -119,11 +120,12 @@ async def local_find_cft(bot: HoshinoBot, ev: CQEvent):
             elif not stat:
                 continue
             elif stat:
-                for i in cft:
-                    if name in i["name_link"]:
-                        if i not in cft_data:
-                            cft_data.append(i)
-                            break
+                try:
+                    ready_cft = cft[jsonpath(cft, "$..name_link").index(name)]
+                    if ready_cft not in cft_data:
+                        cft_data.append(ready_cft)
+                except ValueError:
+                    pass
 
     if len(cft_data) == 0:
         await bot.finish(ev, "嘤嘤嘤，找不到~请重新选择关键词")

@@ -1,10 +1,10 @@
 import re
-from typing import List, Tuple
+from typing import Tuple
 
 
-async def get_svt(rule: re.Pattern, data: str) -> Tuple[List, List]:
+async def get_svt(rule: re.Pattern, data: str) -> Tuple[list, list]:
     svts: str = re.search(rule, data)[1]
-    svt_cft: List = svts.split('\\n')[1:]  # .split('\\n')
+    svt_cft: list = svts.split('\\n')[1:]  # .split('\\n')
     # split('\\n')[1]号位开始是五星，后面是四星，想想办法获取全部四星
     svt_all = []
     cft_all = []
@@ -66,8 +66,8 @@ async def get_multi_svt(data):
 
         for each in all_daily:
             if each.startswith("ce\t"):
-                svt_all: List = all_daily[:all_daily.index(each)]
-                cft_all: List = all_daily[all_daily.index(each):]
+                svt_all: list = all_daily[:all_daily.index(each)]
+                cft_all: list = all_daily[all_daily.index(each):]
                 break
 
         for i in svt_all:

@@ -1,14 +1,11 @@
 import json.encoder
-import os.path
-from typing import List
 
 from aiocqhttp import ActionFailed
 
 from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter
-from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag, get_lucky_gacha
+from .get.get_lucky_bag import *
 from .path_and_json import *
-from hoshino.typing import CQEvent
 
 lucky_limit = DailyNumberLimiter(1)
 LUCKY_EXCEED_NOTICE = f"您今天已经抽过{lucky_limit.max}次福袋了，欢迎明早5点后再来！"
@@ -27,7 +24,7 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 async def update_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     lucky_bag = await get_all_lucky_bag(crt_file)
@@ -55,7 +52,7 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     if not os.path.exists(lucky_path):
@@ -90,10 +87,10 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
         if re.match(r"jp|日(服)?", msg[1]):
             try:
                 if lucky_id.isdigit():
-                    select_lucky: Dict = lucky_bag['jp'][int(lucky_id) - 1]
+                    select_lucky: dict = lucky_bag['jp'][int(lucky_id) - 1]
                 else:
                     if re.match(r"all|全部", lucky_id):
-                        select_lucky: List = lucky_bag['jp']
+                        select_lucky: list = lucky_bag['jp']
                     else:
                         await bot.send(ev, "编号错误")
                         return
@@ -103,10 +100,10 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
         else:
             try:
                 if lucky_id.isdigit():
-                    select_lucky: Dict = lucky_bag['cn'][int(lucky_id) - 1]
+                    select_lucky: dict = lucky_bag['cn'][int(lucky_id) - 1]
                 else:
                     if re.match(r"all|全部", lucky_id):
-                        select_lucky: List = lucky_bag['cn']
+                        select_lucky: list = lucky_bag['cn']
                     else:
                         await bot.send(ev, "编号错误")
                         return
@@ -135,7 +132,7 @@ async def check_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     if re.match(r"next|未来", msg[1]):
         if len(lucky_bag['jp']) == 0:
             await bot.finish(ev, "请先获取福袋：[更新fgo福袋]")
-        select_lucky: List = lucky_bag['jp'][-2:]
+        select_lucky: list = lucky_bag['jp'][-2:]
 
         lucky_nodes = await send_lucky_bag(select_lucky, crt_file, is_next=True)
         try:
@@ -173,13 +170,13 @@ async def gacha_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     if re.match(r"jp|日(服)?", msg[1]):
         server = "日服"
         try:
-            select_lucky: Dict = lucky_bag['jp'][int(lucky_id) - 1]
+            select_lucky: dict = lucky_bag['jp'][int(lucky_id) - 1]
         except IndexError:
             await bot.send(ev, "编号错误")
             return
     else:
         try:
-            select_lucky: Dict = lucky_bag['cn'][int(lucky_id) - 1]
+            select_lucky: dict = lucky_bag['cn'][int(lucky_id) - 1]
         except IndexError:
             await bot.send(ev, "编号错误")
             return
@@ -231,38 +228,7 @@ async def gacha_lucky_bag(bot: HoshinoBot, ev: CQEvent):
     group_config = load_config(ev, True)
     style = group_config["style"]
 
-    # 文字图标版，更快
-    if not style == "图片":
-        cards = []
-        for each in img_path:
-            cards.append(Image.open(each).resize((66, 72)))
-        rows = 3
-        cols = 4
-        base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
-        r_counter = 0
-        c_counter = 0
-        for each in cards:
-            base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
-            c_counter += 1
-            if c_counter >= cols:
-                r_counter += 1
-                if r_counter >= rows:
-                    break
-                else:
-                    c_counter = 0
-
-    else:
-        # 图片版，较慢
-        if server == "国服":
-            base_img = Image.open(back_cn_path).convert("RGBA")
-        else:
-            base_img = Image.open(back_path).convert("RGBA")
-        masker = Image.open(mask_path).resize((width, height))
-
-        for i, pic_path in enumerate(img_path):
-            tmp_img = Image.open(pic_path).resize((width, height))
-            tmp_img = tmp_img.convert('RGBA')
-            base_img.paste(tmp_img, box_list[i], mask=masker)
+    base_img = await gen_gacha_img(style, img_path, server)
 
     msg = f"\n抽取的福袋：{select_lucky['name']}\n" \
           f"抽取的子福袋：{select_lucky_pool['sub_title']}\n" \

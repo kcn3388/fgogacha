@@ -1,10 +1,11 @@
 import random
-from typing import Tuple, List
+import time
+from typing import Tuple
 
 from ..path_and_json import *
 
 
-async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]:
+async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]:
     banners = json.load(open(banner_path, encoding="utf-8"))
     banner = {}
     exists = False
@@ -28,7 +29,7 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]
                     data = each
                     break
             else:
-                data: Dict = each
+                data: dict = each
                 break
     if len(data) == 0:
         print("data error")
@@ -103,7 +104,7 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[List, str, Dict]]
     return result, server, data
 
 
-async def get_gacha_result(pool_data: dict) -> List:
+async def get_gacha_result(pool_data: dict) -> list:
     # here is svt rate
     # if is pickup 5
     if "svt_pup_5" in pool_data:

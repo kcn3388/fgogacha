@@ -1,3 +1,5 @@
+import copy
+import re
 from typing import Tuple
 
 from bs4 import BeautifulSoup
@@ -26,9 +28,9 @@ async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
         return "在线也没找到", 0
 
 
-async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
+async def lib_cmd(cmd_data: dict, crt_file: str = False) -> dict:
     url = "https://fgo.wiki/w/" + cmd_data["name_link"]
-    print("查询纹章" + cmd_data["id"] + "……")
+    sv_lib.logger.info("查询纹章" + cmd_data["id"] + "……")
     cmd = {
         "id": cmd_data["id"],
         "name": cmd_data["name"],
@@ -78,11 +80,12 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> Dict:
             info.append("")
 
     detail_counter = 0
-    for each_cd in cmd_detail:
-        cmd_detail[each_cd] = info[detail_counter]
+    single_cmd_detail = copy.deepcopy(cmd_detail)
+    for each_cd in single_cmd_detail:
+        single_cmd_detail[each_cd] = info[detail_counter]
         detail_counter += 1
 
-    cmd["detail"] = cmd_detail
+    cmd["detail"] = single_cmd_detail
 
     card_url = ""
     curl_soup = cmds.find_all("span")

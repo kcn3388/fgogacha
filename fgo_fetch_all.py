@@ -1,11 +1,10 @@
 from aiocqhttp import ActionFailed
 
 from hoshino import HoshinoBot
-from .download.download_all_res import download_svt, download_cft, download_cmd
+from .download.download_all_res import *
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
 from .get.get_all_svt import *
-from hoshino.typing import CQEvent
 
 
 @sv_fetch.on_fullmatch(("帮助fgo数据获取", "帮助FGO数据获取", "帮助bgo数据获取", "帮助BGO数据获取"))
@@ -22,7 +21,7 @@ async def get_all_mooncell(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     sv_fetch.logger.info("开始获取从者")
@@ -122,7 +121,7 @@ async def get_all_mooncell_svt(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     all_svt, updated_servant_list = await get_all_svt(crt_file)
@@ -173,16 +172,16 @@ async def get_all_mooncell_cft(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                if int(each) == ev.group_id:
+                    if not configs["groups"][each]["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, configs["groups"][each]["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -234,16 +233,16 @@ async def get_all_mooncell_cmd(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     if os.path.exists(config_path):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                if int(each) == ev.group_id:
+                    if not configs["groups"][each]["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, configs["groups"][each]["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -295,7 +294,7 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
@@ -342,7 +341,7 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
@@ -365,7 +364,7 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")
@@ -388,7 +387,7 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
 
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
 
     await bot.send(ev, "开始下载，进度请查看后台~")

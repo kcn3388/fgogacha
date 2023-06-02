@@ -1,10 +1,10 @@
-from typing import Tuple, List
+import re
+from typing import Tuple
+
 from ..path_and_json import *
 
-runtime_path = os.path.dirname(__file__)
 
-
-async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tuple[int, Union[None, List]]]:
+async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tuple[int, Union[None, list]]]:
     root_svt_url = "https://fgo.wiki/w/%E8%8B%B1%E7%81%B5%E5%9B%BE%E9%89%B4"
     try:
         get_all = await aiorequests.get(root_svt_url, timeout=20, verify=crt_file, headers=headers)
@@ -39,7 +39,7 @@ async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tu
             all_svt_icons.pop(i)
 
     for i in range(0, len(data), 8):
-        svt = {
+        svt: dict = {
             "id": data[i].replace("id=", ""),
             "name_cn": data[i + 1].replace("name_cn=", ""),
             "name_jp": data[i + 2].replace("name_jp=", ""),

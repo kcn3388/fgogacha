@@ -43,9 +43,12 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
     ]
 
     for i in svt:
-        if is_search_id and i["id"] == search_id:
-            svt_data.append(i)
-            break
+        if is_search_id:
+            try:
+                svt_data.append(svt[jsonpath(svt, "$..id").index(search_id)])
+                break
+            except ValueError:
+                pass
         trans = {}
         tmp = []
         for j in i:
@@ -123,9 +126,9 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each_group in configs["groups"]:
-                if each_group["group"] == ev.group_id:
-                    if not each_group["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each_group["crt_path"])
+                if int(each_group) == ev.group_id:
+                    if not configs["groups"][each_group]["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, configs["groups"][each_group]["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -140,11 +143,12 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
             elif not stat:
                 continue
             elif stat:
-                for i in svt:
-                    if name in i["name_link"]:
-                        if i not in svt_data:
-                            svt_data.append(i)
-                            break
+                try:
+                    ready_svt = svt[jsonpath(svt, "$..name_link").index(name)]
+                    if ready_svt not in svt_data:
+                        svt_data.append(ready_svt)
+                except ValueError:
+                    pass
 
     if len(svt_data) == 0:
         await bot.finish(ev, "嘤嘤嘤，找不到~请重新选择关键词")
@@ -250,6 +254,11 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                             if data == "NP获得率":
                                 np = str(each['detail'][data]).replace(",", ",\n")
                                 msg_data += f"{data}：{np}\n"
+                            elif data == "画师":
+                                artist_info = str(each['detail'][data]).replace(
+                                    "{", ""
+                                ).replace("}", "").replace(",", "\n").strip()
+                                msg_data += f"{data}：{artist_info}\n"
                             else:
                                 msg_data += f"{data}：{each['detail'][data]}\n"
                     send_data = gen_node(create_img(msg_data.strip()))

@@ -3,7 +3,7 @@ from typing import Tuple
 from ..path_and_json import *
 
 
-async def get_news(page_size=6, crt_file=None) -> Tuple[int, Union[bool, Exception]]:
+async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union[bool, Exception]]:
     list_news_url = f"https://api.biligame.com/news/" \
                     f"list.action?gameExtensionId=45&positionId=2&pageNum=1&pageSize={page_size} "
     try:

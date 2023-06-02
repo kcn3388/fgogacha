@@ -32,9 +32,12 @@ async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
             is_search_id = True
 
     for i in cmd:
-        if is_search_id and i["id"] == search_id:
-            cmd_data.append(i)
-            break
+        if is_search_id:
+            try:
+                cmd_data.append(cmd[jsonpath(cmd, "$..id").index(search_id)])
+                break
+            except ValueError:
+                pass
         trans = {}
         tmp = []
         for j in i:
@@ -97,9 +100,9 @@ async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
         try:
             configs = json.load(open(config_path, encoding="utf-8"))
             for each in configs["groups"]:
-                if each["group"] == ev.group_id:
-                    if not each["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, each["crt_path"])
+                if int(each) == ev.group_id:
+                    if not configs["groups"][each]["crt_path"] == "False":
+                        crt_file = os.path.join(crt_folder_path, configs["groups"][each]["crt_path"])
                         break
         except json.decoder.JSONDecodeError:
             pass
@@ -114,11 +117,12 @@ async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
             elif not stat:
                 continue
             elif stat:
-                for i in cmd:
-                    if name in i["name_link"]:
-                        if i not in cmd_data:
-                            cmd_data.append(i)
-                            break
+                try:
+                    ready_cmd = cmd[jsonpath(cmd, "$..name_link").index(name)]
+                    if ready_cmd not in cmd_data:
+                        cmd_data.append(ready_cmd)
+                except ValueError:
+                    pass
 
     if len(cmd_data) == 0:
         await bot.finish(ev, "嘤嘤嘤，找不到~请重新选择关键词")

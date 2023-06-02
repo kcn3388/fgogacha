@@ -1,13 +1,11 @@
 import json.encoder
-import os.path
 
 from hoshino import HoshinoBot
 from hoshino.util import DailyNumberLimiter, FreqLimiter
-from .get.gacha import gacha
-from .get.get_gacha_pools import get_gacha_pools
-from .get.get_lucky_bag import get_all_lucky_bag, send_lucky_bag
+from .get.gacha import *
+from .get.get_gacha_pools import *
+from .get.get_lucky_bag import *
 from .path_and_json import *
-from hoshino.typing import CQEvent
 
 jewel_limit = DailyNumberLimiter(100)
 tenjo_limit = DailyNumberLimiter(10)
@@ -29,7 +27,7 @@ async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
     crt_file = False
     group_config = load_config(ev, True)
-    if not group_config["crt_path"] == "False":
+    if group_config["crt_path"]:
         crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
     download_stat = await get_gacha_pools(True, crt_file)
     if not isinstance(download_stat, int):
@@ -273,38 +271,7 @@ async def gacha_10(bot: HoshinoBot, ev: CQEvent):
     group_config = load_config(ev, True)
     style = group_config["style"]
 
-    # 文字图标版，更快
-    if not style == "图片":
-        cards = []
-        for each in img_path:
-            cards.append(Image.open(each).resize((66, 72)))
-        rows = 3
-        cols = 4
-        base_img = Image.open(frame_path).resize(((66 * cols) + 40, (72 * rows) + 40))
-        r_counter = 0
-        c_counter = 0
-        for each in cards:
-            base_img.paste(each, ((66 * c_counter) + 20, (72 * r_counter) + 20))
-            c_counter += 1
-            if c_counter >= cols:
-                r_counter += 1
-                if r_counter >= rows:
-                    break
-                else:
-                    c_counter = 0
-
-    else:
-        # 图片版，较慢
-        if server == "国服":
-            base_img = Image.open(back_cn_path).convert("RGBA")
-        else:
-            base_img = Image.open(back_path).convert("RGBA")
-        masker = Image.open(mask_path).resize((width, height))
-
-        for i, pic_path in enumerate(img_path):
-            tmp_img = Image.open(pic_path).resize((width, height))
-            tmp_img = tmp_img.convert('RGBA')
-            base_img.paste(tmp_img, box_list[i], mask=masker)
+    base_img = await gen_gacha_img(style, img_path, server)
 
     msg = f"\n您本次的抽卡结果：\n{gen_ms_img(base_img)}\n"
 

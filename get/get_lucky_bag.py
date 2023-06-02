@@ -1,14 +1,15 @@
 import math
 import random
+import re
+import time
 
 from bs4 import BeautifulSoup
 
-from typing import List
 from .solve_svt import get_multi_svt
 from ..path_and_json import *
 
 
-async def get_all_lucky_bag(crt_file: Union[str, bool] = False) -> Union[Exception, Dict]:
+async def get_all_lucky_bag(crt_file: Union[str, bool] = False) -> Union[Exception, dict]:
     lucky_bag = {
         "abstract": "",
         "cn": [],
@@ -90,7 +91,7 @@ async def get_all_lucky_bag(crt_file: Union[str, bool] = False) -> Union[Excepti
         return e
 
 
-async def get_lucky_bag_detail(bag: Dict, crt_file: Union[str, bool] = False) -> Union[Exception, List, int]:
+async def get_lucky_bag_detail(bag: dict, crt_file: Union[str, bool] = False) -> Union[Exception, list, int]:
     bag_url = f"https://fgo.wiki{bag['sim']}"
     no_sim = False
     if not bag['sim']:
@@ -152,12 +153,12 @@ async def get_lucky_bag_detail(bag: Dict, crt_file: Union[str, bool] = False) ->
         return sub_bag
 
 
-async def get_lucky_bag_image(bag_pools: List) -> List:
+async def get_lucky_bag_image(bag_pools: list) -> list:
     nodes = []
     counter = 1
     for each_pool in bag_pools:
         pool_title = each_pool["sub_title"]
-        svt_s: List = each_pool["servants"][0]["ids"]
+        svt_s: list = each_pool["servants"][0]["ids"]
         img_path = [os.path.join(svt_path, f"Servant{str(svt).zfill(3)}.jpg") for svt in svt_s]
 
         cards = []
@@ -188,7 +189,7 @@ async def get_lucky_bag_image(bag_pools: List) -> List:
     return nodes
 
 
-async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file: Union[str, bool] = False, is_next=False) -> List:
+async def send_lucky_bag(select_lucky: Union[dict, list], crt_file: Union[str, bool] = False, is_next=False) -> list:
     lucky_nodes = []
     if is_next:
         lucky_nodes.append(gen_node("国服千里眼卡池："))
@@ -206,14 +207,14 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file: Union[str, b
         lucky_nodes.append(gen_node(lucky_msg))
 
         if "detail" in select_lucky:
-            bag_pools: List = select_lucky["detail"]
+            bag_pools: list = select_lucky["detail"]
             card_msg = await get_lucky_bag_image(bag_pools)
             lucky_nodes.extend(card_msg)
 
     if isinstance(select_lucky, list):
         counter = 1
         for each_bag in select_lucky:
-            sub_node = []
+            sub_node: list = []
             lucky_msg = f"编号【{counter}】：\n" \
                         f"福袋名称：{each_bag['name']}\n" \
                         f"关联卡池：{each_bag['title']}\n" \
@@ -228,7 +229,7 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file: Union[str, b
             lucky_msg += gen_ms_img(image_bytes)
             sub_node.append(gen_node(lucky_msg))
             if "detail" in each_bag:
-                bag_pools: List = each_bag["detail"]
+                bag_pools: list = each_bag["detail"]
                 card_msg = await get_lucky_bag_image(bag_pools)
                 sub_node.extend(card_msg)
 
@@ -237,7 +238,7 @@ async def send_lucky_bag(select_lucky: Union[Dict, List], crt_file: Union[str, b
     return lucky_nodes
 
 
-async def get_lucky_gacha(select_lucky_pool: Dict) -> List:
+async def get_lucky_gacha(select_lucky_pool: dict) -> list:
     pool_data = {}
     for each in select_lucky_pool["servants"]:
         each["weight"] /= 100
@@ -266,7 +267,7 @@ async def get_lucky_gacha(select_lucky_pool: Dict) -> List:
     return result
 
 
-async def get_lucky_result(pool_data: Dict) -> List:
+async def get_lucky_result(pool_data: dict) -> list:
     # here is svt rate
     rate_svt_5 = pool_data["svt_5_rate"]
     svt_5 = pool_data["svt_5"]
