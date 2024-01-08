@@ -27,19 +27,11 @@ async def get_official_news(bot: HoshinoBot, ev: CQEvent):
         num = int(num[1])
     else:
         num = 6
-    news = await get_news(num, crt_file)
-    if isinstance(news, Exception):
-        await bot.finish(ev, f"获取新闻出错，原因：\n{str(news)}")
+    news, status = await get_news(num, crt_file)
+    if isinstance(status, Exception):
+        await bot.finish(ev, f"获取新闻出错，原因：\n{status}")
 
-    same = False
-    try:
-        old_news = json.load(open(news_detail_path, encoding="utf-8"))
-        if news == old_news:
-            same = True
-    except json.decoder.JSONDecodeError:
-        pass
-
-    if same:
+    if status:
         await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
     else:
         await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")

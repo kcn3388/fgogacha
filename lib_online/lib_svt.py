@@ -1,8 +1,7 @@
-import copy
 import re
 from typing import Tuple
+from urllib.parse import quote
 
-import bs4
 from bs4 import BeautifulSoup
 
 from .lib_json import *
@@ -12,7 +11,11 @@ async def lib_svt_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            response = await aiorequests.get(url, timeout=20, headers=headers)
+        except Exception as e2:
+            return e2, -100
     except Exception as e:
         return e, -100
     soup = BeautifulSoup(await response.content, 'html.parser')
@@ -25,7 +28,13 @@ async def lib_svt_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
 
 
 async def lib_svt(svt_data: dict, crt_file: str = False) -> dict:
-    url = "https://fgo.wiki/w/" + svt_data["name_link"]
+    # def lib_svt_debug(sid: int = 0) -> dict:
+    #     with open(all_servant_path, 'r', encoding="utf-8") as f:
+    #         servants = json.load(f)
+    #     if sid:
+    #         svt_data = jsonpath(servants, f"$..[?(@.id=='{sid}')]")[0]
+    #     else:
+    #         svt_data = jsonpath(servants, "$..[?(@.id=='312')]")[0]
     sv_lib.logger.info("查询Servant" + svt_data["id"] + "……")
     svt: dict = {
         "id": svt_data["id"],
@@ -34,11 +43,12 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> dict:
         "name_en": svt_data["name_en"],
         "name_link": svt_data["name_link"],
         "name_other": None,
-        "method": svt_data["method"]
+        "method": svt_data["method"],
+        "error": []
     }
 
     if "local" in svt_data:
-        svt["svt_icon"] = svt_data["local"]["svt_icon"]
+        svt["svt_icon"] = svt_data["local"]["svt_icon"] if "local" in svt_data else svt_data["svt_icon"]
         svt["class_icon"] = svt_data["local"]["class_icon"]
     else:
         svt["svt_icon"] = svt_data["svt_icon"]
@@ -52,499 +62,407 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> dict:
     if len(svt["name_other"]) == 1 and svt["name_other"][0] == "":
         svt["name_other"] = []
 
-    try:
-        response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
-    except Exception as e:
-        svt["error"] = [f"svt{svt['id']} aiorequest error: {e}"]
+    local_data_path = os.path.join(mc_path, "svt", f'{svt_data["id"]}.txt')
+    local_html_path = os.path.join(mc_path, "svt", f'{svt_data["id"]}.html')
+
+    if os.path.exists(local_data_path) and os.path.exists(local_html_path):
+        raw_data = open(local_data_path, "r", encoding="utf-8").read().replace("魔{{jin}}", "魔神(人)")
+        raw_html = open(local_html_path, "r", encoding="utf-8").read()
+    else:
+        svt["error"].append(f"svt{svt['id']} init error: no local res")
         return svt
 
-    soup = BeautifulSoup(await response.content, 'html.parser')
-    try:
-        soup.find(class_="wikitable nomobile").find("tbody")
-    except Exception as e:
-        svt["error"] = [f"svt{svt['id']} first bs error: {e}"]
-        return svt
+    get_base(svt, raw_html, raw_data)
 
-    raw_html = await response.text
+    get_card_url(svt, raw_html, raw_data)
 
-    get_base(soup, svt, svt_data)
+    get_fool(svt, raw_data)
 
-    get_nick_name(svt, soup)
+    get_info(svt, raw_data)
 
-    get_card_url(svt, raw_html, soup)
+    await get_pickup(
+        svt, BeautifulSoup(raw_html, 'html.parser'), f'https://fgo.wiki/w/{svt_data["name_link"]}', crt_file
+    )
 
-    get_fool(svt, soup)
+    get_ultimate(svt, raw_data)
 
-    get_star(svt, raw_html)
+    get_skills(svt, raw_data)
 
-    get_info(svt, soup)
+    get_voice(svt, BeautifulSoup(raw_html, 'html.parser'))
 
-    await get_pickup(svt, url, crt_file)
-
-    try:
-        base = soup.findAll(class_="wikitable nomobile logo")
-    except Exception as e:
-        svt["error"] = [f"svt{svt['id']} find power bs error: {e}"]
-        return svt
-
-    get_ultimate(svt, base)
-
-    get_skills(svt, base, raw_html)
-
-    get_voice(svt, soup)
-
+    if not svt["error"]:
+        svt.pop("error")
     return svt
 
 
-def get_base(base_soup: BeautifulSoup, svt: dict, svt_data: dict):
-    try:
-        base_table = base_soup.find("span", id=re.compile("基础数值")).find_next("tbody")
-    except AttributeError as e:
-        svt["error"] = [f"svt{svt['id']} base soup error: {e}"]
-        sv_lib.logger.error(f"svt{svt['id']} base soup error: {e}")
-        return
-    base_data = []
-    info: List[bs4.Tag] = base_table.find_all("td")
-    artists_counter = 0
-    for each_info in info:
-        arg = each_info.text.strip()
-        if artists_counter > 1:
-            arg = [x.text for x in each_info.contents if not type(x) == bs4.NavigableString]
-            artists_counter = -2
-        if artists_counter > -1:
-            artists_counter += 1
-        if arg:
-            base_data.append(arg)
-
-    base_data = base_data[2:-1]
-    counter = 0
-    if not svt["id"] in banned_id:
-        single_svt_detail = copy.deepcopy(base_svt_detail)
-        try:
-            for each_data in single_svt_detail:
-                if each_data == "ATK" or each_data == "职阶补正后" or each_data == "HP":
-                    single_svt_detail[each_data] = base_data[counter: counter + 5]
-                    counter += 5
-                elif each_data == "画师":
-                    for index in range(len(base_data[counter])):
-                        single_svt_detail[each_data][f"卡面{index + 1}"] = base_data[counter][index]
-                    counter += 1
-                elif each_data == "能力":
-                    continue
-                elif each_data.startswith("Hit信息"):
-                    single_svt_detail[each_data] = ""
-                    continue
-                elif each_data == "NP获得率":
-                    single_svt_detail[each_data] = {
-                        "Quick": base_data[counter],
-                        "Arts": base_data[counter + 1],
-                        "Buster": base_data[counter + 2],
-                        "Extra": base_data[counter + 3],
-                        "宝具": base_data[counter + 4]
-                    }
-                    counter += 5
-                else:
-                    single_svt_detail[each_data] = base_data[counter]
-                    counter += 1
-        except IndexError:
-            sv_lib.logger.warning(f"seems error happens when getting basic info for svt{svt_data['id']}")
-            pass
-        svt["detail"] = single_svt_detail
+def get_base(svt: dict, raw_html: str, raw_data: str):
+    single_svt_detail: dict = {}
+    # here is painter info
+    painter = re.search(r"\|画师=(.+)", raw_data).group(1)
+    extra_painters = re.findall(r"\|画师(\d+)=(.+)", raw_data)
+    paints = re.findall(r"\|立绘\d+=(.+)", raw_data)
+    painter_dict = {}
+    if extra_painters:
+        first_extra_id = int(extra_painters[0][0]) - 1
+        for paint_index in range(first_extra_id):
+            painter_dict[paints[paint_index]] = painter
+        for paint_index in range(len(extra_painters)):
+            painter_dict[paints[paint_index + first_extra_id]] = extra_painters[paint_index][1]
     else:
-        single_svt_detail = copy.deepcopy(sp_svt_detail)
-        for each_sp_data in single_svt_detail:
-            if each_sp_data == "画师":
-                for index in range(len(base_data[counter])):
-                    single_svt_detail[each_sp_data][f"卡面{index + 1}"] = base_data[counter][index]
-            else:
-                single_svt_detail[each_sp_data] = base_data[counter]
-            counter += 1
-        svt["detail"] = single_svt_detail
+        for paint_index in range(len(paints)):
+            painter_dict[paints[paint_index]] = painter
+    single_svt_detail["画师"] = painter_dict
 
-
-def get_nick_name(svt: dict, soup: BeautifulSoup):
-    nick = soup.select("meta")
-    nick_name = None
-    for each_nick in nick:
-        if each_nick.has_attr("name"):
-            if each_nick.get("name") == "keywords":
-                nick_name = each_nick.get("content")
-
-    if nick_name is not None:
-        if nick_name == "{{{昵称}}}":
-            nick_name = ""
-        svt["nick_name"] = nick_name.split(",")
-    else:
-        svt["nick_name"] = []
-
-
-def get_card_url(svt: dict, raw_html: str, card_soup: BeautifulSoup):
-    cards_url = []
-    try:
-        rule_cs_card = re.compile(r"graphpicker-graph-\d")
-        all_cs = card_soup.find_all("div", class_=rule_cs_card)
-        all_cs = all_cs[:int(len(all_cs) / 2)]
-        rule_card = re.compile(r"/images/.+?.\.(?:png|jpg)")
-        for each_cs in all_cs:
-            card_srcset = each_cs.find_next("img").get("data-src")
-            card = re.search(rule_card, card_srcset).group(0).replace("/thumb", "")
-            cards_url.append(card)
-    except Exception as e:
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} get card img error: {e}")
+    select_attr = base_svt_detail if svt["id"] not in banned_id else sp_svt_detail
+    # now go to attribute
+    for each_attr in select_attr:
+        if each_attr == "属性" or each_attr == "特性":
+            attr = re.findall(rf"\|{each_attr}\d+=(.+)", raw_data)
+        elif each_attr == "ATK" or each_attr == "HP":
+            raw_num = re.findall(rf"\|.+{each_attr}=(.+)", raw_data)
+            if len(raw_num) < 5:
+                lv120_data = re.search(rf'"lv":120.+?{each_attr}":(\d+)', raw_html)
+                raw_num.append(lv120_data.group(1)) if lv120_data else ""
+            attr = [int(num) for num in raw_num if num.isdigit()]
+            attr.extend([num for num in raw_num if not num.isdigit()])
+        elif each_attr == "职阶补正后":
+            attr = [
+                round(num * atk_coefficient(single_svt_detail["职阶"]))
+                if isinstance(num, str) and num.isdigit() else num for num in single_svt_detail["ATK"]
+            ]
+        elif each_attr == "Hit信息（括号内为每hit伤害百分比）":
+            attr = {}
+            cards = ["Q卡", "A卡", "B卡", "EX卡", "宝具卡"]
+            for each_card in cards:
+                hit = re.search(rf"\|{each_card}hit数=(\d+)", raw_data)
+                hit = hit.group(1) if hit else ""
+                damage_percentage = re.search(rf"\|{each_card}伤害分布=(.+)", raw_data)
+                damage_percentage = damage_percentage.group(1) if damage_percentage else ""
+                attr[each_card] = f"{hit} Hits ({damage_percentage})"
+        elif each_attr == "NP获得率":
+            attr = {}
+            cards = ["Q卡", "A卡", "B卡", "EX卡", "宝具", "受击"]
+            for each_card in cards:
+                np_percentage = re.search(rf"\|{each_card}np率=(.+)", raw_data)
+                attr[each_card] = np_percentage.group(1) if np_percentage else ""
+        elif each_attr == "能力":
+            attr = base_svt_detail[each_attr]
         else:
-            svt["error"] = [f"svt{svt['id']} get card img error: {e}"]
-        pass
+            attr = re.search(rf"\|{each_attr}=(.+)", raw_data)
+            attr = attr.group(1) if attr else ""
+        single_svt_detail[each_attr] = attr
 
-    cards_name = []
-    try:
-        rule_names = re.compile(r"(const\s?arrayTitle\s?=)(\[.+])")
-        names = re.search(rule_names, raw_html).group(2)
-        names = json.loads(names)
-        names = list(filter(None, names))
-        for each_name in names:
-            if not each_name == "":
-                cards_name.append(each_name)
-    except AttributeError:
-        pass
+    nick_names = re.search(r"\|昵称=(.+)", raw_data)
+    nick_names = nick_names.group(1).split(",") if nick_names else []
+    rare = re.search(r"\|稀有度=(\d)", raw_data)
 
-    svt["cards_url"] = {}
-    if len(cards_name) == len(cards_url):
-        for i in range(len(cards_url)):
-            svt["cards_url"][cards_name[i]] = cards_url[i]
-    else:
-        for i in range(len(cards_url)):
-            svt["cards_url"][f"卡面{i + 1}"] = cards_url[i]
-
-    artists = [svt["detail"]["画师"][x] for x in svt["detail"]["画师"]]
-    cards = [x for x in svt["cards_url"]]
-    real_artists = {}
-    for index in range(len(artists)):
-        real_artists[cards[index]] = artists[index]
-    svt["detail"]["画师"] = real_artists
+    svt["detail"] = single_svt_detail
+    svt["昵称"] = nick_names
+    svt["rare"] = f"{rare.group(1)}星" if rare else "-"
 
 
-def get_fool(svt: dict, soup: BeautifulSoup):
-    fool_cn = soup.find(class_="tl_svt_april_profile_cn_1")
-    fool_jp = soup.find(class_="tl_svt_april_profile_jp_1")
+def get_card_url(svt: dict, raw_html: str, raw_data: str):
+    cards_url = []
+    cards = {}
+    paints = re.findall(r"\|立绘\d+=(.+)", raw_data)
+    all_files = re.findall(r"\|文件\d+=(.+)", raw_data)
+    if svt["id"] == "81":
+        all_files.pop()
+    for each_file in all_files:
+        # 使用[^.]+代替.+?以避免出现非贪婪失效
+        # raw_file = re.search(rf"(/images/./[^.]+){quote(each_file)}.png", raw_html)
+        raw_file = re.search(rf"(/images/./../){quote(each_file)}.png", raw_html)
+        file = f"{raw_file.group(1)}{each_file}.png" if raw_file else ""
+        cards_url.append(file)
+    for card_index in range(len(all_files)):
+        try:
+            cards[paints[card_index]] = cards_url[card_index]
+        except IndexError:
+            sv_lib.logger.warning(f"unmatch len of url and card for {svt['id']}")
+            sv_lib.logger.warning(f"url: {len(cards_url)}; card: {len(cards)}")
+            svt["error"].append(
+                f"unmatch len of url and card for {svt['id']}\n"
+                f"url: {len(cards_url)}; card: {len(cards)}"
+            )
+            break
+    svt["cards_url"] = cards
+
+
+def get_fool(svt: dict, raw_data: str):
+    fool_raw_data = re.search(r"===愚人节===([\s\S]+?)==牵绊(点数|等级)==", raw_data)
+    fool_data = fool_raw_data.group(1).strip() if fool_raw_data else ""
+    fool_cn = re.findall(r"\|中文=([\s\S]+?)\|日文", fool_data)
+    fool_jp = re.findall(r"\|日文=([\s\S]+?)}}", fool_data)
+    fool_cn = [fcn.strip() for fcn in fool_cn]
+    fool_jp = [fjp.strip() for fjp in fool_jp]
     fools = {
-        "资料": fool_cn.text.strip() if fool_cn is not None else "",
-        "原文": fool_jp.text.strip() if fool_jp is not None else ""
+        "资料": fool_cn,
+        "原文": fool_jp
     }
     svt["fool"] = fools
 
 
-def get_star(svt: dict, raw_html: str):
-    star = ""
-    try:
-        rule_star = re.compile(r"title=\"分类:(\d)星\"")
-        star = re.search(rule_star, raw_html).group(1)
-    except Exception as e:
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} get star error: {e}")
-        else:
-            svt["error"] = [f"svt{svt['id']} get star error: {e}"]
-        pass
+def get_info(svt: dict, raw_data: str):
+    base_info = re.search(r"\|详情=\n([\s\S]+?)\n\n\|", raw_data)
+    all_info = re.findall(r"\|(资料\d)=\n([\s\S]+?)\n\n?\|", raw_data)
+    base_info_jp = re.search(r"\|详情日文=\n([\s\S]+?)\n\n\|", raw_data)
+    rule_jp = re.compile(r"\|资料\d日文=\n([\s\S]+?)\n\n?[|}]")
+    if svt["id"] in ["240", "168"]:
+        rule_jp = re.compile(r"资料\d日文=([\s\S]+?)\n\|")
+    all_info_jp = re.findall(rule_jp, raw_data)
+    all_request = re.findall(r"\|资料\d条件=\n([\s\S]+?)\n\n\|", raw_data)
+    if re.match(r"^\|资料\d条件=\n|", raw_data):
+        request_data = raw_data.replace("条件=\n|", "条件=\n\n|")
+        all_request = re.findall(r"\|资料\d条件=\n(.+)?", request_data)
+    renew_info_key = ""
+    if len(all_info) > 6:
+        renew_info = re.search(r";(通关.+后)", raw_data)
+        renew_info_key = re.sub(
+            r"/.+\|", " ", renew_info.group(1)
+        ).replace("]", "").replace("[", "").strip() if renew_info else "通关特定关卡后"
 
-    svt["rare"] = star + "星"
+    svt_detail = {
+        "角色详情": {
+            "中文": base_info.group(1).strip() if base_info else "",
+            "日文": base_info_jp.group(1).strip() if base_info_jp else ""
+        }
+    }
 
-
-def get_info(svt: dict, soup: BeautifulSoup):
-    detail_info_cn = []
-    detail_info_jp = []
-    rule_svt_info = re.compile(r"(角色详情|个人资料\d)")
-    try:
-        svt_info = soup.find_all(title=rule_svt_info)
-    except Exception as e:
-        svt_info = []
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} svt_info_main error: {e}")
-        else:
-            svt["error"] = [f"svt{svt['id']} svt_info_main error: {e}"]
-        pass
-
-    for each_info in svt_info:
+    for info_index in range(len(all_info)):
         try:
-            cn_p: BeautifulSoup = each_info.find("div", class_="tl_svt_profile_cn_1")
-            jp_p: BeautifulSoup = each_info.find("div", class_="tl_svt_profile_jp_1")
-            if cn_p is None or jp_p is None:
-                continue
-            detail_info_cn.append(cn_p.find_next("p").text.strip())
-            detail_info_jp.append(jp_p.find_next("p").text.strip())
-        except Exception as e:
-            if "error" in svt:
-                svt["error"].append(f"svt{svt['id']} svt_info error: {e}")
-            else:
-                svt["error"] = [f"svt{svt['id']} svt_info error: {e}"]
-            pass
-
-    svt_detail = {}
-    while not len(detail_info_cn) == len(detail_info_jp):
-        detail_info_cn.append("")
-    try:
-        for i in range(len(detail_info_jp)):
-            if i == 0:
-                svt_detail["角色详情"] = {
-                    "资料": re.sub(r"\n\n+", "\n", detail_info_cn[i]).replace(
-                        "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
-                        ""
-                    ),
-                    "原文": re.sub(r"\n\n+", "\n", detail_info_jp[i]).replace(
-                        "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
-                        ""
-                    )
-                }
-            else:
-                svt_detail["个人资料" + str(i)] = {
-                    "资料": re.sub(r"\n\n+", "\n", detail_info_cn[i]).replace(
-                        "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
-                        ""
-                    ),
-                    "原文": re.sub(r"\n\n+", "\n", detail_info_jp[i]).replace(
-                        "这部分内容目前尚无翻译。您可以切换为日文查看，也可以编辑页面添加翻译。请注意，取得许可前不要添加其他来源的翻译。也请不要添加机翻、塞翻等低质量翻译内容。",
-                        ""
-                    )
-                }
-    except IndexError as e:
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} svt_detail error: {e}")
-        else:
-            svt["error"] = [f"svt{svt['id']} svt_detail error: {e}"]
+            req_info = all_request[info_index].strip()
+            req_info = re.sub(r"/.+\|", " ", req_info).replace("]", "").replace("[", "").strip()
+            svt_detail[all_info[info_index][
+                0].strip() if info_index < 6 else f"{all_info[info_index][0].strip()}（{renew_info_key}）"] = {
+                "开放条件": req_info,
+                "中文": all_info[info_index][1].strip(),
+                "日文": all_info_jp[info_index].strip()
+            }
+        except IndexError:
+            sv_lib.logger.warning(f"unmatch len of info for {svt['id']}")
+            sv_lib.logger.warning(
+                f"request: {len(all_request)}; cn: {len(all_info)}; jp: {len(all_info_jp)}"
+            )
+            svt["error"].append(
+                f"unmatch len of info for {svt['id']}\n"
+                f"request: {len(all_request)}; cn: {len(all_info)}; jp: {len(all_info_jp)}"
+            )
+            break
 
     svt["svt_detail"] = svt_detail
 
 
-def get_ultimate(svt: dict, base: List[BeautifulSoup]):
-    ul_soup = []
-    open_info = []
-    rule_multiple = re.compile(r"(灵基再临.+后|第.+阶段|初始|限定|助战|通常|第\d部|强化后|强化前|真名解放.+)")
-    try:
-        for each_base in base:
-            if each_base.find_parent(title=rule_multiple):
-                try:
-                    p_span_text = each_base.find_parent(title=rule_multiple).find_previous("span").text
-                except AttributeError:
-                    p_span_text = ""
-                if "技能" not in p_span_text:
-                    try:
-                        if "技能" in each_base.find_parent(title=rule_multiple).find_previous("b").text:
-                            continue
-                    except AttributeError:
-                        pass
-                    open_time = each_base.find_previous("p").text.strip().replace("开放时间", "\n开放时间")
-                    if not each_base.find_parent(title=rule_multiple):
-                        if open_time not in open_info:
-                            open_info.append(open_time)
-                            ul_soup.append(each_base)
-                    else:
-                        open_request = each_base.find_parent(title=rule_multiple)["title"].strip()
-                        if open_request not in open_info:
-                            open_info.append(f"{open_request}\n{open_time}".strip())
-                            ul_soup.append(each_base)
-    except IndexError:
-        pass
-    except Exception as e:
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} get ultimate error: {e}")
-        else:
-            svt["error"] = [f"svt{svt['id']} get ultimate error: {e}"]
-        pass
-
-    if not ul_soup:
-        ul_soup.append(base[0])
-        open_info.append("")
-
+def get_ultimate(svt: dict, raw_data: str):
     ultimates = []
-    for uls in ul_soup:
-        u1 = []
-        u2 = []
-        ultimate1 = uls.find_all("th")
-        ultimate2 = uls.find_all("td")
-        for each_ultimate1 in ultimate1:
-            if each_ultimate1.find("p"):
-                for all_p in each_ultimate1.find_all("p"):
-                    arg = all_p.text.strip()
-                    u1.append(arg)
-            else:
-                arg = each_ultimate1.text.strip()
-                u1.append(arg)
+    raw_ultimates = re.search(r"==宝具==([\s\S]+?)==技能==", raw_data)
 
-        for each_ultimate2 in ultimate2:
-            if each_ultimate2.find("big"):
-                arg = each_ultimate2.find("big").text.strip()
-                u2.append(arg)
-                arg2 = each_ultimate2.find(class_="npname-border").text.strip()
-                u2.append(arg2)
-            elif each_ultimate2.find("small"):
-                arg = each_ultimate2.find("small").text.strip()
-                u2.append(arg)
-                arg2 = each_ultimate2.text.strip().replace(arg, "")
-                u2.append(arg2)
-            else:
-                arg = each_ultimate2.text.strip()
-                u2.append(arg)
+    if not raw_ultimates:
+        if svt["id"] == "152":
+            svt["宝具信息"] = ultimates
+            return
+        svt["error"].append(f"get ultimate error for {svt['id']}")
+        return
+    raw_ultimates = raw_ultimates.group(1)
+    all_ultimates = re.findall(r"((.+?)=([\s\S]+?)?\n?)?{{宝具\n([\s\S]+?)\n}}", raw_ultimates)
+    all_reqs = re.findall(r"(\n[^|<]+=([^{]+)?)", raw_ultimates)
+    all_reqs = all_reqs if len(all_reqs) == len(all_ultimates) else []
 
-        u2 = u2[:4]
-        ultimate = {}
+    for ui in range(len(all_ultimates)):
+        each_ultimate = all_ultimates[ui]
+        if not each_ultimate[-1]:
+            continue
+        ultimate = each_ultimate[-1]
+        req = ""
+        if all_reqs:
+            req = all_reqs[ui][0].strip()
+            req = re.sub(r"\[\[.+\|", "", req).replace("]", "") if req else ""
+            req = req.replace("=", "/") if not req.endswith("=") else req.replace("=", "")
+        level = re.search(r"\|阶级=(.+)", ultimate)
+        level = level.group(1) if level else ""
+        cn_upper = re.search(r"\|国服上标=(.+)", ultimate)
+        jp_upper = re.search(r"\|日服上标=(.+)", ultimate)
+        single_ultimate = {
+            "中文": (re.search(r"\|中文名=(.+)", ultimate).group(1) + f" {level}").strip(),
+            "日文": (re.search(r"\|日文名=(.+)", ultimate).group(1) + f" {level}").strip(),
+            "国服上标": cn_upper.group(1) if cn_upper else "",
+            "日服上标": jp_upper.group(1) if jp_upper else "",
+            "卡色": re.search(r"\|卡色=(.+)", ultimate).group(1),
+            "类型": re.search(r"\|类型=(.+)", ultimate).group(1),
+            "阶级": level,
+            "开放条件": req.strip()
+        }
+        ultimate_type = re.search(r"\|种类=(.+)", ultimate)
+        single_ultimate["种类"] = ultimate_type.group(1) if ultimate_type else ""
 
-        ultimate_names = ["中文", "英文", "假名", "日文"]
-        for index in range(len(ultimate_names)):
-            ultimate[ultimate_names[index]] = u2[index]
-
-        for index in range(len(u1)):
-            if index == 0 or index == 1:
-                ultimate["类型"] = u1[1]
-                ultimate["等级"] = u1[0]
-            else:
-                ultimate[f"效果{index - 1}"] = u1[index]
-
-        ultimates.append(ultimate)
-
-    error_list = []
-    for i in range(len(ul_soup)):
-        try:
-            color = ul_soup[i].find(class_="floatnone").find("img", alt=True)["alt"]
-            ultimates[i]["卡色"] = color.split(".")[0]
-        except AttributeError:
-            error_list.append(i)
-    for each_error in error_list:
-        ultimates.pop(each_error)
-        open_info.pop(each_error)
-
-    for i in range(len(ultimates)):
-        ultimates[i]["开放条件"] = open_info[i]
+        effect_types = re.findall(r"\|效果([A-Z])=(.+)<!--", ultimate)
+        if not effect_types:
+            effect_types = re.findall(r"\|效果([A-Z])=(.+)", ultimate)
+            if not effect_types:
+                continue
+        for each_effect in effect_types:
+            effect_values = re.findall(rf"\|数值{each_effect[0]}\d=(\d+%?|.)", ultimate)
+            single_ultimate[each_effect[-1]] = effect_values
+        ultimates.append(single_ultimate)
 
     svt["宝具信息"] = ultimates
 
 
-def get_skills(svt: dict, base: List[BeautifulSoup], raw_html: str):
-    if svt["id"] == "151":
-        svt["技能"] = lib_svt_151_skill
-        return
-    skill_soup = base[len(svt["宝具信息"]):]
-    skill_list = []
-    for i in range(len(skill_soup)):
-        skill_list.append(
-            (skill_soup[i], skill_soup[i].text.strip())
-        )
-
+def get_skills(svt: dict, raw_data: str):
     skills: dict = {}
+    all_raw_skills = re.search(r"===持有技能===[\s\S]+?}}(\n</tabber>)?\n\n", raw_data)
+    if all_raw_skills:
+        all_raw_skills = all_raw_skills.group(0).replace("<br>", "")
+    else:
+        svt["技能"] = skills
+        return
 
-    skill_flag = 0
-    counter_skill = 1
-    skills["职阶技能"] = []
-    for each_skill_list in skill_list:
-        skill_type = each_skill_list[0].find_previous("span").text
-        skill_icon = each_skill_list[0].find("img", alt=True)["data-srcset"].split(", ")[-1].split(" 2x")[0]
-        if skill_type == "追加技能" or skill_flag == 2:
-            skill_flag = 2
-            skills[f"追加技能{counter_skill}"] = [each_skill_list[1], skill_icon, each_skill_list[0]]
-            counter_skill += 1
-        if skill_type == "职阶技能" or skill_flag == 1:
-            skill_flag = 1
-            skills["职阶技能"].append(each_skill_list[1])
+    all_raw_normal_skills_temp = re.findall(r"\'\'\'技能[\s\S]+?{{持有技能[\s\S]+?}}", all_raw_skills)
+    all_raw_normal_skills = [ts for ts in all_raw_normal_skills_temp if "<tabber>" not in ts]
+    all_normal_skills = []
+    all_normal_names = []
+    all_normal_reqs = []
+
+    for normal_skill in all_raw_normal_skills:
+        if svt["id"] == "332":
+            normal_skill = re.sub(r"<!--.+\n.+-->\|", "|", normal_skill)
+        if svt["id"] == "281":
+            normal_skill = re.sub(r"<!--.+\n.+-->", "", normal_skill)
+        name = re.search(r"\'\'\'(技能(.+)?)\'\'\'", normal_skill)
+        name = name.group(1) if name else ""
+        all_normal_names.append(name)
+
+        req = re.search(r"\'\'\'技能(.+)?\'\'\'\n([\s\S]+?)\n{{持有技能", normal_skill)
+        req = re.sub(r"\[\[.+\|", "", req.group(2)).replace("]", "") if req else ""
+        all_normal_reqs.append(req)
+
+        temp = re.sub(r"<!--.+-->\n|\|.+=.+\n", "", normal_skill).replace("<nowiki", "$$")
+        unmatch_skill = re.findall(r"\|\D[^|$]+?\n\|.+?\|", temp)
+        if unmatch_skill:
+            for each_us in unmatch_skill:
+                origin = each_us
+                repl = origin.replace("\n", "")
+                temp = temp.replace(origin, repl)
+        temp = re.sub(r"{{持有技能\n", "{{持有技能", temp).split("\n")
+        single_normal_skill = []
+        for each_temp in temp:
+            if re.match(r"^{{|^\|", each_temp):
+                single_normal_skill.append(each_temp.replace("{{", ""))
+        all_normal_skills.append(single_normal_skill) if single_normal_skill else ""
+
+    for ns_index in range(len(all_normal_skills)):
+        skill = {}
+        each_normal_skill = all_normal_skills[ns_index]
         try:
-            if skill_type == "持有技能" or skill_flag == 0:
-                title = each_skill_list[0].findParent("div")["title"]
-                if title == "强化后" or title == "强化后":
-                    skills[f'{each_skill_list[0].find_previous("b").text}({title})'] = [
-                        each_skill_list[1], skill_icon, each_skill_list[0]
-                    ]
+            for skill_index in range(len(each_normal_skill)):
+                temp = each_normal_skill[skill_index].split("|")
+                raw_skill_info = [t for t in temp if t]
+                if skill_index == 0:
+                    skill_type = raw_skill_info[1]
+                    skill_name_cn = raw_skill_info[2]
+                    skill_name_jp = raw_skill_info[3]
+                    cooldown_init = re.match(r"\d+", raw_skill_info[-1])
+                    cooldown = int(cooldown_init.group(0)) if cooldown_init else ""
+                    skill["中文"] = skill_name_cn
+                    skill["日文"] = skill_name_jp
+                    skill["充能时间"] = f"{cooldown}→{cooldown - 1}→{cooldown - 2}" if cooldown else ""
+                    skill["开放条件"] = all_normal_reqs[ns_index]
+                    skill["类型"] = skill_type
                 else:
-                    skills[f'{each_skill_list[0].find_previous("b").text}({title})'] = [
-                        each_skill_list[1], skill_icon, each_skill_list[0]
-                    ]
-        except KeyError:
-            if skill_type == "持有技能" or skill_flag == 0:
-                skills[
-                    each_skill_list[0].find_previous("b").text
-                ] = [each_skill_list[1], skill_icon, each_skill_list[0]]
-        except AttributeError:
-            title = each_skill_list[0].find_parent("div")["title"]
-            skills[f'特殊技能({title})'] = [each_skill_list[1], skill_icon, each_skill_list[0]]
-
-    for each_skill in skills:
-        if each_skill == "职阶技能":
-            continue
-        data = skills.get(each_skill)[0].strip()
-        data = re.sub(r"\n+", "\n", data)
-        rule_filter = re.compile(
-            r"Ø|∅|\d+%\+\d+%\*\(.+\)|(\d+[.,])?\d+%(\*.+)?|\d\d+[^→]|\d+(\*.|次\n)"
-        )
-        data = re.sub(rule_filter, "", data).split("\n")
-        trs = skills[each_skill][2].find_all("tr")
-        for each_text in data[::-1]:
-            if each_text.isdigit() or each_text == "":
-                if not each_skill == "职阶技能":
-                    data.remove(each_text)
-        bak_data: list = data.copy()
-        if not each_skill == "职阶技能":
-            bak_data.append(skills[each_skill][1])
-            tr_counter = 3
-            for each_effect in data[3:]:
-                value = []
-                value_soup = trs[tr_counter].find_all("td")
-                tr_counter += 2
-                for each_value in value_soup:
-                    value.append(each_value.text.strip())
-                bak_data[data.index(each_effect)] = [each_effect, value]
-
-        skills[each_skill] = bak_data
-
-    if "职阶技能" in skills:
-        bak_class_skill = skills["职阶技能"]
-        counter = 1
-        for each_bak_skill in bak_class_skill:
-            ncs = each_bak_skill.strip()
-            ncs = re.sub(r"\n+", "\n", ncs).split("\n")
-            for index_ncs in range(0, len(ncs) - 1, 2):
-                skills[f"职阶技能{counter}"] = [
-                    ncs[index_ncs], ncs[index_ncs + 1]
-                ]
-                counter += 1
-        skills.pop("职阶技能")
-
-    rule_skill_icon = re.compile(r"职阶技能.+\.(png|jpg)")
-    class_skill_icon = re.finditer(rule_skill_icon, raw_html)
-    icons = []
-    for each_skill_icon in class_skill_icon:
-        tmp = each_skill_icon.group(0).split(", ")[1]
-        icons.append(tmp)
-
-    temp = skills.copy()
-    counter_class_skill = 0
-    for each_temp in temp:
-        if each_temp.startswith("职阶技能"):
-            tmp = temp[each_temp]
-            skills[each_temp] = {
-                "中文": tmp[0],
-                "效果": tmp[1],
-                "图标": icons[counter_class_skill]
-            }
-            counter_class_skill += 1
-        elif each_temp.startswith("追加技能"):
-            tmp = temp[each_temp]
-            skills[each_temp] = {
-                "中文": tmp[0],
-                "原文": tmp[1],
-                "效果": tmp[2],
-                "图标": tmp[3]
-            }
-        else:
-            tmp = temp[each_temp]
-            skills[each_temp] = {
-                "中文": tmp[0],
-                "原文": tmp[2],
-                "充能时间": tmp[1],
-                "图标": tmp[-1]
-            }
-            if len(tmp) == 1:
-                skills[each_temp]['效果'] = tmp[3]
+                    effect = raw_skill_info.pop(0)
+                    skill_info = [rsi.replace("}}", "") for rsi in raw_skill_info]
+                    skill[effect] = skill_info
+            if svt["id"] == "1" and all_normal_names[ns_index] in skills:
+                skills[f"{all_normal_names[ns_index]}（第2部灵衣）"] = skill
             else:
-                for i in range(3, len(tmp) - 1):
-                    skills[each_temp][f'效果{i - 2}'] = tmp[i]
+                skills[all_normal_names[ns_index]] = skill
+        except IndexError:
+            sv_lib.logger.warning(f"unmatch len of skill and skill name for {svt['id']}")
+            sv_lib.logger.warning(f"name: {len(all_normal_names)}; skill: {len(all_normal_skills)}")
+            svt["error"].append(f"name: {len(all_normal_names)}; skill: {len(all_normal_skills)}")
+            break
+
+    get_tabber_skills(svt, all_raw_skills, skills)
+
+
+def get_tabber_skills(svt: dict, all_raw_skills: str, skills: dict):
+    all_raw_skills = all_raw_skills.replace("强化前={{持有技能", "强化前=\n{{持有技能")
+    all_raw_multi_skills = re.findall(r"(\'\'\'技能.+?\n<tabber>[\s\S]+?}}\n</tabber>)", all_raw_skills)
+    multi_skills_temp = [mst.split("|-|") for mst in all_raw_multi_skills]
+    if not all_raw_multi_skills:
+        svt["技能"] = skills
+        return
+
+    all_multi_names = []
+    all_multi_skills = []
+    multi_skills_req = []
+    for each_multi in all_raw_multi_skills:
+        multi_name = re.search(r"\'\'\'(技能(.+)?)\'\'\'", each_multi)
+        all_multi_names.append(multi_name.group(1)) if multi_name else ""
+
+    for each_ms in multi_skills_temp:
+        skills_req = []
+        multi_skills = []
+        for ms in each_ms:
+            req = re.search(r"(.+=(.+)?)\n{{持有技能", ms)
+            req = re.sub(r"\[\[.+\||<!--.+-->", "", req.group(1)).replace("]", "") if req else ""
+            req = req.replace("=", "/") if not req.endswith("=") else req.replace("=", "")
+            skills_req.append(req)
+            temp = re.sub(r"<!--.+-->\n(?!{{持有技能)|\|.+=.+\n", "", ms).replace("<nowiki", "$$")
+            unmatch_skill = re.findall(r"\|\D[^|$]+?\n\|.+?\|", temp)
+            if unmatch_skill:
+                for each_us in unmatch_skill:
+                    origin = each_us
+                    repl = origin.replace("\n", "")
+                    temp = temp.replace(origin, repl)
+            temp = re.sub(r"{{持有技能\n", "{{持有技能", temp).split("\n")
+            single_multi_skill = []
+            for each_temp in temp:
+                if re.match(r"^{{|^\|", each_temp):
+                    single_multi_skill.append(each_temp.replace("{{", ""))
+            multi_skills.append(single_multi_skill) if single_multi_skill else ""
+        all_multi_skills.append(multi_skills)
+        multi_skills_req.append(skills_req)
+
+    m_skills = []
+    try:
+        for ns_index in range(len(all_multi_skills)):
+            each_multi_skill = all_multi_skills[ns_index]
+            multi = []
+            for skill_index in range(len(each_multi_skill)):
+                each_skill = each_multi_skill[skill_index]
+                skill = {}
+                for effects_index in range(len(each_skill)):
+                    temp = each_skill[effects_index].split("|")
+                    raw_skill_info = [t for t in temp if t]
+                    if effects_index == 0:
+                        skill_name_cn = raw_skill_info[2]
+                        skill_name_jp = raw_skill_info[3]
+                        cooldown_init = re.match(r"\d+", raw_skill_info[-1])
+                        cooldown = int(cooldown_init.group(0)) if cooldown_init else ""
+                        skill["中文"] = skill_name_cn
+                        skill["日文"] = skill_name_jp
+                        skill["充能时间"] = f"{cooldown}→{cooldown - 1}→{cooldown - 2}" if cooldown else ""
+                        skill["开放条件"] = multi_skills_req[ns_index][skill_index]
+                    else:
+                        effect = raw_skill_info.pop(0)
+                        skill[effect] = raw_skill_info
+                multi.append(skill)
+            m_skills.append(multi)
+
+        for name_index in range(len(all_multi_names)):
+            if svt["id"] == "1" and all_multi_names[name_index] in skills:
+                skills[f"{all_multi_names[name_index]}（第2部灵衣）"] = m_skills[name_index]
+            else:
+                skills[all_multi_names[name_index]] = m_skills[name_index]
+    except IndexError:
+        sv_lib.logger.warning(f"unmatch len of multi skill and skill name for {svt['id']}")
+        sv_lib.logger.warning(
+            f"name: {len(all_multi_names)}; skill: {len(m_skills)}; req: {len(multi_skills_req)}"
+        )
+        svt["error"].append(
+            f" multiname: {len(all_multi_names)}; skill: {len(m_skills)}; req: {len(multi_skills_req)}"
+        )
+        pass
 
     svt["技能"] = skills
 
@@ -580,18 +498,20 @@ def get_voice(svt: dict, soup: BeautifulSoup):
     svt["语音"] = svt_voice
 
 
-async def get_pickup(svt: dict, url: str, crt_file: str):
+async def get_pickup(svt: dict, origin_soup: BeautifulSoup, url: str, crt_file: str):
     new_url = f"{url}/未来Pick_Up情况"
 
     try:
         response = await aiorequests.get(new_url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        response = await aiorequests.get(new_url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            response = await aiorequests.get(new_url, timeout=20, headers=headers)
+        except Exception as e2:
+            svt["error"].append(f"svt{svt['id']} get_pickup error: {e2}")
+            return
     except Exception as e:
-        if "error" in svt:
-            svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
-        else:
-            svt["error"] = [f"svt{svt['id']} get_pickup error: {e}"]
+        svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
         return
 
     soup = BeautifulSoup(await response.content, 'html.parser')
@@ -606,8 +526,30 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
         return
 
     if pup is None:
+        try:
+            all_method_dl = origin_soup.find(id="获得方法").find_next("dl")
+            all_method_ul = origin_soup.find(id="获得方法").find_next("ul")
+            methods = ""
+            how = all_method_dl.find_all("dt")
+            dd = all_method_dl.find_all("dd")
+            li = all_method_ul.find_all("li")
+            if len(how) == len(dd):
+                for index in range(len(how)):
+                    methods += f"{how[index].text}\n{dd[index].text}\n"
+            elif len(how) == len(li):
+                for index in range(len(how)):
+                    methods += f"{how[index].text}\n{li[index].text}\n"
+            else:
+                for index in range(len(how)):
+                    methods += f"{how[index].text}\n"
+            methods = methods.strip()
+            svt["method_get"] = methods
+        except AttributeError:
+            pass
         return
 
+    methods = pup.text.strip()
+    svt["method_get"] = methods
     pup_status = []
 
     all_tds = pup.find_all("td")
@@ -656,3 +598,13 @@ async def get_pickup(svt: dict, url: str, crt_file: str):
         pup_status.append(pup_future)
 
     svt["pup"] = pup_status
+
+# lib_svt_debug()
+# errors = []
+# for i in range(400, 0, -1):
+#     data = lib_svt_debug(i)
+#     if "error" in data:
+#         sv_lib.logger.error(f"更新从者{i}出错：{data['error']}")
+#         errors.append(i)
+#
+# print(errors)

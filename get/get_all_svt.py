@@ -9,7 +9,11 @@ async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tu
     try:
         get_all = await aiorequests.get(root_svt_url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        get_all = await aiorequests.get(root_svt_url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            get_all = await aiorequests.get(root_svt_url, timeout=20, headers=headers)
+        except Exception as e2:
+            return e2
     except Exception as e:
         return e
 
@@ -98,7 +102,7 @@ async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tu
                         "class_icon": all_svt_icons[i_each + 7].split("/").pop()
                     }
         if svt not in old_all_svt:
-            updated_servants.append(svt["id"])
+            updated_servants.append(int(svt["id"]))
         servants.append(svt)
 
     if old_all_svt == servants:

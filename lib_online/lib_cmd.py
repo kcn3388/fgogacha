@@ -1,7 +1,6 @@
-import copy
 import re
 from typing import Tuple
-
+from urllib.parse import quote
 from bs4 import BeautifulSoup
 
 from .lib_json import *
@@ -11,7 +10,11 @@ async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
     try:
         response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            response = await aiorequests.get(url, timeout=20, headers=headers)
+        except Exception as e2:
+            return e2, -100
     except Exception as e:
         return e, -100
 
@@ -28,15 +31,23 @@ async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
         return "在线也没找到", 0
 
 
-async def lib_cmd(cmd_data: dict, crt_file: str = False) -> dict:
-    url = "https://fgo.wiki/w/" + cmd_data["name_link"]
+async def lib_cmd(cmd_data: dict) -> dict:
+    # def lib_cmd_debug(sid: int = 0) -> dict:
+    #     with open(all_command_path, 'r', encoding="utf-8") as f:
+    #         commands = json.load(f)
+    #     if sid:
+    #         cmd_data = jsonpath(commands, f"$..[?(@.id=='{sid}')]")[0]
+    #     else:
+    #         cmd_data = jsonpath(commands, "$..[?(@.id=='74')]")[0]
     sv_lib.logger.info("查询纹章" + cmd_data["id"] + "……")
     cmd = {
         "id": cmd_data["id"],
         "name": cmd_data["name"],
+        "name_jp": cmd_data["name"],
         "name_other": None,
         "name_link": cmd_data["name_link"],
-        "type": cmd_data["type"]
+        "type": cmd_data["type"],
+        "error": []
     }
 
     if "local" in cmd_data:
@@ -54,72 +65,56 @@ async def lib_cmd(cmd_data: dict, crt_file: str = False) -> dict:
     if len(cmd["name_other"]) == 1 and cmd["name_other"][0] == "":
         cmd["name_other"] = []
 
-    try:
-        response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        response = await aiorequests.get(url, timeout=20, verify=False, headers=headers)
-    except Exception as e:
-        cmd["error"] = [f"cmd{cmd['id']} aiorequest error: {e}"]
+    local_data_path = os.path.join(mc_path, "cmd", f'{cmd_data["id"]}.txt')
+    local_html_path = os.path.join(mc_path, "cmd", f'{cmd_data["id"]}.html')
+
+    if os.path.exists(local_data_path):
+        raw_data = open(local_data_path, "r", encoding="utf-8").read().replace("魔{{jin}}", "魔神(人)")
+        raw_html = open(local_html_path, "r", encoding="utf-8").read()
+    else:
+        cmd["error"].append(f"cmd{cmd['id']} init error: no local res")
         return cmd
 
-    raw_html = await response.text
-    soup = BeautifulSoup(await response.content, 'html.parser')
-    try:
-        cmds = soup.find(class_="wikitable nodesktop").find("tbody")
-    except Exception as e:
-        cmd["error"] = [f"cmd{cmd['id']} first bs error: {e}"]
-        return cmd
+    painter = re.search(r"\|画师=(.+)", raw_data)
+    name_jp = re.search(r"\|日文名称=(.+)", raw_data)
+    icon = re.search(r"\|图标=(.+)", raw_data)
+    skills = re.search(r"\|持有技能=\n?([\s\S]+?)\n\|", raw_data)
+    desc_cn = re.search(r"\|解说=\n?([\s\S]+?)\n\n?\n?\|", raw_data)
+    desc_jp = re.search(r"\|日文解说=\n?([\s\S]+?)\n[|<]", raw_data)
+    rare = re.search(r"\|稀有度=(.)", raw_data)
+    raw_card_name = re.search(r"\|图片名=(.+)", raw_data)
+    if not raw_card_name:
+        raw_card_name = re.search(r"\|名称=(.+)", raw_data)
 
-    info = [cmds.find("a", title="画师一览").text.strip() if cmds.find("a", title="画师一览") else ""]
-    info_soup = cmds.find_all("div", class_="poem")
-    for each_is in info_soup:
-        next_p = each_is.find_next("p")
-        if next_p:
-            info.append(next_p.text.strip())
-        else:
-            info.append("")
+    cmd["name_jp"] = name_jp.group(1) if name_jp else ""
+    cmd_detail = {
+        "画师": painter.group(1) if painter else "",
+        "图标": icon.group(1) if icon else "",
+        "持有技能": skills.group(1) if skills else "",
+        "解说": desc_cn.group(1) if desc_cn else "",
+        "日文解说": desc_jp.group(1) if desc_jp else ""
+    }
 
-    detail_counter = 0
-    single_cmd_detail = copy.deepcopy(cmd_detail)
-    for each_cd in single_cmd_detail:
-        single_cmd_detail[each_cd] = info[detail_counter]
-        detail_counter += 1
+    card_name = raw_card_name.group(1).strip().replace(" ", "_") if raw_card_name else ""
+    if cmd["id"] == "74":
+        card_name = "魔神小姐"
+    raw_file = re.search(rf"(/images/./../){quote(card_name)}.png", raw_html, re.I)
+    if not raw_file:
+        cmd["error"].append("cards_url not found")
+    cmd["detail"] = cmd_detail
+    cmd["rare"] = f"{rare.group(1)}星" if rare else "-"
+    cmd["cards_url"] = raw_file.group(0) if raw_file else ""
 
-    cmd["detail"] = single_cmd_detail
-
-    card_url = ""
-    curl_soup = cmds.find_all("span")
-    for each_cls in curl_soup:
-        if each_cls.text.strip() == "卡面为游戏资源原始图片，未经任何处理。":
-            curl_soup = each_cls
-            break
-
-    try:
-        curl_soup = curl_soup.find_next("img").get("data-srcset")
-        rule_card = re.compile(r"/images/.+?.\.(?:png|jpg)")
-        card_set = re.findall(rule_card, curl_soup)
-        card_url = card_set[-1]
-    except Exception as e:
-        if "error" in cmd:
-            cmd["error"].append(f"cmd{cmd['id']} cmd{cmd['id']} get card img error: {e}")
-        else:
-            cmd["error"] = [f"cmd{cmd['id']} cmd{cmd['id']} get card img error: {e}"]
-        pass
-
-    cmd["cards_url"] = card_url
-
-    star = ""
-    try:
-        rule_star = re.compile(r"wgCategories.+星")
-        star = re.search(rule_star, raw_html).group(0)
-        star = star.split("\"")[-1].split("星")[0]
-    except Exception as e:
-        if "error" in cmd:
-            cmd["error"].append(f"cmd{cmd['id']} get star error: {e}")
-        else:
-            cmd["error"] = [f"cmd{cmd['id']} get star error: {e}"]
-        pass
-
-    cmd["rare"] = star + "星"
-
+    if not cmd["error"]:
+        cmd.pop("error")
     return cmd
+
+# lib_cmd_debug()
+# errors = []
+# for i in range(155, 0, -1):
+#     data = lib_cmd_debug(i)
+#     if "error" in data:
+#         sv_lib.logger.error(f"更新纹章{i}出错：{data['error']}")
+#         errors.append(i)
+#
+# print(errors)

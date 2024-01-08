@@ -1,4 +1,6 @@
 from hoshino import HoshinoBot
+from requests.exceptions import SSLError
+from .download.download_all_res import download_icon_skill
 from .download.download_icons import *
 from .get.get_all_cft import *
 from .get.get_all_cmd import *
@@ -50,7 +52,7 @@ async def init(bot: HoshinoBot, ev: CQEvent):
         os.mkdir(basic_path)
     for each in res_paths:
         if not os.path.exists(each):
-            sv_manage.logger.info(f"初始化{str(each)}...")
+            sv_manage.logger.info(f"初始化{each}...")
             os.mkdir(each)
     if not os.path.exists(data_path):
         sv_manage.logger.info("初始化data目录...")
@@ -75,6 +77,28 @@ async def init(bot: HoshinoBot, ev: CQEvent):
                 }
                 with open(config_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps(configs, indent=2, ensure_ascii=False))
+
+    msg = "初始化完成！"
+    await bot.send(ev, msg)
+
+
+@sv_manage.on_fullmatch("初始化路径")
+async def init_folder(bot: HoshinoBot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+    if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
+        await bot.finish(ev, "未配置默认crt文件！请从GitHub获取默认crt文件再运行此插件！")
+    if not os.path.exists(basic_path):
+        sv_manage.logger.info("数据初始化...")
+        sv_manage.logger.info("初始化资源根目录...")
+        os.mkdir(basic_path)
+    for each in res_paths:
+        if not os.path.exists(each):
+            sv_manage.logger.info(f"初始化{each}...")
+            os.mkdir(each)
+    if not os.path.exists(data_path):
+        sv_manage.logger.info("初始化data目录...")
+        os.mkdir(data_path)
 
     msg = "初始化完成！"
     await bot.send(ev, msg)
@@ -255,24 +279,34 @@ async def update_pool():
         crt_file = False
 
     # 自动更新卡池
-    r = await get_gacha_pools(True, crt_file)
+    try:
+        r = await get_gacha_pools(True, crt_file)
+    except SSLError as e:
+        r = e
     if not isinstance(r, int):
-        sv_manage.logger.error(f"获取卡池失败，原因：{str(r)}")
+        sv_manage.logger.error(f"获取卡池失败，原因：{r}")
 
     # 自动更新新闻
-    news = await get_news(6, crt_file)
-    if isinstance(news, Exception):
-        sv_manage.logger.error(f"获取新闻失败，原因：{str(news)}")
+    news, status = await get_news(6, crt_file)
+    if isinstance(status, Exception):
+        sv_manage.logger.error(f"获取新闻失败，原因：{status}")
 
     # 自动下载资源
     _, updated_servant_list = await get_all_svt(crt_file)
     _, updated_cft_list = await get_all_cft(crt_file)
     _, updated_cmd_list = await get_all_cmd(crt_file)
     icon_stat = await download_icons(crt_file)
+    icon_skill_stat = await download_icon_skill(crt_file)
+
     if not isinstance(icon_stat, int):
         sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
     if icon_stat:
         sv_manage.logger.info(f'icon没有更新，跳过……')
+
+    if not isinstance(icon_skill_stat, int):
+        sv_manage.logger.error(f'下载skill icons失败，原因：{icon_skill_stat}')
+    if icon_skill_stat:
+        sv_manage.logger.info(f'skill icon没有更新，跳过……')
 
     updates = {
         "svt": [],
@@ -307,7 +341,7 @@ async def update_pool():
             updates["cmd"].extend(updated_cmd_list)
 
     for each_attr in updates:
-        updates[each_attr] = list(set(updates[each_attr]))
+        updates[each_attr].sort()
 
     with open(update_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))

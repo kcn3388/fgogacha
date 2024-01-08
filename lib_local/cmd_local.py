@@ -34,7 +34,7 @@ async def local_find_cmd(bot: HoshinoBot, ev: CQEvent):
     for i in cmd:
         if is_search_id:
             try:
-                cmd_data.append(cmd[jsonpath(cmd, "$..id").index(search_id)])
+                cmd_data.append(jsonpath(cmd, f"$..[?(@.id=='{search_id}')]")[0])
                 break
             except ValueError:
                 pass

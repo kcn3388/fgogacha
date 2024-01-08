@@ -9,7 +9,11 @@ async def get_all_cmd(crt_file: Union[str, bool] = False) -> Union[Exception, Tu
     try:
         get_all = await aiorequests.get(root_cmd_url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        get_all = await aiorequests.get(root_cmd_url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            get_all = await aiorequests.get(root_cmd_url, timeout=20, headers=headers)
+        except Exception as e2:
+            return e2
     except Exception as e:
         return e
 
@@ -66,7 +70,7 @@ async def get_all_cmd(crt_file: Union[str, bool] = False) -> Union[Exception, Tu
                     "skill_icon": all_cmd_icons[i_each + 1].split("/").pop()
                 }
         if cmd not in old_all_cmd:
-            updated_commands.append(cmd["id"])
+            updated_commands.append(int(cmd["id"]))
         commands.append(cmd)
 
     if old_all_cmd == commands:

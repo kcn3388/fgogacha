@@ -9,6 +9,7 @@ from typing import Union, List
 from PIL import Image, ImageFont, ImageDraw
 from aiocqhttp import MessageSegment
 from playwright.async_api import async_playwright
+from time import sleep
 
 from hoshino import config, util, aiorequests, logger, Service, priv
 from hoshino.typing import CQEvent
@@ -201,6 +202,11 @@ headers = {
 banned_id = ["333", "240", "168", "151", "152", "149", "83"]
 
 basic_path = os.path.join(config.RES_DIR, "img", "fgo")
+runtime_path = os.path.dirname(__file__)
+
+data_path = os.path.join(runtime_path, 'data')
+mc_path = os.path.join(data_path, "data", "mooncell")
+
 icon_path = os.path.join(basic_path, "icons")
 svt_path = os.path.join(icon_path, "svt_icons")
 cft_path = os.path.join(icon_path, "cft_icons")
@@ -209,11 +215,10 @@ cmd_path = os.path.join(icon_path, "cmd_icons")
 card_path = os.path.join(icon_path, "card_icons")
 class_path = os.path.join(icon_path, "class_icons")
 
-res_paths = [basic_path, icon_path, svt_path, cft_path, skill_path, cmd_path, card_path, class_path]
-
-runtime_path = os.path.dirname(__file__)
-
-data_path = os.path.join(runtime_path, 'data')
+res_paths = [
+    basic_path, icon_path, svt_path, cft_path, skill_path,
+    cmd_path, card_path, class_path, mc_path
+]
 news_img_path = os.path.join(runtime_path, 'news')
 banner_path = os.path.join(data_path, 'banner.json')
 config_path = os.path.join(data_path, 'config.json')
@@ -379,9 +384,14 @@ async def get_content(url: str, crt_file: Union[bool, str]) -> Union[Exception, 
             await aiorequests.get(url, timeout=20, headers=headers, verify=crt_file)
         ).content
     except OSError:
-        return await (
-            await aiorequests.get(url, timeout=20, verify=False, headers=headers)
-        ).content
+        try:
+            sleep(10)
+            return await (
+                await aiorequests.get(url, timeout=20, headers=headers)
+            ).content
+        except Exception as e2:
+            logger.error(f"aiorequest error: {e2}")
+            return e2
     except Exception as e:
         logger.error(f"aiorequest error: {e}")
         return e
@@ -422,3 +432,68 @@ async def gen_gacha_img(style: str, img_path: List[str], server: str) -> Image:
             base_img.paste(tmp_img, box_list[i], mask=masker)
 
     return base_img
+
+
+def gen_pool_data(banner: dict, ev: CQEvent = None, gid: int = None) -> Union[str, dict]:
+    if gid is None and ev is None:
+        return ""
+    if ev is not None:
+        gid = ev.group_id
+    gacha_data = json.load(open(gacha_path, encoding="utf-8"))
+    svt_data = {}
+    for each in gacha_data:
+        if each["p_id"] == banner["banner"]["id"]:
+            if "s_id" in each:
+                if each["s_id"] == banner["banner"]["s_id"]:
+                    svt_data = each
+                    break
+            else:
+                svt_data: dict = each
+                break
+    if len(svt_data) == 0:
+        print("data error")
+        return ""
+    pool_data = {
+        "group": gid,
+        "data": {}
+    }
+    for each in svt_data["servants"]:
+        each["weight"] /= 100
+        each["weight"] = round(each["weight"], 3)
+        d = {
+            each["type"]: each["ids"],
+            each["type"] + "_rate": each["weight"]
+        }
+        pool_data["data"].update(d)
+
+    for each in svt_data["crafts"]:
+        each["weight"] /= 100
+        each["weight"] = round(each["weight"], 3)
+        d = {
+            each["type"]: each["ids"],
+            each["type"] + "_rate": each["weight"]
+        }
+        pool_data["data"].update(d)
+
+    if not os.path.exists(banner_data_path):
+        print("初始化数据json...")
+        open(banner_data_path, 'w')
+        pool_detail_data = []
+    else:
+        try:
+            pool_detail_data = json.load(open(banner_data_path, encoding="utf-8"))
+        except json.decoder.JSONDecodeError:
+            pool_detail_data = []
+
+    exists = False
+    for i in range(len(pool_detail_data)):
+        if pool_detail_data[i]["group"] == gid:
+            pool_detail_data[i] = pool_data
+            exists = True
+    if not exists:
+        pool_detail_data.append(pool_data)
+
+    with open(banner_data_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
+
+    return pool_detail_data

@@ -9,7 +9,11 @@ async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union
     try:
         list_news = await aiorequests.get(list_news_url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        list_news = await aiorequests.get(list_news_url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            list_news = await aiorequests.get(list_news_url, timeout=20, headers=headers)
+        except Exception as e2:
+            return -100, e2
     except Exception as e:
         return -100, e
 
@@ -36,7 +40,11 @@ async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union
         try:
             single_news = await aiorequests.get(single_news_url, timeout=20, verify=crt_file, headers=headers)
         except OSError:
-            single_news = await aiorequests.get(single_news_url, timeout=20, verify=False, headers=headers)
+            try:
+                sleep(10)
+                single_news = await aiorequests.get(single_news_url, timeout=20, headers=headers)
+            except Exception as e2:
+                return -100, e2
         except Exception as e:
             return -100, e
         single_news = json.loads(await single_news.text)["data"]

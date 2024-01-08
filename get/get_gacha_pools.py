@@ -59,7 +59,11 @@ async def get_gacha_pools(is_latest: bool = True, crt_file: Union[str, bool] = F
             try:
                 raw = await aiorequests.get(i["href"], timeout=20, verify=crt_file, headers=headers)
             except OSError:
-                raw = await aiorequests.get(i["href"], timeout=20, verify=False, headers=headers)
+                try:
+                    sleep(10)
+                    raw = await aiorequests.get(i["href"], timeout=20, headers=headers)
+                except Exception as e2:
+                    return e2
             except Exception as e:
                 return e
             data = await raw.text

@@ -73,10 +73,10 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
         if int(msg[0]) > int(max_id):
             await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
         svt_index = jsonpath(svt, "$..id").index(msg[0])
-        servants_index = jsonpath(servants, "$..id").index(msg[0])
-        data = await lib_svt(servants[servants_index], crt_file)
+        select_servant = jsonpath(servants, f"$..[?(@.id=='{msg[0]}')]")[0]
+        data = await lib_svt(select_servant, crt_file)
         if "error" in data:
-            sv_lib.logger.error(f"更新从者{svt[svt_index]['id']}出错：{data['error']}")
+            sv_lib.logger.error(f"更新从者{select_servant['id']}出错：{data['error']}")
         else:
             fixed = True
         svt[svt_index] = data
@@ -104,8 +104,8 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
             await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
 
         cft_index = jsonpath(cft, "$..id").index(msg[0])
-        crafts_index = jsonpath(crafts, "$..id").index(msg[0])
-        data = await lib_cft(crafts[crafts_index], crt_file)
+        select_craft = jsonpath(crafts, f"$..[?(@.id=='{msg[0]}')]")[0]
+        data = await lib_cft(select_craft)
         if "error" in data:
             sv_lib.logger.error(f"更新礼装{cft[cft_index]['id']}出错：{data['error']}")
         else:
@@ -135,8 +135,8 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
             await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
 
         cmd_index = jsonpath(cmd, "$..id").index(msg[0])
-        commands_index = jsonpath(commands, "$..id").index(msg[0])
-        data = await lib_cmd(commands[commands_index], crt_file)
+        select_command = jsonpath(commands, f"$..[?(@.id=='{msg[0]}')]")[0]
+        data = await lib_cmd(select_command)
         if "error" in data:
             sv_lib.logger.error(f"更新纹章{cmd[cmd_index]['id']}出错：{data['error']}")
         else:

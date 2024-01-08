@@ -25,27 +25,20 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 @sv.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[卡k][池c]$", re.IGNORECASE))
 async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
-    crt_file = False
     group_config = load_config(ev, True)
-    if group_config["crt_path"]:
-        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
-    download_stat = await get_gacha_pools(True, crt_file)
-    if not isinstance(download_stat, int):
+    crt_file = os.path.join(crt_folder_path, group_config["crt_path"]) if group_config["crt_path"] else False
+    if not isinstance(download_stat := await get_gacha_pools(True, crt_file), int):
         await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
-    if not download_stat:
-        await bot.send(ev, "获取卡池完成")
-    elif download_stat:
-        await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
+    await bot.send(
+        ev, "获取卡池完成"
+    ) if not download_stat else await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
 
 
 @sv.on_rex(re.compile(r"^[查c][询x][fb]go[卡k][池c]$", re.IGNORECASE))
 async def check_pool(bot: HoshinoBot, ev: CQEvent):
-    if os.path.exists(pools_path):
-        try:
-            pools = json.load(open(pools_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            pools = []
-    else:
+    try:
+        pools = json.load(open(pools_path, encoding="utf-8")) if os.path.exists(pools_path) else []
+    except json.decoder.JSONDecodeError:
         pools = []
     if not pools:
         sv.logger.info("No pools exist")
@@ -58,61 +51,53 @@ async def check_pool(bot: HoshinoBot, ev: CQEvent):
             for sub_pools in each["sub_pool"]:
                 msg += f"\n\t{sub_pools['id'] + 1}：{sub_pools['sub_title']}"
 
-    if os.path.exists(banner_path):
-        banners = json.load(open(banner_path, encoding="utf-8"))
-        banner = [each_banner for each_banner in banners if each_banner["group"] == ev.group_id]
-        if not banner:
-            sv.logger.info(f"no banner in group {ev.group_id}")
-        else:
-            b_name = banner[0]["banner"]["banner"]
-            title = banner[0]["banner"]["title"]
-            if "sub_title" in banner[0]["banner"]:
-                b_name = banner[0]["banner"]["sub_title"]
-            group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner[0]['banner']['server']})\n从属活动：\n{title}"
-            msg += group
-
-    if len(msg) > 200:
-        _banner = gen_node(msg)
-        await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_banner)
+    try:
+        banners = json.load(open(banner_path, encoding="utf-8")) if os.path.exists(banner_path) else {}
+    except json.decoder.JSONDecodeError:
+        banners = {}
+    if not (banner := [each_banner for each_banner in banners if each_banner["group"] == ev.group_id]):
+        sv.logger.info(f"no banner in group {ev.group_id}")
     else:
-        await bot.send(ev, msg)
+        b_name = banner[0]["banner"]["banner"]
+        title = banner[0]["banner"]["title"]
+        if "sub_title" in banner[0]["banner"]:
+            b_name = banner[0]["banner"]["sub_title"]
+        group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner[0]['banner']['server']})\n从属活动：\n{title}"
+        msg += group
+
+    # if len(msg) > 200:
+    _banner = [gen_node(msg)]
+    banner_info = get_current_banner_info(ev, banner[0])
+    _banner.append(gen_node(banner_info)) if banner_info else sv.logger.info(f"no banner in group {ev.group_id}")
+    await bot.send_group_forward_msg(group_id=ev['group_id'], messages=_banner)
+    # else:
+    #     await bot.send(ev, msg)
 
 
 @sv.on_rex(re.compile(r"^[切qs][换hw][fb]go[卡k][池c](\s\d+)?$", re.IGNORECASE))
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
-    p_ids = ev.message.extract_plain_text().split()
-    if len(p_ids) > 1:
-        p_id = p_ids[1]
-    else:
-        p_id = p_ids[0]
+    p_id = p_ids[1] if len(p_ids := ev.message.extract_plain_text().split()) > 1 else p_ids[0]
     if not p_id.isdigit():
         await bot.finish(ev, "食用指南：[切换fgo卡池 + 编号]", at_sender=True)
 
-    if os.path.exists(pools_path):
-        try:
-            pools = json.load(open(pools_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            pools = []
-    else:
+    try:
+        pools = json.load(open(pools_path, encoding="utf-8")) if os.path.exists(pools_path) else []
+    except json.decoder.JSONDecodeError:
         pools = []
     if not pools:
         sv.logger.info("No pools exist")
         await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
 
-    if not os.path.exists(banner_path):
-        sv.logger.info("初始化数据json...")
-        open(banner_path, 'w')
-        banners = []
-    else:
-        banners = json.load(open(banner_path, encoding="utf-8"))
-
+    try:
+        banners = json.load(open(banner_path, encoding="utf-8")) if os.path.exists(banner_path) else {}
+    except json.decoder.JSONDecodeError:
+        banners = {}
     banner = {
         "group": ev.group_id,
         "banner": []
     }
 
-    dp_pool = [each for each in pools if each["id"] == int(p_id) - 1]
-    if not dp_pool:
+    if not (dp_pool := [each for each in pools if each["id"] == int(p_id) - 1]):
         await bot.finish(ev, "卡池编号不存在")
     banner["banner"] = dp_pool[0]
     if dp_pool[0]["type"] == "daily pickup":
@@ -129,51 +114,41 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     title = dp_pool[0]["title"]
     b_name = dp_pool[0]["banner"]
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({dp_pool[0]['server']})\n从属活动：\n{title}")
+    shortcut = get_current_banner_info(ev, banner)
+    await bot.send(ev, shortcut) if shortcut else ""
 
 
 @sv.on_rex(re.compile(r"^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$", re.IGNORECASE))
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
-    ids = ev.message.extract_plain_text()
-    if not ids:
+    if not (ids := ev.message.extract_plain_text().split()):
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
-
-    ids = ids.split()
-    p_id = ""
-    s_id = ""
+    p_id = s_id = ""
     if len(ids) > 2:
         p_id = ids[1]
         s_id = ids[2]
     else:
         await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]", at_sender=True)
 
-    if os.path.exists(pools_path):
-        try:
-            pools = json.load(open(pools_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            pools = []
-    else:
-        pools = []
-    if not pools:
-        sv.logger.info("No pools exist")
+    try:
+        if not (pools := json.load(open(pools_path, encoding="utf-8")) if os.path.exists(pools_path) else []):
+            sv.logger.info("No pools exist")
+            await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+    except json.decoder.JSONDecodeError:
         await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+        return
 
-    if not os.path.exists(banner_path):
-        sv.logger.info("初始化数据json...")
-        open(banner_path, 'w')
-        banners = []
-    else:
-        banners = json.load(open(banner_path, encoding="utf-8"))
-
+    try:
+        banners = json.load(open(banner_path, encoding="utf-8")) if os.path.exists(banner_path) else {}
+    except json.decoder.JSONDecodeError:
+        banners = {}
     banner = {
         "group": ev.group_id,
         "banner": []
     }
 
-    gp = [each for each in pools if each["id"] == (int(p_id) - 1) and each["type"] == "daily pickup"]
-    if not gp:
+    if not (gp := [each for each in pools if each["id"] == (int(p_id) - 1) and each["type"] == "daily pickup"]):
         await bot.finish(ev, "卡池参数错误")
-    gps = [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == (int(s_id) - 1)]
-    if not gps:
+    if not (gps := [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == (int(s_id) - 1)]):
         await bot.finish(ev, "卡池参数错误")
 
     sp = {
@@ -204,6 +179,8 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     if "sub_title" in banner["banner"]:
         b_name = banner["banner"]["sub_title"]
     await bot.send(ev, f"切换fgo卡池成功！当前卡池：\n{b_name}({banner['banner']['server']})\n从属活动：\n{title}")
+    shortcut = get_current_banner_info(ev, banner)
+    await bot.send(ev, shortcut) if shortcut else ""
 
 
 # @sv.on_prefix("fgo十连", only_to_me=True)
@@ -359,7 +336,7 @@ async def gacha_10(bot: HoshinoBot, ev: CQEvent):
         if get_pup4 + get_4 > 1:
             msg += "多黄不亏\n"
         if not get_pup4 and not get_4:
-            msg += "零鸡蛋！酋长，咱们回非洲吧！\n"
+            msg += "一秒十连，只是技术性调整，别慌\n"
         if not get_pup4_id and get_4:
             if get_4 == 1:
                 msg += "出金就行.jpg\n"
@@ -651,3 +628,37 @@ async def kakin(bot: HoshinoBot, ev: CQEvent):
             count += 1
     if count:
         await bot.send(ev, f"已为{count}位用户充值完毕！谢谢惠顾～")
+
+
+def get_current_banner_info(ev: CQEvent, banner: dict) -> str:
+    pool_details: dict = gen_pool_data(banner, ev=ev)
+    selected_banner = {}
+    for each in pool_details:
+        if each["group"] == ev.group_id:
+            selected_banner = each["data"]
+    if not selected_banner:
+        return ""
+    pool_info = ""
+    if "svt_pup_5" in selected_banner:
+        pool_info += "本池UP5☆从者："
+        for each_up5 in selected_banner["svt_pup_5"]:
+            local_svt5 = os.path.join(svt_path, f"Servant{each_up5.zfill(3)}.jpg")
+            if os.path.exists(local_svt5):
+                pool_info += f"{gen_ms_img(Image.open(local_svt5))}"
+        pool_info += "\n"
+    if "svt_pup_4" in selected_banner:
+        pool_info += "本池UP4☆从者："
+        for each_up4 in selected_banner["svt_pup_4"]:
+            local_svt4 = os.path.join(svt_path, f"Servant{each_up4.zfill(3)}.jpg")
+            if os.path.exists(local_svt4):
+                pool_info += f"{gen_ms_img(Image.open(local_svt4))}"
+        pool_info += "\n"
+    if "svt_pup_3" in selected_banner:
+        pool_info += "本池UP3☆从者："
+        for each_up3 in selected_banner["svt_pup_3"]:
+            local_svt3 = os.path.join(svt_path, f"Servant{each_up3.zfill(3)}.jpg")
+            if os.path.exists(local_svt3):
+                pool_info += f"{gen_ms_img(Image.open(local_svt3))}"
+        pool_info += "\n"
+
+    return pool_info.strip()

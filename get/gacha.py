@@ -18,8 +18,6 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]
         print("no banner")
         return 12, 0, 0
 
-    server: str = banner["banner"]["server"]
-
     gacha_data = json.load(open(gacha_path, encoding="utf-8"))
     data = {}
     for each in gacha_data:
@@ -35,48 +33,19 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]
         print("data error")
         return 13, 0, 0
 
-    pool_data = {
-        "group": gid,
-        "data": {}
-    }
-    for each in data["servants"]:
-        each["weight"] /= 100
-        each["weight"] = round(each["weight"], 3)
-        d = {
-            each["type"]: each["ids"],
-            each["type"] + "_rate": each["weight"]
-        }
-        pool_data["data"].update(d)
+    server: str = banner["banner"]["server"]
+    pool_detail_data = gen_pool_data(banner, gid=gid)
+    if not pool_detail_data:
+        print("data error")
+        return 13, 0, 0
+    pool_data = {}
+    for each_pool_data in pool_detail_data:
+        if each_pool_data["group"] == gid:  # noqa
+            pool_data = each_pool_data
 
-    for each in data["crafts"]:
-        each["weight"] /= 100
-        each["weight"] = round(each["weight"], 3)
-        d = {
-            each["type"]: each["ids"],
-            each["type"] + "_rate": each["weight"]
-        }
-        pool_data["data"].update(d)
-
-    if not os.path.exists(banner_data_path):
-        print("初始化数据json...")
-        open(banner_data_path, 'w')
-        pool_detail_data = []
-    else:
-        try:
-            pool_detail_data = json.load(open(banner_data_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            pool_detail_data = []
-
-    exists = False
-    for i in range(len(pool_detail_data)):
-        if pool_detail_data[i]["group"] == gid:
-            pool_detail_data[i] = pool_data
-            exists = True
-    if not exists:
-        pool_detail_data.append(pool_data)
-
-    with open(banner_data_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(pool_detail_data, indent=2, ensure_ascii=False))
+    if not pool_data:
+        print("data error")
+        return 13, 0, 0
 
     try:
         result = await get_gacha_result(pool_data["data"])

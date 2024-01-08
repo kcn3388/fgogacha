@@ -108,7 +108,7 @@ async def get_all_mooncell(bot: HoshinoBot, ev: CQEvent):
             updates["cmd"].extend(updated_cmd_list)
 
     for each_attr in updates:
-        updates[each_attr] = list(set(updates[each_attr]))
+        updates[each_attr].sort()
 
     with open(update_data_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(updates, indent=2, ensure_ascii=False))
@@ -152,7 +152,7 @@ async def get_all_mooncell_svt(bot: HoshinoBot, ev: CQEvent):
             if updated_servant_list is not None:
                 updates["svt"].extend(updated_servant_list)
 
-        updates["svt"] = list(set(updates["svt"]))
+        updates["svt"].sort()
 
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
@@ -213,7 +213,7 @@ async def get_all_mooncell_cft(bot: HoshinoBot, ev: CQEvent):
             if updated_cft_list is not None:
                 updates["cft"].extend(updated_cft_list)
 
-        updates["cft"] = list(set(updates["cft"]))
+        updates["cft"].sort()
 
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
@@ -274,7 +274,7 @@ async def get_all_mooncell_cmd(bot: HoshinoBot, ev: CQEvent):
             if updated_cmd_list is not None:
                 updates["cmd"].extend(updated_cmd_list)
 
-        updates["cmd"] = list(set(updates["cmd"]))
+        updates["cmd"].sort()
 
         with open(update_data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(updates, indent=2, ensure_ascii=False))
@@ -330,6 +330,17 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     else:
         sv_fetch.logger.info("下载纹章完成")
         await bot.send(ev, "下载纹章完成~")
+
+    # await bot.send(ev, "开始下载技能图标")
+    icon_stat = await download_icon_skill(crt_file)
+    if not isinstance(icon_stat, int):
+        await bot.finish(ev, f'下载技能图标资源失败，原因：\n{icon_stat}')
+    if icon_stat:
+        sv_fetch.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "技能图标资源已是最新~稍后再来试试吧~")
+    else:
+        sv_fetch.logger.info("下载技能图标完成")
+        await bot.send(ev, "下载技能图标完成~")
 
     # await bot.finish(ev, "下载完成")
 
@@ -401,3 +412,34 @@ async def down_all_card_res(bot: HoshinoBot, ev: CQEvent):
     else:
         sv_fetch.logger.info("下载纹章完成")
         await bot.send(ev, "下载纹章完成~")
+
+
+@sv_fetch.on_fullmatch("下载全部图标资源")
+async def down_all_icon_res(bot: HoshinoBot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '此命令仅群管可用~')
+
+    crt_file = False
+    group_config = load_config(ev, True)
+    if group_config["crt_path"]:
+        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+
+    await bot.send(ev, "开始下载，进度请查看后台~")
+    # await bot.send(ev, "开始下载技能图标")
+    icon_stat = await download_icon_skill(crt_file)
+    if not isinstance(icon_stat, int):
+        await bot.finish(ev, f'下载技能图标资源失败，原因：\n{icon_stat}')
+    if icon_stat:
+        sv_fetch.logger.info('资源没有更新，跳过……')
+        await bot.send(ev, "技能图标资源已是最新~稍后再来试试吧~")
+    else:
+        sv_fetch.logger.info("下载技能图标完成")
+        await bot.send(ev, "下载技能图标完成~")
+
+# updates = json.load(open(update_data_path, encoding="utf-8"))
+# for each_attr in updates:
+#     updates[each_attr] = [int(x) for x in updates[each_attr]]
+#     updates[each_attr].sort()
+#
+# with open(update_data_path, "w", encoding="utf-8") as f:
+#     f.write(json.dumps(updates, indent=2, ensure_ascii=False))

@@ -37,7 +37,7 @@ async def local_find_cft(bot: HoshinoBot, ev: CQEvent):
     for i in cft:
         if is_search_id:
             try:
-                cft_data.append(cft[jsonpath(cft, "$..id").index(search_id)])
+                cft_data.append(jsonpath(cft, f"$..[?(@.id=='{search_id}')]")[0])
                 break
             except ValueError:
                 pass

@@ -30,22 +30,20 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
             is_search_id = True
 
     banned_keys = [
-        "Hit信息括号内为每hit伤害百分比",
-        "Quick",
-        "Arts",
-        "Buster",
-        "Extra",
-        "宝具",
-        "受击",
-        "出星率",
-        "被即死率",
-        "暴击星分配权重"
+        "detail",
+        "rare",
+        "cards_url",
+        "fool",
+        "svt_detail",
+        "method_get",
+        "pup",
+        "语音"
     ]
 
     for i in svt:
         if is_search_id:
             try:
-                svt_data.append(svt[jsonpath(svt, "$..id").index(search_id)])
+                svt_data.append(jsonpath(svt, f"$..[?(@.id=='{search_id}')]")[0])
                 break
             except ValueError:
                 pass
@@ -59,6 +57,8 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                 if j == "宝具信息":
                     for index in range(len(i[j])):
                         for each in i[j][index]:
+                            if not each == "中文" and not each == "日文":
+                                continue
                             trans[f"{each}{index}"] = i[j][index][each]
                 counter = 1
                 for k in i[j]:
@@ -71,11 +71,12 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                 if j == "技能":
                     for skills in i[j]:
                         for each in i[j][skills]:
-                            skill_info = i[j][skills][each]
-                            if each == "图标":
+                            try:
+                                skill_info = i[j][skills][each]
+                            except TypeError:
                                 continue
-                            if isinstance(i[j][skills][each], list):
-                                skill_info = i[j][skills][each][0]
+                            if not each == "中文" and not each == "日文":
+                                continue
                             trans[f"{skills}{each}"] = skill_info
                 if j == "svt_detail" or j == "cards_url":
                     continue
@@ -167,47 +168,10 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
         for each in svt_data:
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):
-                msg_error = ""
                 if "error" in each:
-                    msg_error += f"从者{each['id']}数据存在错误，请使用[修补fgo图书馆 + 从者 + id]修补\n"
-                    error_num = len(each["error"])
-                    for each_error in each["error"]:
-                        if each_error.startswith("aiorequest"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "基础数据错误\n"
-                        if each_error.startswith("first bs error"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "从者数据错误\n"
-                        if each_error.startswith("find power bs error"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "技能/宝具数据错误\n"
-                        if each_error.startswith("get card img error"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "卡面数据错误\n"
-                        if each_error.startswith("get star error"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "星级数据错误\n"
-                        if each_error.startswith("svt_info_main"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "主描述数据错误\n"
-                        if each_error.startswith("svt_info"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "描述数据错误\n"
-                        if each_error.startswith("svt_detail"):
-                            if not error_num == 1:
-                                msg_error += f'错误{each["error"].index(each_error) + 1}：'
-                            msg_error += "描述详情数据错误\n"
-
-                    send_error = gen_node(msg_error.strip())
-                    details.append(send_error)
-                    continue
+                    msg_error = f"从者{each['id']}数据存在错误，请使用[修补fgo图书馆 + 从者 + id]修补\n"
+                    await bot.send(ev, msg_error)
+                    return
 
                 if len(svt_data) < 2:
                     msg_send = f"你找的可能是：\n{each['name_link']}\n"
@@ -219,12 +183,12 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                         msg_send += f"【{counter}】：{each['name_link']}\n"
                     counter += 1
 
-                # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-                # class_ = os.path.join(class_path, each["class_icon"])
-                # if os.path.exists(class_):
-                #     class_img = Image.open(class_)
-                #     pic_card = util.pic2b64(class_img)
-                #     msg_send += f"{MessageSegment.image(pic_card)}\n"
+                # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
+                class_ = os.path.join(class_path, each["class_icon"])
+                if os.path.exists(class_):
+                    class_img = Image.open(class_)
+                    pic_card = util.pic2b64(class_img)
+                    msg_send += f"{MessageSegment.image(pic_card)}\n"
 
                 if os.path.exists(img_path):
                     msg_send += f"{gen_ms_img(Image.open(img_path))}\n"
@@ -248,45 +212,31 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                     details.append(send_card)
 
                 if not remove_data:
-                    msg_data = ""
-                    for data in each["detail"]:
-                        if not data == "职阶":
-                            if data == "NP获得率":
-                                np = str(each['detail'][data]).replace(",", ",\n")
-                                msg_data += f"{data}：{np}\n"
-                            elif data == "画师":
-                                artist_info = str(each['detail'][data]).replace(
-                                    "{", ""
-                                ).replace("}", "").replace(",", "\n").strip()
-                                msg_data += f"{data}：{artist_info}\n"
-                            else:
-                                msg_data += f"{data}：{each['detail'][data]}\n"
+                    msg_data = str(each["detail"]).replace(",", ",\n")
                     send_data = gen_node(create_img(msg_data.strip()))
                     details.append(send_data)
 
                 if not remove_info:
                     for data in each["svt_detail"]:
-                        msg_info = f"{data}：\n{each['svt_detail'][data]['资料']}\n"
+                        msg_info = f"{data}：\n{each['svt_detail'][data]['中文']}\n\n{each['svt_detail'][data]['日文']}\n"
                         send_info = gen_node(create_img(msg_info.strip()))
                         details.append(send_info)
 
                 if not remove_fool:
-                    if not each['fool']['资料'] == "" and not each['fool']['原文'] == "":
-                        msg_fool = f"愚人节：\n{each['fool']['资料']}\n"
-                        jp = each['fool']['原文'].replace('。', '。\n')
-                        msg_fool += f"原文：\n{jp}\n"
-                        send_fool = gen_node(create_img(msg_fool.strip()))
-                        details.append(send_fool)
+                    if each['fool']['资料']:
+                        for each_fool_cn in each['fool']['资料']:
+                            msg_fool = f"愚人节资料：\n{each_fool_cn}\n"
+                            send_fool = gen_node(create_img(msg_fool.strip()))
+                            details.append(send_fool)
+                    if each['fool']['原文']:
+                        for each_fool_jp in each['fool']['原文']:
+                            msg_fool = f"愚人节原文：\n{each_fool_jp}\n"
+                            jp = msg_fool.replace('。', '。\n')
+                            send_fool = gen_node(create_img(jp.strip()))
+                            details.append(send_fool)
 
                 if not remove_ultimate:
-                    msg_ultimate = ""
-                    for index in range(len(each["宝具信息"])):
-                        if len(each["宝具信息"]) > 1:
-                            msg_ultimate += f"宝具{index + 1}：\n"
-                        else:
-                            msg_ultimate += "宝具：\n"
-                        for data in each["宝具信息"][index]:
-                            msg_ultimate += f"\t\t\t\t{data}：{each['宝具信息'][index][data]}\n"
+                    msg_ultimate = str(each["宝具信息"]).replace(",", ",\n")
                     send_ultimate = gen_node(create_img(msg_ultimate.strip()))
                     details.append(send_ultimate)
 
@@ -295,44 +245,21 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
                         if each["技能"] == {}:
                             break
                         msg_skill = f"{skills}\n"
-                        msg_skill_icon = ""
-                        for data in each["技能"][skills]:
-                            if data == "图标":
-                                icon = await gen_img_from_url(each["技能"][skills][data], crt_file)
-                                if not isinstance(icon, Exception):
-                                    msg_skill_icon += f"{icon}\n"
-                                continue
-                            if isinstance(each["技能"][skills][data], list):
-                                msg_skill += f'\t\t\t\t{data}：\n'
-                                for each_value in each["技能"][skills][data]:
-                                    msg_skill += f'\t\t\t\t\t\t\t\t{each_value}\n'
-                            else:
-                                msg_skill += f'\t\t\t\t{data}：{each["技能"][skills][data]}\n'
-
+                        msg_skill_icon = MessageSegment.image(os.path.join(skill_path, f"{skills['类型']}"))
                         msg_skill = msg_skill_icon + create_img(msg_skill.strip())
                         send_skill = gen_node(msg_skill)
                         details.append(send_skill)
 
                 if not remove_voice:
-                    for each_type in each["语音"]:
-                        msg_voice = f"{each_type}：\n"
-                        for each_voice in each["语音"][each_type]:
-                            msg_voice += f'\t\t\t\t{each_voice}：' \
-                                         f'\n\t\t\t\t\t\t\t\t{each["语音"][each_type][each_voice]["文本"]}\n'
-
-                        msg_voice = create_img(msg_voice.strip())
-                        send_voice = gen_node(msg_voice)
-                        details.append(send_voice)
+                    msg_voice = str(each["语音"]).replace(",", ",\n")
+                    msg_voice = create_img(msg_voice.strip())
+                    send_voice = gen_node(msg_voice)
+                    details.append(send_voice)
                 if not remove_pup:
-                    method = each["method"]
-                    if "圣晶石常驻" not in method and "期间限定" not in method:
-                        if "友情" in method:
-                            details.append(gen_node("该从者只能通过友情池获取"))
-                        else:
-                            details.append(gen_node("该从者是赠送的从者"))
-                    elif not each["pup"]:
-                        details.append(gen_node("该从者国服未来没有Pick Up"))
-                    else:
+                    if "method_get" in each:
+                        how = f"获得方法：\n{each['method_get']}".strip()
+                        details.append(gen_node(how))
+                    if "pup" in each:
                         details.append(gen_node("国服未来Pick Up情况："))
                         pool_counter = 1
                         for each_pool in each["pup"]:
@@ -418,11 +345,11 @@ async def local_find_svt(bot: HoshinoBot, ev: CQEvent):
             counter += 1
 
             # # 因为奇奇怪怪的风控，暂时屏蔽职阶图标
-            # class_ = os.path.join(class_path, each["class_icon"])
-            # if os.path.exists(class_):
-            #     class_img = Image.open(class_)
-            #     pic_card = util.pic2b64(class_img)
-            #     msg_send += f"{MessageSegment.image(pic_card)}\n"
+            class_ = os.path.join(class_path, each["class_icon"])
+            if os.path.exists(class_):
+                class_img = Image.open(class_)
+                pic_card = util.pic2b64(class_img)
+                msg_send += f"{MessageSegment.image(pic_card)}\n"
 
             img_path = os.path.join(svt_path, each["svt_icon"])
             if os.path.exists(img_path):

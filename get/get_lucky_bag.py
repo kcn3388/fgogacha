@@ -21,7 +21,11 @@ async def get_all_lucky_bag(crt_file: Union[str, bool] = False) -> Union[Excepti
         try:
             lucky_bag_page = await aiorequests.get(lucky_bag_url, timeout=20, verify=crt_file, headers=headers)
         except OSError:
-            lucky_bag_page = await aiorequests.get(lucky_bag_url, timeout=20, verify=False, headers=headers)
+            try:
+                sleep(10)
+                lucky_bag_page = await aiorequests.get(lucky_bag_url, timeout=20, headers=headers)
+            except Exception as e2:
+                return e2
         except Exception as e:
             return e
         soup = BeautifulSoup(await lucky_bag_page.content, 'html.parser')
@@ -101,7 +105,11 @@ async def get_lucky_bag_detail(bag: dict, crt_file: Union[str, bool] = False) ->
     try:
         bag_detail_page = await aiorequests.get(bag_url, timeout=20, verify=crt_file, headers=headers)
     except OSError:
-        bag_detail_page = await aiorequests.get(bag_url, timeout=20, verify=False, headers=headers)
+        try:
+            sleep(10)
+            bag_detail_page = await aiorequests.get(bag_url, timeout=20, headers=headers)
+        except Exception as e2:
+            return e2
     except Exception as e:
         return e
 
