@@ -29,8 +29,16 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 更新日志
 ======
 
-### 2023
+### 2024
 #### ※建议更新后清除全部配置文件并重新生成，每次更新会尽可能兼容之前的配置文件，但是出现问题请先排查配置文件的问题
+- 🚀 **v2.7.3 (2023-02-19)**
+  - 移除弃用的pillow函数
+- 🚀 **v2.7.2 (2023-01-22)**
+  - 优化在线功能
+    - 不再需要crt文件
+- 🚀 **v2.7.1 (2023-01-09)**
+  - 修复福袋获取功能
+  - 优化代码
 - 🚀 **v2.7.0 (2023-12-29)**
   - 现在切换卡池可以看到本池子up的从者图标
   - 完成图书馆功能重构，大幅提高准确率与速度
@@ -42,6 +50,11 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
       - 用于将图书馆的在线资源缓存到本地
     - `下载全部图标资源`
       - 用于抓取全部技能图标
+
+<details>
+<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
+
+### 2023
 - 🚀 **v2.6.12 (2023-06-06)**
   - 修复获取未来卡池
 - 🚀 **v2.6.11 (2023-06-02)**
@@ -50,11 +63,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
       - **新增依赖：`jsonpath`**
   - 优化代码
     - **本次更新后需要重新生成配置文件**
-
-<details>
-<summary><span style="font-weight: bold; font-size: 150%">过往更新归档</span></summary>
-
-### 2023
 - 🚀 **v2.6.10 (2023-04-20)**
   - 修复获取fgo福袋缺少ssl验证导致的问题
 - 🚀 **v2.6.9 (2023-04-13)**
@@ -340,9 +348,11 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 
 </details>
 
-使用方法
-======
-# 安装依赖：`pip install -r ./requirements.txt`
+# 使用方法
+- 将本项目放在hoshino/modules/目录下
+- 安装依赖：`pip install -r ./requirements.txt`
+- res目录为抽卡相关素材，需要手动使用指令下载，路径为Hoshino的res/img/fgo文件夹下。
+- 使用“fgo数据初始化”“fgo数据下载”“获取fgo卡池”载入卡池数据
 
 # 抽卡模拟相关
 
@@ -379,10 +389,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 ``[fgo数据下载]`` 下载从者及礼装以及纹章图标，务必先初始化数据再执行下载！
 
 ``[跟随最新/剧情卡池]`` 设置卡池数据更新后跟随最新国服卡池还是国服剧情卡池
-
-``[fgo_enable_crt + crt文件路径]`` 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
-
-``[fgo_check_crt]`` 检查本群crt文件配置状态
 
 ``[重载配置文件]`` 为本群新建默认配置或还原至默认配置，同时修补其他群的配置
 
@@ -466,13 +472,6 @@ WIKI：https://github.com/kcn3388/fgogacha/wiki <br>
 - 若关键词大于两个，只会搜索同时符合的
 - 可以附带参数``详细``以获取卡面及游戏数据
 - 查询特定id的纹章同上
-
-安装
-======
-
-- 将本项目放在hoshino/modules/目录下
-- res目录为抽卡相关素材，需要手动使用指令下载，路径为Hoshino的res/img/fgo文件夹下。
-- 使用“fgo数据初始化”“fgo数据下载”“获取fgo卡池”载入卡池数据
 
 说明
 ======

@@ -15,7 +15,7 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]
             exists = True
 
     if not exists:
-        print("no banner")
+        sv.logger.info("no banner")
         return 12, 0, 0
 
     gacha_data = json.load(open(gacha_path, encoding="utf-8"))
@@ -30,13 +30,13 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]
                 data: dict = each
                 break
     if len(data) == 0:
-        print("data error")
+        sv.logger.info("data error")
         return 13, 0, 0
 
     server: str = banner["banner"]["server"]
     pool_detail_data = gen_pool_data(banner, gid=gid)
     if not pool_detail_data:
-        print("data error")
+        sv.logger.info("data error")
         return 13, 0, 0
     pool_data = {}
     for each_pool_data in pool_detail_data:
@@ -44,7 +44,7 @@ async def gacha(gid: int) -> Union[Tuple[int, int, int], Tuple[list, str, dict]]
             pool_data = each_pool_data
 
     if not pool_data:
-        print("data error")
+        sv.logger.info("data error")
         return 13, 0, 0
 
     try:

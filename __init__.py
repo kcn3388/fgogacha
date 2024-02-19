@@ -25,13 +25,13 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 @sv.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[卡k][池c]$", re.IGNORECASE))
 async def get_fgo_pool(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, "开始更新....")
-    group_config = load_config(ev, True)
-    crt_file = os.path.join(crt_folder_path, group_config["crt_path"]) if group_config["crt_path"] else False
-    if not isinstance(download_stat := await get_gacha_pools(True, crt_file), int):
-        await bot.finish(ev, f'更新失败，原因：\n{download_stat}')
-    await bot.send(
-        ev, "获取卡池完成"
-    ) if not download_stat else await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
+    async with ClientSession(headers=headers) as session:
+        if not isinstance(download_stat := await get_gacha_pools(True, session), int):
+            await bot.send(ev, f'更新失败，原因：\n{download_stat}')
+            return
+        await bot.send(
+            ev, "获取卡池完成"
+        ) if not download_stat else await bot.send(ev, "本地卡池和线上卡池是一样的啦~\n晚点再来看看吧~")
 
 
 @sv.on_rex(re.compile(r"^[查c][询x][fb]go[卡k][池c]$", re.IGNORECASE))
@@ -42,7 +42,8 @@ async def check_pool(bot: HoshinoBot, ev: CQEvent):
         pools = []
     if not pools:
         sv.logger.info("No pools exist")
-        await bot.finish(ev, "没有卡池你查个🔨！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.send(ev, "没有卡池你查个🔨！请先获取卡池！\n指令：[获取fgo卡池]")
+        return
 
     msg = "当前卡池："
     for each in pools:
@@ -64,8 +65,11 @@ async def check_pool(bot: HoshinoBot, ev: CQEvent):
             b_name = banner[0]["banner"]["sub_title"]
         group = f"\n\n本群{ev.group_id}卡池：\n{b_name}({banner[0]['banner']['server']})\n从属活动：\n{title}"
         msg += group
+    if not banner:
+        await bot.send(ev, "第一次使用请先执行[切换FGO卡池]")
+        return
 
-    # if len(msg) > 200:
+        # if len(msg) > 200:
     _banner = [gen_node(msg)]
     banner_info = get_current_banner_info(ev, banner[0])
     _banner.append(gen_node(banner_info)) if banner_info else sv.logger.info(f"no banner in group {ev.group_id}")
@@ -78,7 +82,8 @@ async def check_pool(bot: HoshinoBot, ev: CQEvent):
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     p_id = p_ids[1] if len(p_ids := ev.message.extract_plain_text().split()) > 1 else p_ids[0]
     if not p_id.isdigit():
-        await bot.finish(ev, "食用指南：[切换fgo卡池 + 编号]", at_sender=True)
+        await bot.send(ev, "食用指南：[切换fgo卡池 + 编号]", at_sender=True)
+        return
 
     try:
         pools = json.load(open(pools_path, encoding="utf-8")) if os.path.exists(pools_path) else []
@@ -86,7 +91,8 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
         pools = []
     if not pools:
         sv.logger.info("No pools exist")
-        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.send(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+        return
 
     try:
         banners = json.load(open(banner_path, encoding="utf-8")) if os.path.exists(banner_path) else {}
@@ -98,10 +104,12 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     }
 
     if not (dp_pool := [each for each in pools if each["id"] == int(p_id) - 1]):
-        await bot.finish(ev, "卡池编号不存在")
+        await bot.send(ev, "卡池编号不存在")
+        return
     banner["banner"] = dp_pool[0]
     if dp_pool[0]["type"] == "daily pickup":
-        await bot.finish(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
+        await bot.send(ev, "日替卡池请使用指令：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]")
+        return
 
     gb_index = [i for i in range(len(banners)) if banners[i]["group"] == ev.group_id]
     if not gb_index:
@@ -121,20 +129,22 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
 @sv.on_rex(re.compile(r"^[切qs][换hw][fb]go[日rd][替tp][卡k][池c](\s\d+\s\d+)?$", re.IGNORECASE))
 async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     if not (ids := ev.message.extract_plain_text().split()):
-        await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
-    p_id = s_id = ""
+        await bot.send(ev, "食用指南：[切换fgo日替卡池 + 编号 + 子编号]", at_sender=True)
+        return
     if len(ids) > 2:
         p_id = ids[1]
         s_id = ids[2]
     else:
-        await bot.finish(ev, "食用指南：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]", at_sender=True)
+        await bot.send(ev, "食用指南：[切换fgo日替卡池 + 卡池编号 + 子卡池编号]", at_sender=True)
+        return
 
     try:
         if not (pools := json.load(open(pools_path, encoding="utf-8")) if os.path.exists(pools_path) else []):
             sv.logger.info("No pools exist")
-            await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+            await bot.send(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+            return
     except json.decoder.JSONDecodeError:
-        await bot.finish(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
+        await bot.send(ev, "没有卡池你切换个🐔8️⃣！请先获取卡池！\n指令：[获取fgo卡池]")
         return
 
     try:
@@ -147,14 +157,16 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     }
 
     if not (gp := [each for each in pools if each["id"] == (int(p_id) - 1) and each["type"] == "daily pickup"]):
-        await bot.finish(ev, "卡池参数错误")
+        await bot.send(ev, "卡池参数错误")
+        return
     if not (gps := [sub_pool for sub_pool in gp[0]["sub_pool"] if sub_pool["id"] == (int(s_id) - 1)]):
-        await bot.finish(ev, "卡池参数错误")
+        await bot.send(ev, "卡池参数错误")
+        return
 
     sp = {
         "id": gp[0]["id"],
         "title": gp[0]["title"],
-        "href": gp[0]["href"],
+        "href": unquote(gp[0]["href"]),
         "banner": gp[0]["banner"],
         "sub_title": gps[0]["sub_title"],
         "server": gp[0]["server"],
@@ -164,7 +176,8 @@ async def switch_pool(bot: HoshinoBot, ev: CQEvent):
     banner["banner"] = sp
 
     if not banner["banner"]:
-        await bot.finish(ev, "卡池编号不存在")
+        await bot.send(ev, "卡池编号不存在")
+        return
 
     gb_index = [i for i in range(len(banners)) if banners[i]["group"] == ev.group_id]
     if not gb_index:
@@ -193,14 +206,17 @@ async def gacha_10(bot: HoshinoBot, ev: CQEvent):
         return
     lmt.start_cd(ev.user_id)
     if not jewel_limit.check(f"{ev.user_id}@{ev.group_id}"):
-        await bot.finish(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
+        await bot.send(ev, JEWEL_EXCEED_NOTICE, at_sender=True)
+        return
     jewel_limit.increase(f"{ev.user_id}@{ev.group_id}", 1)
 
     gacha_result, server, pool_list = await gacha(gid)
     if gacha_result == 12:
-        await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
+        await bot.send(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
+        return
     if gacha_result == 13:
-        await bot.finish(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
+        await bot.send(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
+        return
 
     if not gacha_result:
         return
@@ -382,7 +398,8 @@ async def gacha_100(bot: HoshinoBot, ev: CQEvent):
         return
     lmt.start_cd(ev.user_id)
     if not tenjo_limit.check(f"{ev.user_id}@{ev.group_id}"):
-        await bot.finish(ev, TENJO_EXCEED_NOTICE, at_sender=True)
+        await bot.send(ev, TENJO_EXCEED_NOTICE, at_sender=True)
+        return
     tenjo_limit.increase(f"{ev.user_id}@{ev.group_id}", 1)
 
     g100 = []
@@ -402,9 +419,11 @@ async def gacha_100(bot: HoshinoBot, ev: CQEvent):
     msg = ""
 
     if g100[0] == 12:
-        await bot.finish(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
+        await bot.send(ev, "卡池都没选宁搁这抽空气呢！请先选择卡池！")
+        return
     if g100[0] == 13:
-        await bot.finish(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
+        await bot.send(ev, "卡池数据错误！请更新卡池或重新选择卡池！")
+        return
 
     img_path = []
     get_pup5_id = []
@@ -618,7 +637,8 @@ async def gacha_100(bot: HoshinoBot, ev: CQEvent):
 @sv.on_prefix('氪圣晶石')
 async def kakin(bot: HoshinoBot, ev: CQEvent):
     if ev.user_id not in bot.config.SUPERUSERS:
-        bot.finish(ev, "小孩子别在游戏里氪金！", at_sender=True)
+        await bot.send(ev, "小孩子别在游戏里氪金！", at_sender=True)
+        return
     count = 0
     for m in ev.message:
         if m.type == 'at' and m.data['qq'] != 'all':

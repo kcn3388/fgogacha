@@ -17,16 +17,21 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
 
     if is_3_args:
         if not len(msg) == 3:
-            await bot.finish(ev, "食用指南：[修补fgo图书馆 + 类型 + id]")
+            await bot.send(ev, "食用指南：[修补fgo图书馆 + 类型 + id]")
+            return
 
         if not msg[2].isdigit():
-            await bot.finish(ev, "说了要id，宁这是填了个🔨")
+            await bot.send(ev, "说了要id，宁这是填了个🔨")
+            return
+
     else:
         if not len(msg) == 2:
-            await bot.finish(ev, "食用指南：[修补fgo(类型) + id]")
+            await bot.send(ev, "食用指南：[修补fgo(类型) + id]")
+            return
 
         if not msg[1].isdigit():
-            await bot.finish(ev, "说了要id，宁这是填了个🔨")
+            await bot.send(ev, "说了要id，宁这是填了个🔨")
+            return
 
     try:
         with open(lib_servant_path, 'r', encoding="utf-8") as f:
@@ -41,22 +46,9 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
             crafts = json.load(f)
         with open(all_command_path, 'r', encoding="utf-8") as f:
             commands = json.load(f)
-    except json.decoder.JSONDecodeError or FileNotFoundError:
-        await bot.finish(ev, "本地没有图书馆数据~请先更新图书馆~\n指令：[更新fgo图书馆]")
-    except FileNotFoundError:
-        await bot.finish(ev, "本地没有图书馆数据~请先更新图书馆~\n指令：[更新fgo图书馆]")
-
-    crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each_group in configs["groups"]:
-                if int(each_group) == ev.group_id:
-                    if not configs["groups"][each_group]["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, configs["groups"][each_group]["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
+    except (json.decoder.JSONDecodeError, FileNotFoundError):
+        await bot.send(ev, "本地没有图书馆数据~请先更新图书馆~\n指令：[更新fgo图书馆]")
+        return
 
     rule_svt = re.compile(r"([从c][者z]|svt|servant)", re.IGNORECASE)
     is_svt = False
@@ -67,85 +59,93 @@ async def online_fix_lib(bot: HoshinoBot, ev: CQEvent):
         is_svt = True
         msg = msg[1:]
 
-    fixed = False
-    if is_svt:
-        max_id = svt[0]["id"]
-        if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
-        svt_index = jsonpath(svt, "$..id").index(msg[0])
-        select_servant = jsonpath(servants, f"$..[?(@.id=='{msg[0]}')]")[0]
-        data = await lib_svt(select_servant, crt_file)
-        if "error" in data:
-            sv_lib.logger.error(f"更新从者{select_servant['id']}出错：{data['error']}")
-        else:
-            fixed = True
-        svt[svt_index] = data
+    async with ClientSession(headers=headers) as session:
+        fixed = False
+        if is_svt:
+            max_id = svt[0]["id"]
+            if int(msg[0]) > int(max_id):
+                await bot.send(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
+                return
 
-        with open(lib_servant_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(svt, indent=2, ensure_ascii=False))
-        if fixed:
-            await bot.finish(ev, "已修补从者数据~")
-        else:
-            await bot.finish(ev, "从者数据错误，请再试一次~")
+            svt_index = jsonpath(svt, "$..id").index(msg[0])
+            select_servant = jsonpath(servants, f"$..[?(@.id=='{msg[0]}')]")[0]
+            data = await lib_svt(select_servant, session)
+            if "error" in data:
+                sv_lib.logger.error(f"更新从者{select_servant['id']}出错：{data['error']}")
+            else:
+                fixed = True
+            svt[svt_index] = data
 
-    rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
-    is_cft = False
-    if re.search(rule_cft, msg[1]):
-        is_cft = True
-        msg = msg[2:]
-    if re.search(rule_cft, msg[0]):
-        is_cft = True
-        msg = msg[1:]
+            with open(lib_servant_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(svt, indent=2, ensure_ascii=False))
+            if fixed:
+                await bot.send(ev, "已修补从者数据~")
+            else:
+                await bot.send(ev, "从者数据错误，请再试一次~")
+            return
 
-    fixed = False
-    if is_cft:
-        max_id = cft[0]["id"]
-        if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
+        rule_cft = re.compile(r"([礼l][装z]|cft|craft)", re.IGNORECASE)
+        is_cft = False
+        if re.search(rule_cft, msg[1]):
+            is_cft = True
+            msg = msg[2:]
+        if re.search(rule_cft, msg[0]):
+            is_cft = True
+            msg = msg[1:]
 
-        cft_index = jsonpath(cft, "$..id").index(msg[0])
-        select_craft = jsonpath(crafts, f"$..[?(@.id=='{msg[0]}')]")[0]
-        data = await lib_cft(select_craft)
-        if "error" in data:
-            sv_lib.logger.error(f"更新礼装{cft[cft_index]['id']}出错：{data['error']}")
-        else:
-            fixed = True
-        cft[cft_index] = data
+        fixed = False
+        if is_cft:
+            max_id = cft[0]["id"]
+            if int(msg[0]) > int(max_id):
+                await bot.send(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
+                return
 
-        with open(lib_craft_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(cft, indent=2, ensure_ascii=False))
-        if fixed:
-            await bot.finish(ev, "已修补礼装数据~")
-        else:
-            await bot.finish(ev, "礼装数据错误，请再试一次~")
+            cft_index = jsonpath(cft, "$..id").index(msg[0])
+            select_craft = jsonpath(crafts, f"$..[?(@.id=='{msg[0]}')]")[0]
+            data = await lib_cft(select_craft)
+            if "error" in data:
+                sv_lib.logger.error(f"更新礼装{cft[cft_index]['id']}出错：{data['error']}")
+            else:
+                fixed = True
+            cft[cft_index] = data
 
-    rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
-    is_cmd = False
-    if re.search(rule_cmd, msg[1]):
-        is_cmd = True
-        msg = msg[2:]
-    if re.search(rule_cmd, msg[0]):
-        is_cmd = True
-        msg = msg[1:]
+            with open(lib_craft_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(cft, indent=2, ensure_ascii=False))
+            if fixed:
+                await bot.send(ev, "已修补礼装数据~")
+            else:
+                await bot.send(ev, "礼装数据错误，请再试一次~")
+            return
 
-    fixed = False
-    if is_cmd:
-        max_id = cmd[0]["id"]
-        if int(msg[0]) > int(max_id):
-            await bot.finish(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
+        rule_cmd = re.compile(r"([纹w][章z]|cmd|command)", re.IGNORECASE)
+        is_cmd = False
+        if re.search(rule_cmd, msg[1]):
+            is_cmd = True
+            msg = msg[2:]
+        if re.search(rule_cmd, msg[0]):
+            is_cmd = True
+            msg = msg[1:]
 
-        cmd_index = jsonpath(cmd, "$..id").index(msg[0])
-        select_command = jsonpath(commands, f"$..[?(@.id=='{msg[0]}')]")[0]
-        data = await lib_cmd(select_command)
-        if "error" in data:
-            sv_lib.logger.error(f"更新纹章{cmd[cmd_index]['id']}出错：{data['error']}")
-        else:
-            fixed = True
-        cmd[cmd_index] = data
+        fixed = False
+        if is_cmd:
+            max_id = cmd[0]["id"]
+            if int(msg[0]) > int(max_id):
+                await bot.send(ev, "不存在此id，如果要新增条目请使用[增添fgo图书馆]~")
+                return
 
-        with open(lib_craft_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(cmd, indent=2, ensure_ascii=False))
-        if fixed:
-            await bot.finish(ev, "已修补纹章数据~")
-        else:
-            await bot.finish(ev, "纹章数据错误，请再试一次~")
+            cmd_index = jsonpath(cmd, "$..id").index(msg[0])
+            select_command = jsonpath(commands, f"$..[?(@.id=='{msg[0]}')]")[0]
+            data = await lib_cmd(select_command)
+            if "error" in data:
+                sv_lib.logger.error(f"更新纹章{cmd[cmd_index]['id']}出错：{data['error']}")
+            else:
+                fixed = True
+            cmd[cmd_index] = data
+
+            with open(lib_craft_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps(cmd, indent=2, ensure_ascii=False))
+            if fixed:
+                await bot.send(ev, "已修补纹章数据~")
+            else:
+                await bot.send(ev, "纹章数据错误，请再试一次~")
+            return

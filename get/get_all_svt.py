@@ -4,20 +4,13 @@ from typing import Tuple
 from ..path_and_json import *
 
 
-async def get_all_svt(crt_file: Union[str, bool] = False) -> Union[Exception, Tuple[int, Union[None, list]]]:
+async def get_all_svt(session: ClientSession) -> Union[Exception, Tuple[int, Union[None, list]]]:
     root_svt_url = "https://fgo.wiki/w/%E8%8B%B1%E7%81%B5%E5%9B%BE%E9%89%B4"
     try:
-        get_all = await aiorequests.get(root_svt_url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        try:
-            sleep(10)
-            get_all = await aiorequests.get(root_svt_url, timeout=20, headers=headers)
-        except Exception as e2:
-            return e2
+        raw_data = (await get_content(root_svt_url, session)).decode()
     except Exception as e:
         return e
 
-    raw_data = await get_all.text
     rule = re.compile(r'override_data(\s)?=(\s)?\".+tag=')
     data = re.search(rule, raw_data).group(0)
     data = re.sub(r'override_data(\s)?=(\s)?\"', "", data).split("\\n")

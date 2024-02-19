@@ -4,14 +4,14 @@ from urllib.parse import quote
 from .download import *
 
 
-async def download_svt(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
+async def download_svt(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
-    print("开始下载从者相关……")
+    sv.logger.info("开始下载从者相关……")
     if os.path.exists(svt_path):
         try:
             with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -24,12 +24,12 @@ async def download_svt(crt_file: Union[str, bool] = False) -> Union[int, Excepti
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
                     # 如果是指令卡
                     rule = re.compile(r"(ultimate|card\d)_icon")
                     if re.match(rule, j):
@@ -37,49 +37,49 @@ async def download_svt(crt_file: Union[str, bool] = False) -> Union[int, Excepti
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
                     # 如果是职阶
                     if j == "class_icon":
                         local = os.path.join(class_path, i["local"][j])
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
         except json.decoder.JSONDecodeError:
-            print("不存在从者数据……跳过")
+            sv.logger.info("不存在从者数据……跳过")
     else:
-        print("不存在从者数据……跳过")
+        sv.logger.info("不存在从者数据……跳过")
 
     if not isinstance(download_stat, int):
-        print("存在下载错误：" + str(download_stat))
+        sv.logger.info("存在下载错误：" + str(download_stat))
         return download_stat
 
     if download_stat:
-        print("没有新的资源")
+        sv.logger.info("没有新的资源")
         return download_stat
     else:
-        print("从者下载完成")
+        sv.logger.info("从者下载完成")
         return download_stat
 
 
-async def download_cft(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
+async def download_cft(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
-    print("开始下载礼装相关……")
+    sv.logger.info("开始下载礼装相关……")
     if os.path.exists(cft_path):
         try:
             with open(all_craft_path, 'r', encoding="utf-8") as f:
@@ -92,49 +92,49 @@ async def download_cft(crt_file: Union[str, bool] = False) -> Union[int, Excepti
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
                         local = os.path.join(skill_path, i["local"][j])
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
         except json.decoder.JSONDecodeError:
-            print("不存在礼装数据……跳过")
+            sv.logger.info("不存在礼装数据……跳过")
     else:
-        print("不存在礼装数据……跳过")
+        sv.logger.info("不存在礼装数据……跳过")
 
     if not isinstance(download_stat, int):
-        print("存在下载错误：" + str(download_stat))
+        sv.logger.info("存在下载错误：" + str(download_stat))
         return download_stat
 
     if download_stat:
-        print("没有新的资源")
+        sv.logger.info("没有新的资源")
         return download_stat
     else:
-        print("礼装下载完成")
+        sv.logger.info("礼装下载完成")
         return download_stat
 
 
-async def download_cmd(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
+async def download_cmd(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
 
-    print("开始下载纹章相关……")
+    sv.logger.info("开始下载纹章相关……")
     if os.path.exists(cmd_path):
         try:
             with open(all_command_path, 'r', encoding="utf-8") as f:
@@ -147,42 +147,42 @@ async def download_cmd(crt_file: Union[str, bool] = False) -> Union[int, Excepti
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
                     # 如果是技能
                     if j == "skill_icon":
                         local = os.path.join(skill_path, i["local"][j])
                         online = f'{basic_url}{i["online"][j]}'
                         if os.path.exists(local):
                             continue
-                        print(f"======开始下载：{local}======")
+                        sv.logger.info(f"======开始下载：{local}======")
                         download_stat = await download(
-                            online, local, True, crt_file
+                            online, local, True, session
                         )
                         if not isinstance(download_stat, int):
-                            print("download icons error, reason: " + str(download_stat))
+                            sv.logger.info("download icons error, reason: " + str(download_stat))
         except json.decoder.JSONDecodeError:
-            print("不存在纹章数据……跳过")
+            sv.logger.info("不存在纹章数据……跳过")
     else:
-        print("不存在纹章数据……跳过")
+        sv.logger.info("不存在纹章数据……跳过")
 
     if not isinstance(download_stat, int):
-        print("存在下载错误：" + str(download_stat))
+        sv.logger.info("存在下载错误：" + str(download_stat))
         return download_stat
 
     if download_stat:
-        print("没有新的资源")
+        sv.logger.info("没有新的资源")
         return download_stat
     else:
-        print("纹章下载完成")
+        sv.logger.info("纹章下载完成")
         return download_stat
 
 
-async def download_icon_skill(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
+async def download_icon_skill(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
     basic_url = "https://fgo.wiki"
     for each in res_paths:
@@ -191,20 +191,8 @@ async def download_icon_skill(crt_file: Union[str, bool] = False) -> Union[int, 
     root_url = "https://fgo.wiki/w/技能一览/技能图标"
     icon_list_url = "https://fgo.wiki/index.php?title=模板:技能图标一览&action=edit"
     try:
-        raw_html = await (await aiorequests.get(root_url, timeout=20, headers=headers, verify=crt_file)).text
-        raw_icon_html = await (
-            await aiorequests.get(icon_list_url, timeout=20, headers=headers, verify=crt_file)
-        ).text
-    except OSError:
-        try:
-            sleep(10)
-            raw_html = await (await aiorequests.get(root_url, timeout=20, headers=headers)).text
-            raw_icon_html = await (
-                await aiorequests.get(icon_list_url, timeout=20, headers=headers)
-            ).text
-        except Exception as e2:
-            logger.error(f"aiorequest error: {e2}")
-            return e2
+        raw_html = (await get_content(root_url, session)).decode()
+        raw_icon_html = (await get_content(icon_list_url, session)).decode()
     except Exception as e:
         logger.error(f"aiorequest error: {e}")
         return e
@@ -230,11 +218,11 @@ async def download_icon_skill(crt_file: Union[str, bool] = False) -> Union[int, 
         online = f'{basic_url}{online_icon}'
         if os.path.exists(local):
             continue
-        print(f"======开始下载：{local}======")
+        sv.logger.info(f"======开始下载：{local}======")
         download_stat = await download(
-            online, local, True, crt_file
+            online, local, True, session
         )
         if not isinstance(download_stat, int):
-            print("download icons error, reason: " + str(download_stat))
+            sv.logger.info("download icons error, reason: " + str(download_stat))
 
     return download_stat

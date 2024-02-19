@@ -1,5 +1,6 @@
 beautifulsoup4
 requests
 jsonpath
-Pillow
+Pillow>=9.5.0
 playwright
+aiohttp

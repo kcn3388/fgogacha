@@ -1,24 +1,20 @@
+import datetime
 import re
+from datetime import datetime
 from typing import Tuple
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from bs4 import BeautifulSoup
 
 from .lib_json import *
 
 
-async def lib_svt_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
+async def lib_svt_online(url: str, session: ClientSession) -> Tuple[Union[Exception, str], int]:
     try:
-        response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        try:
-            sleep(10)
-            response = await aiorequests.get(url, timeout=20, headers=headers)
-        except Exception as e2:
-            return e2, -100
+        soup = BeautifulSoup(await get_content(url, session), 'html.parser')
     except Exception as e:
         return e, -100
-    soup = BeautifulSoup(await response.content, 'html.parser')
+
     is_get = soup.find(class_="SvtCardNameCN")
     if is_get:
         name = soup.find("title").text.split()[0]
@@ -27,7 +23,7 @@ async def lib_svt_online(url: str, crt_file: str = False) -> Tuple[Union[Excepti
         return "在线也没找到", 0
 
 
-async def lib_svt(svt_data: dict, crt_file: str = False) -> dict:
+async def lib_svt(svt_data: dict, session: ClientSession) -> dict:
     # def lib_svt_debug(sid: int = 0) -> dict:
     #     with open(all_servant_path, 'r', encoding="utf-8") as f:
     #         servants = json.load(f)
@@ -81,7 +77,7 @@ async def lib_svt(svt_data: dict, crt_file: str = False) -> dict:
     get_info(svt, raw_data)
 
     await get_pickup(
-        svt, BeautifulSoup(raw_html, 'html.parser'), f'https://fgo.wiki/w/{svt_data["name_link"]}', crt_file
+        svt, BeautifulSoup(raw_html, 'html.parser'), f'https://fgo.wiki/w/{svt_data["name_link"]}', session
     )
 
     get_ultimate(svt, raw_data)
@@ -275,7 +271,7 @@ def get_ultimate(svt: dict, raw_data: str):
         req = ""
         if all_reqs:
             req = all_reqs[ui][0].strip()
-            req = re.sub(r"\[\[.+\|", "", req).replace("]", "") if req else ""
+            req = re.sub(r"\[\[.+\|", "", req).replace("]", "").replace("[", "") if req else ""
             req = req.replace("=", "/") if not req.endswith("=") else req.replace("=", "")
         level = re.search(r"\|阶级=(.+)", ultimate)
         level = level.group(1) if level else ""
@@ -332,7 +328,7 @@ def get_skills(svt: dict, raw_data: str):
         all_normal_names.append(name)
 
         req = re.search(r"\'\'\'技能(.+)?\'\'\'\n([\s\S]+?)\n{{持有技能", normal_skill)
-        req = re.sub(r"\[\[.+\|", "", req.group(2)).replace("]", "") if req else ""
+        req = re.sub(r"\[\[.+\|", "", req.group(2)).replace("]", "").replace("[", "") if req else ""
         all_normal_reqs.append(req)
 
         temp = re.sub(r"<!--.+-->\n|\|.+=.+\n", "", normal_skill).replace("<nowiki", "$$")
@@ -487,7 +483,7 @@ def get_voice(svt: dict, soup: BeautifulSoup):
                 voice_file = ""
             svt_voice[voice_type][voice_title] = {
                 "文本": voice_text,
-                "文件": voice_file
+                "文件": unquote(voice_file)
             }
 
     for each_type in svt_voice:
@@ -498,23 +494,14 @@ def get_voice(svt: dict, soup: BeautifulSoup):
     svt["语音"] = svt_voice
 
 
-async def get_pickup(svt: dict, origin_soup: BeautifulSoup, url: str, crt_file: str):
+async def get_pickup(svt: dict, origin_soup: BeautifulSoup, url: str, session: ClientSession):
     new_url = f"{url}/未来Pick_Up情况"
 
     try:
-        response = await aiorequests.get(new_url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        try:
-            sleep(10)
-            response = await aiorequests.get(new_url, timeout=20, headers=headers)
-        except Exception as e2:
-            svt["error"].append(f"svt{svt['id']} get_pickup error: {e2}")
-            return
+        soup = BeautifulSoup(await get_content(new_url, session), 'html.parser')
     except Exception as e:
         svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
         return
-
-    soup = BeautifulSoup(await response.content, 'html.parser')
 
     try:
         pup = soup.find(class_="mw-parser-output")
@@ -554,47 +541,48 @@ async def get_pickup(svt: dict, origin_soup: BeautifulSoup, url: str, crt_file: 
 
     all_tds = pup.find_all("td")
     for each_td in all_tds:
+        if "页面不存在" in str(each_td):
+            continue
         each_pool: BeautifulSoup = each_td.find("a")
-        img_soup = each_pool.find("img")
         href = each_pool.get("href")
-        try:
-            img_urls = img_soup.get("srcset").split(",")[-1].strip()
-        except AttributeError:
-            img_urls = img_soup.get("data-srcset").split(",")[-1].strip()
-
         pup_future = {
             "title": each_pool.get("title"),
-            "href": href,
-            "img_url": img_urls,
+            "href": unquote(href),
+            "img_url": "",
             "time_start": "",
             "time_end": "",
             "time_delta": ""
         }
-        time_soup = BeautifulSoup(await get_content(f"https://fgo.wiki{href}", crt_file), 'html.parser')
         try:
-            time_info = time_soup.find(text="日服卡池信息")
-            time_start = time_info.find_next("td")
-            time_end = time_start.find_next("td")
-            time_delta = time_end.find_next("td")
-            pup_future["time_start"] = f'{time_start.string.strip()}（JST）'
-            pup_future["time_end"] = f'{time_end.string.strip()}（JST）'
-            pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
-        except Exception as e:
-            sv_lib.logger.error(f"{e}")
+            new_href = href.replace("/w/", "")
+            raw_time = BeautifulSoup(
+                await get_content(f"https://fgo.wiki/index.php?title={new_href}&action=edit", session), 'html.parser'
+            ).find("textarea").text
             try:
-                time_info = time_soup.find(text="日服卡池信息(使用日本标准时间)")
-                time_start = time_info.find_next("td")
-                time_end = time_start.find_next("td")
-                time_delta = time_end.find_next("td")
-                pup_future["time_start"] = f'{time_start.string.strip()}（JST）'
-                pup_future["time_end"] = f'{time_end.string.strip()}（JST）'
-                pup_future["time_delta"] = f'{time_delta.string.strip()}（JST）'
-            except Exception as e:
-                if "error" in svt:
-                    svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
-                else:
-                    svt["error"] = [f"svt{svt['id']} get_pickup error: {e}"]
-                continue
+                img_soup = each_pool.find("img")
+                try:
+                    raw_img_url = img_soup.get("srcset").split(",")[-1].replace("/thumb", "").strip()
+                except AttributeError:
+                    raw_img_url = img_soup.get("data-srcset").split(",")[-1].replace("/thumb", "").strip()
+                img = re.search(r"/images/./../.+?\.png", raw_img_url).group(0)
+            except AttributeError:
+                img_file = re.search(r"\|卡池图文件名jp=(.+?\.png)", raw_time).group(1).replace(" ", "_")
+                img = re.search(rf"/images(/thumb)?/./../{quote(img_file)}", str(soup)).group(0).replace("/thumb", "")
+            pup_future["img_url"] = unquote(img)
+            time_start = datetime.strptime(re.search(r"\|卡池开始时间jp=(.+)", raw_time).group(1), "%Y-%m-%d %H:%M")
+            time_end = datetime.strptime(re.search(r"\|卡池结束时间jp=(.+)", raw_time).group(1), "%Y-%m-%d %H:%M")
+            time_delta = time_end - time_start
+            pup_future["time_start"] = time_start.strftime(
+                f"%Y年%m月%d日({week_list[time_start.weekday()]}) %H:%M（JST）"
+            )
+            pup_future["time_end"] = time_end.strftime(
+                f"%Y年%m月%d日({week_list[time_end.weekday()]}) %H:%M（JST）"
+            )
+            sec = time_delta.seconds
+            pup_future["time_delta"] = f'{time_delta.days}天{int(sec / 3600)}小时{int((sec % 3600) / 60)}分钟（JST）'
+        except Exception as e:
+            svt["error"].append(f"svt{svt['id']} get_pickup error: {e}")
+            continue
         pup_status.append(pup_future)
 
     svt["pup"] = pup_status

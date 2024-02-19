@@ -3,21 +3,14 @@ from typing import Tuple
 from ..path_and_json import *
 
 
-async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union[bool, Exception]]:
+async def get_news(page_size: int = 6, session: ClientSession = None) -> Tuple[int, Union[bool, Exception]]:
     list_news_url = f"https://api.biligame.com/news/" \
                     f"list.action?gameExtensionId=45&positionId=2&pageNum=1&pageSize={page_size} "
     try:
-        list_news = await aiorequests.get(list_news_url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        try:
-            sleep(10)
-            list_news = await aiorequests.get(list_news_url, timeout=20, headers=headers)
-        except Exception as e2:
-            return -100, e2
+        list_news = json.loads((await get_content(list_news_url, session)).decode())["data"]
     except Exception as e:
         return -100, e
 
-    list_news = json.loads(await list_news.text)["data"]
     for index_news in range(len(list_news)):
         new_content: str = list_news[index_news]["content"]
         new_content = f'{new_content.replace("...", "").replace("&nbsp;", "").strip()}...'
@@ -38,17 +31,10 @@ async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union
         single_news_page = f"https://game.bilibili.com/fgo/news.html#!news/0/0/{each}"
         single_news_page_mobile = f"https://game.bilibili.com/fgo/h5/news.html#detailId={each}"
         try:
-            single_news = await aiorequests.get(single_news_url, timeout=20, verify=crt_file, headers=headers)
-        except OSError:
-            try:
-                sleep(10)
-                single_news = await aiorequests.get(single_news_url, timeout=20, headers=headers)
-            except Exception as e2:
-                return -100, e2
+            single_news = json.loads((await get_content(single_news_url, session)).decode())["data"]
         except Exception as e:
             return -100, e
-        single_news = json.loads(await single_news.text)["data"]
-        single_news["content"] = await solve_content(single_news["content"])
+        single_news["content"] = solve_content(single_news["content"])
         single_news["page"] = single_news_page
         single_news["mobile_page"] = single_news_page_mobile
         all_news.append(single_news)
@@ -67,7 +53,7 @@ async def get_news(page_size: int = 6, crt_file: str = None) -> Tuple[int, Union
     return len(all_news), same
 
 
-async def solve_content(news_detail: str) -> str:
+def solve_content(news_detail: str) -> str:
     soup = BeautifulSoup(news_detail, 'html.parser')
     all_text = soup.find_all("span")
     result = ""

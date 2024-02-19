@@ -1,5 +1,5 @@
+import copy
 from hoshino import HoshinoBot
-from requests.exceptions import SSLError
 from .download.download_all_res import download_icon_skill
 from .download.download_icons import *
 from .get.get_all_cft import *
@@ -35,7 +35,9 @@ except KeyError:
 @sv_manage.on_rex(re.compile(r"^[fb]go[管g][理l][帮b][助z]$", re.IGNORECASE))
 async def bangzhu(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
+        await bot.send(ev, '此命令仅群管可用~')
+        return
+
     helps = gen_node(sv_manage_help)
     await bot.send_group_forward_msg(group_id=ev['group_id'], messages=helps)
 
@@ -43,9 +45,9 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 @sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][初ci][始sn][化hi]|fgo\sinit$", re.IGNORECASE))
 async def init(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
-    if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
-        await bot.finish(ev, "未配置默认crt文件！请从GitHub获取默认crt文件再运行此插件！")
+        await bot.send(ev, '此命令仅群管可用~')
+        return
+
     if not os.path.exists(basic_path):
         sv_manage.logger.info("数据初始化...")
         sv_manage.logger.info("初始化资源根目录...")
@@ -57,13 +59,14 @@ async def init(bot: HoshinoBot, ev: CQEvent):
     if not os.path.exists(data_path):
         sv_manage.logger.info("初始化data目录...")
         os.mkdir(data_path)
+        os.mkdir(os.path.join(data_path, "data"))
+        os.mkdir(mc_path)
     for each in all_json:
         if not os.path.exists(each):
             sv_manage.logger.info("初始化配置文件json...")
             open(each, 'w')
             if each == config_path:
                 basic_config = {
-                    "crt_path": crt_path,
                     "style": "图片"
                 }
                 configs = {
@@ -82,61 +85,40 @@ async def init(bot: HoshinoBot, ev: CQEvent):
     await bot.send(ev, msg)
 
 
-@sv_manage.on_fullmatch("初始化路径")
-async def init_folder(bot: HoshinoBot, ev: CQEvent):
-    if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
-    if not os.path.exists(os.path.join(crt_folder_path, crt_path)):
-        await bot.finish(ev, "未配置默认crt文件！请从GitHub获取默认crt文件再运行此插件！")
-    if not os.path.exists(basic_path):
-        sv_manage.logger.info("数据初始化...")
-        sv_manage.logger.info("初始化资源根目录...")
-        os.mkdir(basic_path)
-    for each in res_paths:
-        if not os.path.exists(each):
-            sv_manage.logger.info(f"初始化{each}...")
-            os.mkdir(each)
-    if not os.path.exists(data_path):
-        sv_manage.logger.info("初始化data目录...")
-        os.mkdir(data_path)
-
-    msg = "初始化完成！"
-    await bot.send(ev, msg)
-
-
 @sv_manage.on_rex(re.compile(r"^[fb]go[数s][据j][下xd][载zl]$", re.IGNORECASE))
 async def get_fgo_data(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
+        await bot.send(ev, '此命令仅群管可用~')
+        return
+
     if not os.path.exists(basic_path) or not os.path.exists(data_path):
         sv_manage.logger.info("资源路径未初始化...")
-        await bot.finish(ev, "资源路径未初始化！你是不是想下到你ass里？请先初始化资源路径\n指令：[fgo数据初始化]")
+        await bot.send(ev, "资源路径未初始化！你是不是想下到你ass里？请先初始化资源路径\n指令：[fgo数据初始化]")
+        return
 
     sv_manage.logger.info("Downloaded bg-mc-icon.png")
     await bot.send(ev, "开始下载....")
 
-    crt_file = False
-    group_config = load_config(ev, True)
-    if group_config["crt_path"]:
-        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+    async with ClientSession(headers=headers) as session:
+        sv_manage.logger.info("开始下载icon")
+        icon_stat = await download_icons(session)
+        if not isinstance(icon_stat, int):
+            await bot.send(ev, f'下载icons失败，原因：\n{icon_stat}')
+        if icon_stat:
+            sv_manage.logger.info(f'icon没有更新，跳过……')
 
-    sv_manage.logger.info("开始下载icon")
-    icon_stat = await download_icons(crt_file)
-    if not isinstance(icon_stat, int):
-        await bot.send(ev, f'下载icons失败，原因：\n{icon_stat}')
-    if icon_stat:
-        sv_manage.logger.info(f'icon没有更新，跳过……')
-
-    if icon_stat:
-        await bot.send(ev, "没有新的资源~晚点再来看看吧~")
-    else:
-        await bot.send(ev, "下载完成")
+        if icon_stat:
+            await bot.send(ev, "没有新的资源~晚点再来看看吧~")
+        else:
+            await bot.send(ev, "下载完成")
 
 
 @sv_manage.on_rex(re.compile(r"^[g跟][s随][z最j剧][x新q情][k卡][c池]$", re.IGNORECASE))
 async def follow_latest(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
+        await bot.send(ev, '此命令仅群管可用~')
+        return
+
     global FOLLOW_LATEST_POOL
     args = ev.message.extract_plain_text()
     configs = load_config(ev)
@@ -159,68 +141,14 @@ async def follow_latest(bot: HoshinoBot, ev: CQEvent):
         await bot.send(ev, "切换成功，当前跟随剧情卡池")
 
 
-@sv_manage.on_rex(re.compile(r"^fgo_enable_crt(\s.+)?$", re.IGNORECASE))
-async def enable_crt(bot: HoshinoBot, ev: CQEvent):
-    gid = str(ev.group_id)
-    if not priv.check_priv(ev, priv.SUPERUSER):
-        await bot.finish(ev, '此命令仅主さま可用~')
-    crt = ev.message.extract_plain_text().split()
-    crt.pop(0)
-
-    if not crt:
-        await bot.send(ev, "食用指南：[指令 + crt文件路径]，留空设置为默认路径")
-        crt = crt_path
-
-    if isinstance(crt, list):
-        crt = crt[0]
-
-    rule = re.compile(r"^false$", re.IGNORECASE)
-    match = re.match(rule, crt)
-    if match:
-        crt = False
-
-    configs = load_config(ev)
-
-    if gid in configs["groups"]:
-        configs["groups"][gid]["crt_path"] = crt
-    else:
-        configs["groups"][gid] = {
-            "crt_path": crt,
-            "style": "图片"
-        }
-
-    with open(config_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(configs, indent=2, ensure_ascii=False))
-
-    if not crt:
-        await bot.finish(ev, f"已禁用crt文件")
-    else:
-        await bot.finish(ev, f"已配置crt文件，文件路径：{crt}")
-
-
-@sv_manage.on_rex(re.compile("^fgo_check_crt$", re.IGNORECASE))
-async def enable_crt(bot: HoshinoBot, ev: CQEvent):
-    if not priv.check_priv(ev, priv.SUPERUSER):
-        await bot.finish(ev, '此命令仅主さま可用~')
-
-    if not os.path.exists(config_path):
-        await bot.finish(ev, "未配置crt文件")
-
-    crt_config = load_config(ev, True)
-
-    if not crt_config['crt_path']:
-        await bot.finish(ev, "本群已禁用crt文件")
-    else:
-        await bot.finish(ev, f"本群已配置crt文件，文件路径：{crt_config['crt_path']}")
-
-
 @sv_manage.on_rex(re.compile(r"^[切qs][换hw][抽c][卡k][样y][式s]\s(text|img|文字|图片)$", re.IGNORECASE))
 async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
     gid = str(ev.group_id)
     style = ev.message.extract_plain_text().split()
 
     if not os.path.exists(config_path):
-        await bot.finish(ev, "未初始化配置文件")
+        await bot.send(ev, "未初始化配置文件")
+        return
 
     if re.match(re.compile(r"(text|文字)", re.IGNORECASE), style[1]):
         style = "文字"
@@ -230,14 +158,14 @@ async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
 
     if not style == "图片":
         if not style == "文字":
-            await bot.finish(ev, "参数错误")
+            await bot.send(ev, "参数错误")
+            return
 
     configs = load_config(ev)
     if gid in configs:
         configs["groups"][gid]["style"] = style
     else:
         style_config = {
-            "crt_path": crt_path,
             "style": style
         }
         configs["groups"][gid] = style_config
@@ -252,11 +180,11 @@ async def switch_10roll_style(bot: HoshinoBot, ev: CQEvent):
 async def reload_config(bot: HoshinoBot, ev: CQEvent):
     gid = str(ev.group_id)
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
+        await bot.send(ev, '此命令仅群管可用~')
+        return
 
     configs = load_config(ev)
     configs["groups"][gid] = {
-        "crt_path": crt_path,
         "style": "图片"
     }
 
@@ -273,80 +201,75 @@ async def update_pool():
         return
     sv_manage.logger.info("开始自动更新fgo")
 
-    # 寻找crt
-    crt_file = os.path.join(crt_folder_path, crt_path)
-    if not os.path.exists(crt_file):
-        crt_file = False
+    async with ClientSession(headers=headers) as session:
+        # 自动更新卡池
+        r = await get_gacha_pools(True, session)
+        if not isinstance(r, int):
+            sv_manage.logger.error(f"获取卡池失败，原因：{r}")
 
-    # 自动更新卡池
-    try:
-        r = await get_gacha_pools(True, crt_file)
-    except SSLError as e:
-        r = e
-    if not isinstance(r, int):
-        sv_manage.logger.error(f"获取卡池失败，原因：{r}")
+        # 自动更新新闻
+        news, status = await get_news(6, session)
+        if isinstance(status, Exception):
+            sv_manage.logger.error(f"获取新闻失败，原因：{status}")
 
-    # 自动更新新闻
-    news, status = await get_news(6, crt_file)
-    if isinstance(status, Exception):
-        sv_manage.logger.error(f"获取新闻失败，原因：{status}")
+        # 自动下载资源
+        _, updated_servant_list = await get_all_svt(session)
+        _, updated_cft_list = await get_all_cft(session)
+        _, updated_cmd_list = await get_all_cmd(session)
+        icon_stat = await download_icons(session)
+        icon_skill_stat = await download_icon_skill(session)
 
-    # 自动下载资源
-    _, updated_servant_list = await get_all_svt(crt_file)
-    _, updated_cft_list = await get_all_cft(crt_file)
-    _, updated_cmd_list = await get_all_cmd(crt_file)
-    icon_stat = await download_icons(crt_file)
-    icon_skill_stat = await download_icon_skill(crt_file)
+        if not isinstance(icon_stat, int):
+            sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
+        if icon_stat:
+            sv_manage.logger.info(f'icon没有更新，跳过……')
 
-    if not isinstance(icon_stat, int):
-        sv_manage.logger.error(f'下载icons失败，原因：{icon_stat}')
-    if icon_stat:
-        sv_manage.logger.info(f'icon没有更新，跳过……')
+        if not isinstance(icon_skill_stat, int):
+            sv_manage.logger.error(f'下载skill icons失败，原因：{icon_skill_stat}')
+        if icon_skill_stat:
+            sv_manage.logger.info(f'skill icon没有更新，跳过……')
 
-    if not isinstance(icon_skill_stat, int):
-        sv_manage.logger.error(f'下载skill icons失败，原因：{icon_skill_stat}')
-    if icon_skill_stat:
-        sv_manage.logger.info(f'skill icon没有更新，跳过……')
+        updates = {
+            "svt": [],
+            "cft": [],
+            "cmd": []
+        }
+        if not os.path.exists(update_data_path):
+            sv_fetch.logger.info("初始化数据json...")
+            open(update_data_path, 'w')
+        else:
+            try:
+                updates = json.load(open(update_data_path, encoding="utf-8"))
+            except json.decoder.JSONDecodeError:
+                pass
 
-    updates = {
-        "svt": [],
-        "cft": [],
-        "cmd": []
-    }
-    if not os.path.exists(update_data_path):
-        sv_fetch.logger.info("初始化数据json...")
-        open(update_data_path, 'w')
-    else:
-        try:
-            updates = json.load(open(update_data_path, encoding="utf-8"))
-        except json.decoder.JSONDecodeError:
-            pass
+        if not updates["svt"]:
+            updates["svt"] = updated_servant_list if updated_servant_list is not None else []
+        else:
+            if updated_servant_list is not None:
+                updates["svt"].extend(updated_servant_list)
 
-    if not updates["svt"]:
-        updates["svt"] = updated_servant_list if updated_servant_list is not None else []
-    else:
-        if updated_servant_list is not None:
-            updates["svt"].extend(updated_servant_list)
+        if not updates["cft"]:
+            updates["cft"] = updated_cft_list if updated_cft_list is not None else []
+        else:
+            if updated_cft_list is not None:
+                updates["cft"].extend(updated_cft_list)
 
-    if not updates["cft"]:
-        updates["cft"] = updated_cft_list if updated_cft_list is not None else []
-    else:
-        if updated_cft_list is not None:
-            updates["cft"].extend(updated_cft_list)
+        if not updates["cmd"]:
+            updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
+        else:
+            if updated_cmd_list is not None:
+                updates["cmd"].extend(updated_cmd_list)
 
-    if not updates["cmd"]:
-        updates["cmd"] = updated_cmd_list if updated_cmd_list is not None else []
-    else:
-        if updated_cmd_list is not None:
-            updates["cmd"].extend(updated_cmd_list)
+        for each_attr in updates:
+            temp_list = copy.deepcopy(updates[each_attr])
+            temp_list.sort()
+            updates[each_attr] = temp_list
 
-    for each_attr in updates:
-        updates[each_attr].sort()
+        with open(update_data_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(updates, indent=2, ensure_ascii=False))
 
-    with open(update_data_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(updates, indent=2, ensure_ascii=False))
-
-    sv_manage.logger.info("结束自动更新fgo")
+        sv_manage.logger.info("结束自动更新fgo")
 
 
 @sv_manage.on_rex(re.compile(
@@ -357,7 +280,9 @@ async def update_pool():
 ))
 async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '此命令仅群管可用~')
+        await bot.send(ev, '此命令仅群管可用~')
+        return
+
     msg = ev.message.extract_plain_text()
     times = msg.strip()
 
@@ -366,8 +291,9 @@ async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     rule_c = re.compile("^([设s][置z])?[fb]go[时s][间j]([设s][置z])?$", re.IGNORECASE)
     if re.search(rule_c, times[0]) and len(times) == 1:
         await bot.send(ev, "食用指南：设置fgo时间 + 小时 + 分钟 + 秒（至少存在一个）")
-        await bot.finish(ev, f"当前自动更新时间：{configs['flush_hour']}小时"
-                             f"{configs['flush_minute']}分钟{configs['flush_second']}秒")
+        await bot.send(ev, f"当前自动更新时间：{configs['flush_hour']}小时"
+                           f"{configs['flush_minute']}分钟{configs['flush_second']}秒")
+        return
 
     rule_h = re.compile(r"\d+(h((our)?s?)?|小时)", re.IGNORECASE)
     rule_m = re.compile(r"\d+(m((inute)?s?)?|分钟)", re.IGNORECASE)
@@ -396,6 +322,7 @@ async def set_update_time(bot: HoshinoBot, ev: CQEvent):
     with open(reload_path, 'w') as f:
         f.write(_content)
 
-    await bot.finish(ev, f"设置完成，当前自动更新时间：{configs['flush_hour']}小时"
-                         f"{configs['flush_minute']}分钟{configs['flush_second']}秒\n"
-                         f"机器人重启中~")
+    await bot.send(ev, f"设置完成，当前自动更新时间：{configs['flush_hour']}小时"
+                       f"{configs['flush_minute']}分钟{configs['flush_second']}秒\n"
+                       f"机器人重启中~")
+    return

@@ -1,3 +1,4 @@
+import hoshino
 from ..path_and_json import *
 
 headers = {
@@ -8,18 +9,18 @@ headers = {
 
 
 async def download(
-        url: str, path: str, mute: bool = False, crt_file: Union[str, bool] = False
+        url: str, path: str, mute: bool = False, session: ClientSession = None
 ) -> Union[int, Exception]:
     if not mute:
-        print("start download img resources")
-    png = await get_content(url, crt_file)
+        sv.logger.info("start download img resources")
+    png = await get_content(url, session)
     if isinstance(png, Exception):
         return png
     if not os.path.exists(path):
         with open(path, "wb") as f:
             f.write(png)
         if not mute:
-            print("finish")
+            sv.logger.info("finish")
         return 0
     else:
         return 1

@@ -7,19 +7,9 @@ from .lib_json import *
 
 
 async def fetch_mooncell(bot: HoshinoBot, ev: CQEvent, select: int, _id: int = 0, force: bool = False):
+    session = ClientSession(headers=headers)
     if not os.path.exists(mc_path):
         os.mkdir(mc_path)
-    crt_file = False
-    if os.path.exists(config_path):
-        try:
-            configs = json.load(open(config_path, encoding="utf-8"))
-            for each_group in configs["groups"]:
-                if int(each_group) == ev.group_id:
-                    if not configs["groups"][each_group]["crt_path"] == "False":
-                        crt_file = os.path.join(crt_folder_path, configs["groups"][each_group]["crt_path"])
-                        break
-        except json.decoder.JSONDecodeError:
-            pass
     try:
         if select == 1:
             with open(all_servant_path, 'r', encoding="utf-8") as f:
@@ -49,11 +39,8 @@ async def fetch_mooncell(bot: HoshinoBot, ev: CQEvent, select: int, _id: int = 0
             if not os.path.exists(folder_path):
                 os.mkdir(folder_path)
             card_type = "svt"
-    except json.decoder.JSONDecodeError:
-        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆] 或 [获取全部内容]")
-        return
-    except FileNotFoundError:
-        await bot.finish(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆] 或 [获取全部内容]")
+    except (json.decoder.JSONDecodeError, FileNotFoundError):
+        await bot.send(ev, "本地没有数据~请先获取数据~\n指令：[更新fgo图书馆] 或 [获取全部内容]")
         return
     _ids = jsonpath(card_data, "$..id")
     links = jsonpath(card_data, "$..name_link")
@@ -76,26 +63,8 @@ async def fetch_mooncell(bot: HoshinoBot, ev: CQEvent, select: int, _id: int = 0
         url = f"https://fgo.wiki/w/{quote(links[index], 'utf-8')}"
         root_url = f"https://fgo.wiki/index.php?title={quote(links[index], 'utf-8')}&action=edit"
         try:
-            raw_html = await (await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)).text
-            root_text = BeautifulSoup(
-                await (await aiorequests.get(root_url, timeout=20, verify=crt_file, headers=headers)).text,
-                'html.parser'
-            ).find("textarea").text
-        except aiorequests.exceptions.SSLError:
-            try:
-                raw_html = await (await aiorequests.get(url, timeout=20, headers=headers)).text
-                root_text = BeautifulSoup(
-                    await (await aiorequests.get(root_url, timeout=20, headers=headers)).text,
-                    'html.parser'
-                ).find("textarea").text
-            except (
-                    aiorequests.exceptions.ReadTimeout,
-                    aiorequests.exceptions.ConnectionError,
-                    aiorequests.exceptions.SSLError
-            ):
-                continue
-        except aiorequests.exceptions.ReadTimeout:
-            continue
+            raw_html = (await get_content(url, session)).decode()
+            root_text = BeautifulSoup(await get_content(root_url, session), 'html.parser').find("textarea").text
         except Exception as e:
             sv_lib.logger.warning(f"Fetch {card_type} {_ids[index]} error: {e}")
             loss.append(_ids[index])

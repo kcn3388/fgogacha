@@ -1,7 +1,7 @@
 from .download import *
 
 
-async def download_icons(crt_file: Union[str, bool] = False) -> Union[int, Exception]:
+async def download_icons(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
     if not os.path.exists(svt_path):
         os.mkdir(svt_path)
@@ -27,59 +27,29 @@ async def download_icons(crt_file: Union[str, bool] = False) -> Union[int, Excep
             if os.path.exists(local_svt):
                 continue
             download_stat = await download(
-                basic_url + each_svt["online"]["svt_icon"], local_svt, True, crt_file
+                basic_url + each_svt["online"]["svt_icon"], local_svt, True, session
             )
             if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
+                sv.logger.info("download icons error, reason:" + str(download_stat))
         for each_cft in cft:
             local_cft = os.path.join(cft_path, each_cft["local"]["cft_icon"])
             if os.path.exists(local_cft):
                 continue
             download_stat = await download(
-                basic_url + each_cft["online"]["cft_icon"], local_cft, True, crt_file
+                basic_url + each_cft["online"]["cft_icon"], local_cft, True, session
             )
             if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
+                sv.logger.info("download icons error, reason:" + str(download_stat))
         for each_cmd in cmd:
             local_cmd = os.path.join(cmd_path, each_cmd["local"]["cmd_icon"])
             if os.path.exists(local_cmd):
                 continue
             download_stat = await download(
-                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, crt_file
+                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, session
             )
             if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
-        print("finish download icons")
-        return download_stat
-    except OSError:
-        for each_svt in svt:
-            local_svt = os.path.join(svt_path, each_svt["local"]["svt_icon"])
-            if os.path.exists(local_svt):
-                continue
-            download_stat = await download(
-                basic_url + each_svt["online"]["svt_icon"], local_svt, True, crt_file
-            )
-            if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
-        for each_cft in cft:
-            local_cft = os.path.join(cft_path, each_cft["local"]["cft_icon"])
-            if os.path.exists(local_cft):
-                continue
-            download_stat = await download(
-                basic_url + each_cft["online"]["cft_icon"], local_cft, True, crt_file
-            )
-            if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
-        for each_cmd in cmd:
-            local_cmd = os.path.join(cmd_path, each_cmd["local"]["cmd_icon"])
-            if os.path.exists(local_cmd):
-                continue
-            download_stat = await download(
-                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, crt_file
-            )
-            if not isinstance(download_stat, int):
-                print("download icons error, reason:" + str(download_stat))
-        print("finish download icons")
+                sv.logger.info("download icons error, reason:" + str(download_stat))
+        sv_fetch.logger.info("finish download icons")
         return download_stat
     except Exception as e:
         return e

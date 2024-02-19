@@ -3,15 +3,15 @@ import io
 import json
 import os
 
+from aiohttp import ClientSession
 from jsonpath import jsonpath  # noqa
 from typing import Union, List
 
 from PIL import Image, ImageFont, ImageDraw
 from aiocqhttp import MessageSegment
 from playwright.async_api import async_playwright
-from time import sleep
 
-from hoshino import config, util, aiorequests, logger, Service, priv
+from hoshino import config, util, logger, Service, priv
 from hoshino.typing import CQEvent
 
 sv_help = '''
@@ -131,8 +131,6 @@ sv_manage_help = '''
 [fgo数据初始化] 初始化数据文件及目录，务必安装后先执行此命令！
 [fgo数据下载] 下载从者及礼装图标，务必先初始化数据再执行下载！
 [跟随最新/剧情卡池] 设置卡池数据更新后跟随最新国服卡池还是国服剧情卡池
-[fgo_enable_crt + crt文件路径] 为下载配置crt文件以规避拒绝访问，留空为默认，False为禁用
-[fgo_check_crt] 检查本群crt文件配置状态
 [重载配置文件] 为本群新建默认配置或还原至默认配置，同时修补其他群的配置
 [切换抽卡样式 + 样式] 切换抽卡样式，可选样式：
 - 文字：旧版简约图标
@@ -217,7 +215,7 @@ class_path = os.path.join(icon_path, "class_icons")
 
 res_paths = [
     basic_path, icon_path, svt_path, cft_path, skill_path,
-    cmd_path, card_path, class_path, mc_path
+    cmd_path, card_path, class_path
 ]
 news_img_path = os.path.join(runtime_path, 'news')
 banner_path = os.path.join(data_path, 'banner.json')
@@ -227,8 +225,7 @@ gacha_path = os.path.join(data_path, 'gacha.json')
 lucky_path = os.path.join(data_path, 'lucky_bag.json')
 banner_data_path = os.path.join(data_path, 'b_data.json')
 update_data_path = os.path.join(data_path, 'update.json')
-
-old_pools_path = os.path.join(runtime_path, 'data/old_pools.json')
+old_pools_path = os.path.join(data_path, 'old_pools.json')
 
 news_path = os.path.join(data_path, 'news.json')
 news_detail_path = os.path.join(data_path, 'news_detail.json')
@@ -240,9 +237,6 @@ back_path = os.path.join(static_path, 'back.jpg')
 back_cn_path = os.path.join(static_path, 'back_cn.png')
 mask_path = os.path.join(static_path, 'mask.png')
 font_path = os.path.join(static_path, 'SourceHanSansSC-Regular.otf')
-
-crt_folder_path = os.path.join(runtime_path, "crt")
-crt_path = "ca-certificates.crt"
 
 all_servant_path = os.path.join(data_path, "all_svt.json")
 all_command_path = os.path.join(data_path, "all_cmd.json")
@@ -260,15 +254,22 @@ all_json = [
     lib_servant_path, lib_command_path, lib_craft_path
 ]
 
+week_list = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+
 
 def create_img(text: str) -> str:
     font_size = 30
     padding = 10
 
-    font = ImageFont.truetype(font_path, font_size)
+    font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
+    tl = round(font.getlength(text))
 
-    wit, hei = font.getsize_multiline(text)
-    img = Image.new("RGB", (wit + padding * 2, hei + padding * 2), "white")
+    # img = Image.new("RGB", (wit + padding * 2, hei + padding * 2), "white")
+    img = Image.new("RGB", (tl, tl), "white")
+    draw = ImageDraw.Draw(img)
+    left, _, right, hei = draw.multiline_textbbox((0, 0), text, font=font)
+    wit = right - left
+    img = img.resize((wit + padding * 2, hei + padding * 2))
     draw = ImageDraw.Draw(img)
     draw.multiline_text((padding / 2, padding / 2), text, font=font, fill="black")
 
@@ -297,7 +298,6 @@ def load_config(ev: CQEvent, get_group: bool = False) -> dict:
             configs = json.load(open(config_path, encoding="utf-8"))
             if gid not in configs["groups"]:
                 basic_config = {
-                    "crt_path": crt_path,
                     "style": "图片"
                 }
                 configs["groups"][gid] = basic_config
@@ -313,7 +313,6 @@ def load_config(ev: CQEvent, get_group: bool = False) -> dict:
             pass
 
     basic_config = {
-        "crt_path": crt_path,
         "style": "图片"
     }
     configs = {
@@ -370,28 +369,18 @@ def gen_ms_img(image: Union[bytes, Image.Image]) -> MessageSegment:
         )
 
 
-async def gen_img_from_url(img_url: str, crt_file: Union[bool, str]) -> Union[Exception, MessageSegment]:
+async def gen_img_from_url(img_url: str, session: ClientSession) -> Union[Exception, MessageSegment]:
     img_url = f"https://fgo.wiki{img_url}"
-    image_bytes = await get_content(img_url, crt_file)
+    image_bytes = await get_content(img_url, session)
     if isinstance(image_bytes, Exception):
         return image_bytes
     return gen_ms_img(image_bytes)
 
 
-async def get_content(url: str, crt_file: Union[bool, str]) -> Union[Exception, bytes]:
+async def get_content(url: str, session: ClientSession) -> Union[Exception, bytes]:
     try:
-        return await (
-            await aiorequests.get(url, timeout=20, headers=headers, verify=crt_file)
-        ).content
-    except OSError:
-        try:
-            sleep(10)
-            return await (
-                await aiorequests.get(url, timeout=20, headers=headers)
-            ).content
-        except Exception as e2:
-            logger.error(f"aiorequest error: {e2}")
-            return e2
+        async with session.get(url, headers=headers) as resp:
+            return await resp.content.read()
     except Exception as e:
         logger.error(f"aiorequest error: {e}")
         return e
@@ -451,7 +440,7 @@ def gen_pool_data(banner: dict, ev: CQEvent = None, gid: int = None) -> Union[st
                 svt_data: dict = each
                 break
     if len(svt_data) == 0:
-        print("data error")
+        sv.logger.info("data error")
         return ""
     pool_data = {
         "group": gid,
@@ -476,7 +465,7 @@ def gen_pool_data(banner: dict, ev: CQEvent = None, gid: int = None) -> Union[st
         pool_data["data"].update(d)
 
     if not os.path.exists(banner_data_path):
-        print("初始化数据json...")
+        sv.logger.info("初始化数据json...")
         open(banner_data_path, 'w')
         pool_detail_data = []
     else:

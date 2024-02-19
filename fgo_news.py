@@ -17,30 +17,29 @@ async def bangzhu(bot: HoshinoBot, ev: CQEvent):
 
 @sv_news.on_rex(re.compile(r"^[获h更g][取q新x][fb]go[新x][闻w](\s\d+)?$", re.IGNORECASE))
 async def get_official_news(bot: HoshinoBot, ev: CQEvent):
-    crt_file = False
-    group_config = load_config(ev, True)
-    if group_config["crt_path"]:
-        crt_file = os.path.join(crt_folder_path, group_config["crt_path"])
+    async with ClientSession(headers=headers) as session:
+        num = ev.message.extract_plain_text().split()
+        if len(num) > 1:
+            num = int(num[1])
+        else:
+            num = 6
+        news, status = await get_news(num, session)
+        if isinstance(status, Exception):
+            await bot.send(ev, f"获取新闻出错，原因：\n{status}")
+            return
 
-    num = ev.message.extract_plain_text().split()
-    if len(num) > 1:
-        num = int(num[1])
-    else:
-        num = 6
-    news, status = await get_news(num, crt_file)
-    if isinstance(status, Exception):
-        await bot.finish(ev, f"获取新闻出错，原因：\n{status}")
-
-    if status:
-        await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
-    else:
-        await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
+        if status:
+            await bot.send(ev, f"没有新的新闻~本地共有{news}条新闻~")
+        else:
+            await bot.send(ev, f"下载完成，本次共获取了{news}条新闻~")
 
 
 @sv_news.on_rex(re.compile(r"^[查c][询x][fb]go[新x][闻w](\s.+)?$", re.IGNORECASE))
 async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     if not os.path.exists(news_detail_path):
-        await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+        await bot.send(ev, "没有本地新闻~请先获取官网新闻~")
+        return
+
     args = ev.message.extract_plain_text()
     pic = True if "pic" in args else False
     get_all = True if "all" in args or "全部" in args else False
@@ -52,7 +51,7 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
     try:
         news = json.load(open(news_detail_path, encoding="utf-8"))
     except json.decoder.JSONDecodeError:
-        await bot.finish(ev, "没有本地新闻~请先获取官网新闻~")
+        await bot.send(ev, "没有本地新闻~请先获取官网新闻~")
         return
 
     if not os.path.exists(news_img_path):
@@ -117,4 +116,5 @@ async def get_local_news(bot: HoshinoBot, ev: CQEvent):
 @sv_news.on_fullmatch("清除新闻缓存")
 async def delete_news_cache(bot: HoshinoBot, ev: CQEvent):
     shutil.rmtree(news_img_path)
-    await bot.finish(ev, "已清理新闻缓存")
+    await bot.send(ev, "已清理新闻缓存")
+    return

@@ -1,24 +1,17 @@
 import re
 from typing import Tuple
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from bs4 import BeautifulSoup
 
 from .lib_json import *
 
 
-async def lib_cmd_online(url: str, crt_file: str = False) -> Tuple[Union[Exception, str], int]:
+async def lib_cmd_online(url: str, session: ClientSession) -> Tuple[Union[Exception, str], int]:
     try:
-        response = await aiorequests.get(url, timeout=20, verify=crt_file, headers=headers)
-    except OSError:
-        try:
-            sleep(10)
-            response = await aiorequests.get(url, timeout=20, headers=headers)
-        except Exception as e2:
-            return e2, -100
+        soup = BeautifulSoup(await get_content(url, session), 'html.parser')
     except Exception as e:
         return e, -100
 
-    soup = BeautifulSoup(await response.content, 'html.parser')
     try:
         is_get = soup.find(class_="wikitable nomobile").find_all("big")
     except AttributeError:
@@ -103,7 +96,7 @@ async def lib_cmd(cmd_data: dict) -> dict:
         cmd["error"].append("cards_url not found")
     cmd["detail"] = cmd_detail
     cmd["rare"] = f"{rare.group(1)}星" if rare else "-"
-    cmd["cards_url"] = raw_file.group(0) if raw_file else ""
+    cmd["cards_url"] = unquote(raw_file.group(0)) if raw_file else ""
 
     if not cmd["error"]:
         cmd.pop("error")
