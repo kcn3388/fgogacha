@@ -9,7 +9,7 @@ headers = {
 
 
 async def download(
-        url: str, path: str, mute: bool = False, session: ClientSession = None
+        url: str, path, mute: bool = False, session: ClientSession = None
 ) -> Union[int, Exception]:
     if not mute:
         sv.logger.info("start download img resources")

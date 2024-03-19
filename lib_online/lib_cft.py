@@ -95,7 +95,7 @@ async def lib_cft(cft_data: dict) -> dict:
     }
 
     card_name = raw_card_name.group(1).strip().replace(" ", "_").replace("‎", "") if raw_card_name else ""
-    raw_file = re.search(rf"(/images/./../){quote(card_name)}.png", raw_html, re.I)
+    raw_file = re.search(rf"(https://media.fgo.wiki/./../){quote(card_name)}.png", raw_html, re.I)
     if not raw_file:
         cft["error"].append("cards_url not found")
     cft["detail"] = cft_detail

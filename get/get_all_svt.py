@@ -28,12 +28,14 @@ async def get_all_svt(session: ClientSession) -> Union[Exception, Tuple[int, Uni
         except json.decoder.JSONDecodeError:
             old_all_svt = []
 
-    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+/images/.+\.(png|jpg)")
+    rule_all_cmd = re.compile(r"raw_str(\s)?=(\s)?\"id.+//media.fgo.wiki/.+\.(png|jpg)")
     all_svt_icons = re.search(rule_all_cmd, raw_data).group(0).split(",")
-    rule_png = re.compile(r"/images/.+\.(png|jpg)")
+    rule_png = re.compile(r"//media.fgo.wiki/.+\.(png|jpg)")
     for i in range(len(all_svt_icons) - 1, -1, -1):
         if not re.match(rule_png, all_svt_icons[i]):
             all_svt_icons.pop(i)
+        else:
+            all_svt_icons[i] = all_svt_icons[i].replace("//", "https://")
 
     for i in range(0, len(data), 8):
         svt: dict = {
@@ -48,7 +50,7 @@ async def get_all_svt(session: ClientSession) -> Union[Exception, Tuple[int, Uni
         }
         cid = svt["id"]
         cid = cid.zfill(3)
-        rule_cmd = re.compile(rf"/images/.+Servant{cid}\.(png|jpg)")
+        rule_cmd = re.compile(rf"https://media.fgo.wiki/.+Servant{cid}\.(png|jpg)")
         for each in all_svt_icons:
             if re.match(rule_cmd, each):
                 i_each = all_svt_icons.index(each)
@@ -62,15 +64,15 @@ async def get_all_svt(session: ClientSession) -> Union[Exception, Tuple[int, Uni
                         "class_icon": all_svt_icons[i_each + 1].split("/").pop()
                     }
                     if svt["id"] == "240" or svt["id"] == "168":
-                        path = "/images/3/32/BeastⅢ.png"
+                        path = "https://media.fgo.wiki/3/32/BeastⅢ.png"
                         svt["online"]["class_icon"] = path
                         svt["local"]["class_icon"] = path.split("/").pop()
                     if svt["id"] == "149":
-                        path = "/images/5/59/BeastⅡ.png"
+                        path = "https://media.fgo.wiki/5/59/BeastⅡ.png"
                         svt["online"]["class_icon"] = path
                         svt["local"]["class_icon"] = path.split("/").pop()
                     if svt["id"] == "151":
-                        path = "/images/3/36/BeastⅠ.png"
+                        path = "https://media.fgo.wiki/3/36/BeastⅠ.png"
                         svt["online"]["class_icon"] = path
                         svt["local"]["class_icon"] = path.split("/").pop()
                 else:

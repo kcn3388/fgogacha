@@ -52,7 +52,7 @@ async def get_all_lucky_bag(session: ClientSession) -> Union[Exception, dict]:
         }
         sim = f'/w/{re.search(r"link=(.+)]]", info[0]).group(1).replace(" ", "_")}' if len(info) > 1 else ""
         img_file = re.search(r"文件:(.+\.png)", info[-1]).group(1).replace(" ", "_")
-        img = re.search(rf"/images/./../{quote(img_file)}", raw_html).group(0).replace(quote(img_file), img_file)
+        img = re.search(rf"https://media.fgo.wiki/./../{quote(img_file)}", raw_html).group(0).replace(quote(img_file), img_file)
         bag["img"] = img
         if "四周年" in bag["name"]:
             sim = sim.replace("2019", "2020").replace("(日服)", "")

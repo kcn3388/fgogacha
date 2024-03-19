@@ -641,10 +641,10 @@ async def kakin(bot: HoshinoBot, ev: CQEvent):
         return
     count = 0
     for m in ev.message:
-        if m.type == 'at' and m.data['qq'] != 'all':
+        if m.type == 'at' and not m.data['qq'] == 'all':
             uid = int(m.data['qq'])
-            jewel_limit.reset(uid)
-            tenjo_limit.reset(uid)
+            jewel_limit.reset(f"{uid}@{ev.group_id}")
+            tenjo_limit.reset(f"{uid}@{ev.group_id}")
             count += 1
     if count:
         await bot.send(ev, f"已为{count}位用户充值完毕！谢谢惠顾～")

@@ -166,8 +166,8 @@ def get_card_url(svt: dict, raw_html: str, raw_data: str):
         all_files.pop()
     for each_file in all_files:
         # 使用[^.]+代替.+?以避免出现非贪婪失效
-        # raw_file = re.search(rf"(/images/./[^.]+){quote(each_file)}.png", raw_html)
-        raw_file = re.search(rf"(/images/./../){quote(each_file)}.png", raw_html)
+        # raw_file = re.search(rf"(https://media.fgo.wiki/./[^.]+){quote(each_file)}.png", raw_html)
+        raw_file = re.search(rf"(https://media.fgo.wiki/./../){quote(each_file)}.png", raw_html)
         file = f"{raw_file.group(1)}{each_file}.png" if raw_file else ""
         cards_url.append(file)
     for card_index in range(len(all_files)):
@@ -564,10 +564,10 @@ async def get_pickup(svt: dict, origin_soup: BeautifulSoup, url: str, session: C
                     raw_img_url = img_soup.get("srcset").split(",")[-1].replace("/thumb", "").strip()
                 except AttributeError:
                     raw_img_url = img_soup.get("data-srcset").split(",")[-1].replace("/thumb", "").strip()
-                img = re.search(r"/images/./../.+?\.png", raw_img_url).group(0)
+                img = re.search(r"https://media.fgo.wiki/./../.+?\.png", raw_img_url).group(0)
             except AttributeError:
                 img_file = re.search(r"\|卡池图文件名jp=(.+?\.png)", raw_time).group(1).replace(" ", "_")
-                img = re.search(rf"/images(/thumb)?/./../{quote(img_file)}", str(soup)).group(0).replace("/thumb", "")
+                img = re.search(rf"https://media.fgo.wiki(/thumb)?/./../{quote(img_file)}", str(soup)).group(0).replace("/thumb", "")
             pup_future["img_url"] = unquote(img)
             time_start = datetime.strptime(re.search(r"\|卡池开始时间jp=(.+)", raw_time).group(1), "%Y-%m-%d %H:%M")
             time_end = datetime.strptime(re.search(r"\|卡池结束时间jp=(.+)", raw_time).group(1), "%Y-%m-%d %H:%M")

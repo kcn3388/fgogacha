@@ -20,14 +20,14 @@ async def download_icons(session: ClientSession) -> Union[int, Exception]:
     except json.decoder.JSONDecodeError:
         return 1
 
-    basic_url = "https://fgo.wiki"
+    # basic_url = "https://fgo.wiki"
     try:
         for each_svt in svt:
             local_svt = os.path.join(svt_path, each_svt["local"]["svt_icon"])
             if os.path.exists(local_svt):
                 continue
             download_stat = await download(
-                basic_url + each_svt["online"]["svt_icon"], local_svt, True, session
+                each_svt["online"]["svt_icon"], local_svt, True, session
             )
             if not isinstance(download_stat, int):
                 sv.logger.info("download icons error, reason:" + str(download_stat))
@@ -36,7 +36,7 @@ async def download_icons(session: ClientSession) -> Union[int, Exception]:
             if os.path.exists(local_cft):
                 continue
             download_stat = await download(
-                basic_url + each_cft["online"]["cft_icon"], local_cft, True, session
+                each_cft["online"]["cft_icon"], local_cft, True, session
             )
             if not isinstance(download_stat, int):
                 sv.logger.info("download icons error, reason:" + str(download_stat))
@@ -45,7 +45,7 @@ async def download_icons(session: ClientSession) -> Union[int, Exception]:
             if os.path.exists(local_cmd):
                 continue
             download_stat = await download(
-                basic_url + each_cmd["online"]["cmd_icon"], local_cmd, True, session
+                each_cmd["online"]["cmd_icon"], local_cmd, True, session
             )
             if not isinstance(download_stat, int):
                 sv.logger.info("download icons error, reason:" + str(download_stat))

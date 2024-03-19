@@ -6,7 +6,7 @@ from .download import *
 
 async def download_svt(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
-    basic_url = "https://fgo.wiki"
+    # basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
@@ -21,7 +21,7 @@ async def download_svt(session: ClientSession) -> Union[int, Exception]:
                     # 如果是从者
                     if j == "svt_icon":
                         local = os.path.join(svt_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -34,7 +34,7 @@ async def download_svt(session: ClientSession) -> Union[int, Exception]:
                     rule = re.compile(r"(ultimate|card\d)_icon")
                     if re.match(rule, j):
                         local = os.path.join(card_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -46,7 +46,7 @@ async def download_svt(session: ClientSession) -> Union[int, Exception]:
                     # 如果是职阶
                     if j == "class_icon":
                         local = os.path.join(class_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -74,7 +74,7 @@ async def download_svt(session: ClientSession) -> Union[int, Exception]:
 
 async def download_cft(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
-    basic_url = "https://fgo.wiki"
+    # basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
@@ -89,7 +89,7 @@ async def download_cft(session: ClientSession) -> Union[int, Exception]:
                     # 如果是礼装
                     if j == "cft_icon":
                         local = os.path.join(cft_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -101,7 +101,7 @@ async def download_cft(session: ClientSession) -> Union[int, Exception]:
                     # 如果是技能
                     if j == "skill_icon":
                         local = os.path.join(skill_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -129,7 +129,7 @@ async def download_cft(session: ClientSession) -> Union[int, Exception]:
 
 async def download_cmd(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
-    basic_url = "https://fgo.wiki"
+    # basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
@@ -144,7 +144,7 @@ async def download_cmd(session: ClientSession) -> Union[int, Exception]:
                     # 如果是纹章
                     if j == "cmd_icon":
                         local = os.path.join(cmd_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -156,7 +156,7 @@ async def download_cmd(session: ClientSession) -> Union[int, Exception]:
                     # 如果是技能
                     if j == "skill_icon":
                         local = os.path.join(skill_path, i["local"][j])
-                        online = f'{basic_url}{i["online"][j]}'
+                        online = i["online"][j]
                         if os.path.exists(local):
                             continue
                         sv.logger.info(f"======开始下载：{local}======")
@@ -184,7 +184,7 @@ async def download_cmd(session: ClientSession) -> Union[int, Exception]:
 
 async def download_icon_skill(session: ClientSession) -> Union[int, Exception]:
     download_stat = 1
-    basic_url = "https://fgo.wiki"
+    # basic_url = "https://fgo.wiki"
     for each in res_paths:
         if not os.path.exists(each):
             os.mkdir(each)
@@ -204,10 +204,10 @@ async def download_icon_skill(session: ClientSession) -> Union[int, Exception]:
     skill_icons = raw_skill_icons.split(";;")
     for each_icon in skill_icons:
         local_icon = f"{each_icon}.png"
-        raw_icon_url = re.search(rf"/images/./../{quote(each_icon)}.png", raw_html)
+        raw_icon_url = re.search(rf"https://media.fgo.wiki/./../{quote(each_icon)}.png", raw_html)
         if each_icon == "被暴击发生耐性提升" and not raw_icon_url:
             local_icon = f"{each_icon}2.png"
-            raw_icon_url = re.search(rf"/images/./../{quote(each_icon)}2.png", raw_html)
+            raw_icon_url = re.search(rf"https://media.fgo.wiki/./../{quote(each_icon)}2.png", raw_html)
 
         online_icon = raw_icon_url.group(0) if raw_icon_url else ""
         if not online_icon:
@@ -215,12 +215,11 @@ async def download_icon_skill(session: ClientSession) -> Union[int, Exception]:
             continue
 
         local = os.path.join(skill_path, local_icon)
-        online = f'{basic_url}{online_icon}'
         if os.path.exists(local):
             continue
         sv.logger.info(f"======开始下载：{local}======")
         download_stat = await download(
-            online, local, True, session
+            online_icon, local, True, session
         )
         if not isinstance(download_stat, int):
             sv.logger.info("download icons error, reason: " + str(download_stat))

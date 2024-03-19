@@ -91,7 +91,7 @@ async def lib_cmd(cmd_data: dict) -> dict:
     card_name = raw_card_name.group(1).strip().replace(" ", "_") if raw_card_name else ""
     if cmd["id"] == "74":
         card_name = "魔神小姐"
-    raw_file = re.search(rf"(/images/./../){quote(card_name)}.png", raw_html, re.I)
+    raw_file = re.search(rf"(https://media.fgo.wiki/./../){quote(card_name)}.png", raw_html, re.I)
     if not raw_file:
         cmd["error"].append("cards_url not found")
     cmd["detail"] = cmd_detail
